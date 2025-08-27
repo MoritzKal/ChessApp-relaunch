@@ -12,7 +12,7 @@
 ## Observability
 - **Prometheus** scrapt (zunächst) Prometheus selbst – später `api:8080`, `ml:8000`, `mlflow`.
 - **Loki + Promtail** sammeln Docker‑Logs aller Services (Labels: `container`, `service`).
-- **Grafana** hat fertige Datasources (Prometheus, Loki). Dashboards folgen in einem späteren PR.
+- **Grafana** hat fertige Datasources (Prometheus, Loki). Dashboards: Grafana → Dashboards → Ordner "ChessApp" → "ChessApp – Overview".
 
 ## Grafana / Explore
 
