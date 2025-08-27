@@ -11,6 +11,8 @@ spring:
     open-in-view: false
   flyway:
     enabled: true
+    locations: classpath:db/migration
+    schemas: public
     baseline-on-migrate: true
     baseline-version: 0
 management:
@@ -24,5 +26,6 @@ logging:
   level:
     root: INFO
     com.chessapp.api: INFO
+    org.flywaydb: DEBUG
 chs:
   default-username: ${CHESS_USERNAME:M3NG00S3}

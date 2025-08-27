@@ -37,7 +37,7 @@ public class Move {
     @Column(name = "is_blunder")
     private Boolean isBlunder;
 
-    @Lob
+    @Column(name ="comment")
     private String comment;
 
     // getters and setters
