@@ -1,0 +1,223 @@
+
+x-ports: &ports
+  prometheus: ${PROMETHEUS_PORT:-9090}
+  grafana: ${GRAFANA_PORT:-3000}
+  loki: ${LOKI_PORT:-3100}
+  mlflow: ${MLFLOW_PORT:-5000}
+  minio_s3: ${MINIO_S3_PORT:-9000}
+  minio_console: ${MINIO_CONSOLE_PORT:-9001}
+  postgres: ${POSTGRES_PORT:-5432}
+
+networks:
+  chs_net: {}
+
+volumes:
+  db-data: {}
+  minio-data: {}
+  grafana-data: {}
+  prometheus-data: {}
+  loki-data: {}
+  mlflow-data: {}
+
+services:
+  db:
+    image: postgres:16
+    container_name: chs_db
+    env_file:
+      - "../.env"
+    environment:
+      POSTGRES_USER: POSTGRES_USER
+      POSTGRES_PASSWORD: POSTGRES_PASSWORD
+      POSTGRES_DB: POSTGRES_DB
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks: [chs_net]
+    healthcheck:
+      test: [ "CMD-SHELL","pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: chs_minio
+    env_file:
+      - "../.env"
+    environment:
+      MINIO_ROOT_USER: MINIO_ROOT_USER
+      MINIO_ROOT_PASSWORD: MINIO_ROOT_PASSWORD
+    command: server /data --console-address ":${MINIO_CONSOLE_PORT:-9001}"
+    ports:
+      - "${MINIO_S3_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio-data:/data
+    networks: [ chs_net ]
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:9000/minio/health/ready || curl -fsS http://localhost:9000/minio/health/ready" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+  create-buckets:
+    image: minio/mc:latest
+    container_name: chs_minio_mc
+    depends_on:
+      minio:
+        condition: service_healthy
+    env_file:
+      - "../.env"
+    environment:
+      MINIO_ROOT_USER: MINIO_ROOT_USER
+      MINIO_ROOT_PASSWORD: MINIO_ROOT_PASSWORD
+    entrypoint: >
+      /bin/sh -c "
+      until (/usr/bin/mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} >/dev/null 2>&1); do echo '...waiting for minio'; sleep 2; done &&
+      /usr/bin/mc mb -p local/datasets || true &&
+      /usr/bin/mc mb -p local/models || true &&
+      /usr/bin/mc mb -p local/reports || true &&
+      /usr/bin/mc mb -p local/logs || true &&
+      /usr/bin/mc mb -p local/mlflow || true &&
+      /usr/bin/mc anonymous set public local/mlflow || true &&
+      echo 'MinIO buckets ready'"
+    networks: [ chs_net ]
+
+  mlflow:
+    build: ./mlflow
+    container_name: chs_mlflow
+    env_file:
+      - "../.env"
+    environment:
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: MINIO_ROOT_USER
+      AWS_SECRET_ACCESS_KEY: MINIO_ROOT_PASSWORD
+      AWS_DEFAULT_REGION: us-east-1
+    command: >
+      sh -c "mlflow server \
+      --backend-store-uri sqlite:////mlflow/mlflow.db \
+      --default-artifact-root s3://mlflow \
+      --host 0.0.0.0 --port ${MLFLOW_PORT:-5000}"
+    ports:
+      - "${MLFLOW_PORT:-5000}:5000"
+    volumes:
+      - mlflow-data:/mlflow
+    depends_on:
+      minio:
+        condition: service_healthy
+      create-buckets:
+        condition: service_completed_successfully
+    networks: [chs_net]
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: chs_prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+    volumes:
+      - prometheus-data:/prometheus
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9090/-/ready || curl -fsS http://localhost:9090/-/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks: [chs_net]
+
+  loki:
+    image: grafana/loki:2.9.6
+    container_name: chs_loki
+    command: -config.file=/etc/loki/config/loki-config.yaml
+    volumes:
+      - loki-data:/loki
+      - ./loki/loki-config.yaml:/etc/loki/config/loki-config.yaml:ro
+    ports:
+      - "${LOKI_PORT:-3100}:3100"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3100/ready || curl -fsS http://localhost:3100/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks: [chs_net]
+
+  promtail:
+    image: grafana/promtail:2.9.6
+    container_name: chs_promtail
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+    depends_on:
+      - loki
+    networks: [chs_net]
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: chs_grafana
+    env_file:
+      - "../.env"
+    environment:
+      GF_SECURITY_ADMIN_USER: GRAFANA_USER
+      GF_SECURITY_ADMIN_PASSWORD: GRAFANA_PASSWORD
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Editor"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || curl -fsS http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+    networks: [chs_net]
+  api:
+    build:
+      context: ..
+      dockerfile: api/api-app/Dockerfile
+    container_name: chs_api
+    env_file:
+      - "../.env"
+    environment:
+      POSTGRES_USER: POSTGRES_USER
+      POSTGRES_PASSWORD: POSTGRES_PASSWORD
+      POSTGRES_DB: POSTGRES_DB
+      CHESS_USERNAME: ${CHESS_USERNAME:-M3NG00S3}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/$${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: POSTGRES_USER
+      SPRING_DATASOURCE_PASSWORD: POSTGRES_PASSWORD
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      LOGGING_LEVEL_org.springdoc: DEBUG
+      LOGGING_LEVEL_org.springdoc_web: INFO
+      LOGGING_LEVEL_org_springframework: INFO
+      SPRINGDOC_SWAGGER_UI_URL: /v3/api-docs/v1
+      SPRINGDOC_SWAGGER_UI_DISABLE_SWAGGER_DEFAULT_URL: "true"
+      SPRINGDOC_GROUPS_ENABLED: "true"
+      SPRINGDOC_CACHE_DISABLED: "false"
+
+    depends_on:
+      db:
+        condition: service_healthy
+      create-buckets:
+        condition: service_completed_successfully
+    ports:
+      - "8080:8080"
+    networks: [ chs_net ]
+    restart: unless-stopped
