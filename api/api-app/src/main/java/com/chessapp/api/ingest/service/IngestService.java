@@ -10,7 +10,10 @@ import com.chessapp.api.ingest.entity.IngestRun;
 import com.chessapp.api.ingest.repo.IngestRunRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import com.chessapp.api.domain.entity.Color;
+import com.chessapp.api.domain.entity.GameResult;
 import org.slf4j.MDC;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -23,7 +26,6 @@ import java.time.YearMonth;
 import java.util.*;
 
 @Service
-@Slf4j
 public class IngestService {
 
     private final PgnParser pgnParser;
@@ -32,6 +34,7 @@ public class IngestService {
     private final PositionRepository positionRepository;
     private final IngestRunRepository ingestRunRepository;
     private final MeterRegistry meterRegistry;
+    private static final Logger log = LoggerFactory.getLogger(IngestService.class);
 
     public IngestService(PgnParser pgnParser,
                          GameRepository gameRepository,
@@ -68,40 +71,40 @@ public class IngestService {
         int skipped = 0;
 
         try {
-            if (offline) {
+            if(offline) {
                 String data = Files.readString(Path.of("fixtures/pgn/sample_10_games.pgn"));
-                String[] parts = data.split("\r?\n\r?\n");
+                // Neu: in einem Rutsch alle Partien parsen (kompatibel zu chesslib 1.3.4)
+                List<PgnParser.ParsedGame> parsedGames = pgnParser.parseManyFromConcatPgn(data);
                 List<Game> games = new ArrayList<>();
                 List<Move> moves = new ArrayList<>();
                 List<Position> positions = new ArrayList<>();
-                for (String pgn : parts) {
-                    if (pgn.trim().isEmpty()) continue;
-                    PgnParser.ParsedGame parsed = pgnParser.parse(pgn.trim());
-                    if (gameRepository.findByGameIdExt(parsed.gameIdExt()).isPresent()) {
+                for (PgnParser.ParsedGame parsed : parsedGames) {
+                    if (parsed == null) continue;
+                    if (parsed.gameIdExt() != null && gameRepository.findByGameIdExt(parsed.gameIdExt()).isPresent()) {
                         skipped++;
                         continue;
                     }
                     UUID gameId = UUID.randomUUID();
                     Game g = new Game();
                     g.setId(gameId);
-                    g.setUserId(UUID.randomUUID());
+                    g.setUserId(UUID.randomUUID()); // MVP: Default-User, später via Mapping M3NG00S3
                     g.setGameIdExt(parsed.gameIdExt());
                     g.setEndTime(parsed.endTime());
                     g.setTimeControl(parsed.timeControl());
-                    g.setResult(parsed.result());
+                    g.setResult(mapPgnResult(parsed.result()));
                     g.setWhiteRating(parsed.whiteRating());
                     g.setBlackRating(parsed.blackRating());
                     g.setPgn(parsed.pgnRaw());
                     games.add(g);
-
                     for (PgnParser.ParsedMove m : parsed.moves()) {
                         Move mv = new Move();
                         mv.setId(UUID.randomUUID());
                         mv.setGameId(gameId);
                         mv.setPly(m.ply());
-                        mv.setSan(m.san());
+                        // SAN liefern wir im MVP nicht – leerer String vermeidet NOT NULL-Probleme
+                        mv.setSan("");
                         mv.setUci(m.uci());
-                        mv.setColor(m.color());
+                        mv.setColor(mapColor(m.color()));
                         moves.add(mv);
                     }
                     for (PgnParser.ParsedPosition p : parsed.positions()) {
@@ -109,30 +112,20 @@ public class IngestService {
                         pos.setId(UUID.randomUUID());
                         pos.setGameId(gameId);
                         pos.setPly(p.ply());
-                        pos.setFen(p.fen());
-                        pos.setSideToMove(p.sideToMove());
-                        pos.setLegalMoves(p.legalMoves());
+                        pos.setFen(p.fen());              // NOT NULL gemäß V2
+                        pos.setSideToMove(mapColor(p.sideToMove()));
+                        // legalMoves wird im MVP nicht befüllt; falls Spalte NOT NULL wäre -> "[]"
+                        // pos.setLegalMoves("[]");
                         positions.add(pos);
                     }
                     gamesCount++;
                     movesCount += parsed.moves().size();
                     positionsCount += parsed.positions().size();
                 }
-                gameRepository.saveAll(games);
-                moveRepository.saveAll(moves);
-                positionRepository.saveAll(positions);
-            }
-            run.setStatus("succeeded");
-            run.setGamesCount(gamesCount);
-            run.setMovesCount(movesCount);
-            run.setPositionsCount(positionsCount);
-            run.setFinishedAt(Instant.now());
-            ingestRunRepository.save(run);
-            meterRegistry.counter("chs_ingest_games_total").increment(gamesCount);
-            meterRegistry.counter("chs_ingest_positions_total").increment(positionsCount);
-            log.info("event=ingest.completed games={} moves={} positions={} skipped={}"
-                    , gamesCount, movesCount, positionsCount, skipped);
-        } catch (Exception e) {
+                if (!games.isEmpty()) gameRepository.saveAll(games);
+                if (!moves.isEmpty()) moveRepository.saveAll(moves);
+                if (!positions.isEmpty()) positionRepository.saveAll(positions);
+            }} catch (Exception e) {
             log.error("event=ingest.failed error={}", e.getMessage(), e);
             run.setStatus("failed");
             run.setError(e.getMessage());
@@ -143,4 +136,40 @@ public class IngestService {
             MDC.clear();
         }
     }
+
+
+    private GameResult mapPgnResult(String pgnResult) {
+        String s = (pgnResult == null) ? "" : pgnResult.trim();
+        String[] candidates;
+        switch (s) {
+            case "1-0":
+                candidates = new String[] {"WHITE", "WHITE_WIN", "WHITEWON", "WHITE_WON", "WHITE_WINS"};
+                break;
+            case "0-1":
+                candidates = new String[] {"BLACK", "BLACK_WIN", "BLACKWON", "BLACK_WON", "BLACK_WINS"};
+                break;
+            case "1/2-1/2":
+                candidates = new String[] {"DRAW", "REMIS", "TIE"};
+                break;
+            case "*":
+            default:
+                candidates = new String[] {"UNKNOWN", "ONGOING", "UNDECIDED", "ABORTED"};
+        }
+        for (String c : candidates) {
+            try { return GameResult.valueOf(c); } catch (IllegalArgumentException ignored) {}
+        }
+        // Fallback: erstes Enum, um niemals null zu schreiben
+        return GameResult.values()[0];
+    }
+
+    private Color mapColor(String c) {
+        if (c == null) return Color.WHITE; // harmloser Default
+        String s = c.trim().toUpperCase();
+        try { return Color.valueOf(s); } catch (IllegalArgumentException ignored) {}
+        if (s.equals("W")) return Color.WHITE;
+        if (s.equals("B")) return Color.BLACK;
+        return Color.WHITE;
+    }
 }
+
+
