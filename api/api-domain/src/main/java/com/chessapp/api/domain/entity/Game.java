@@ -49,7 +49,7 @@ public class Game {
     @Column(name = "black_rating")
     private Integer blackRating;
 
-    @Lob
+    @Column(name = "pgn", columnDefinition = "text", nullable = false)
     private String pgn;
 
     @Type(JsonType.class)
