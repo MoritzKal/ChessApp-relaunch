@@ -2,6 +2,7 @@ import os
 import urllib.request
 import urllib.error
 import pytest
+import json
 
 GRAFANA_URL = os.getenv("GRAFANA_URL", "http://localhost:3000")
 LOKI_URL = os.getenv("LOKI_URL", "http://localhost:3100")
@@ -32,6 +33,9 @@ def test_grafana_has_loki_datasource():
     opener = urllib.request.build_opener(handler)
     with opener.open(f"{GRAFANA_URL}/api/datasources/name/Loki", timeout=5) as resp:
         assert resp.status == 200
+        data = json.load(resp)
+        assert data["name"] == "Loki"
+        assert data["type"] == "loki"
 
 
 @pytest.mark.skipif(not service_up(PROMETHEUS_URL, "/-/ready"), reason="Prometheus not reachable")
