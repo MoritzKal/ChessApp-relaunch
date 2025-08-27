@@ -11,11 +11,12 @@ import java.util.concurrent.Executor;
 @EnableAsync
 public class AsyncConfig {
 
-    @Bean("ingestExecutor")
-    public Executor ingestExecutor() {
+    @Bean(name = "ingestExecutor")
+    public ThreadPoolTaskExecutor ingestExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(2);
-        executor.setMaxPoolSize(2);
+        executor.setCorePoolSize(4);
+        executor.setMaxPoolSize(8);
+        executor.setQueueCapacity(200);
         executor.setThreadNamePrefix("ingest-");
         executor.initialize();
         return executor;
