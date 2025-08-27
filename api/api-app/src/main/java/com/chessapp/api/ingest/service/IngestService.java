@@ -22,6 +22,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.core.io.ClassPathResource;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import com.chessapp.api.domain.entity.Platform;
+import com.chessapp.api.domain.entity.TimeControlCategory;
+import com.chessapp.api.domain.entity.User;
+import com.chessapp.api.domain.repo.UserRepository;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,6 +41,7 @@ public class IngestService {
     private final MoveRepository moveRepository;
     private final PositionRepository positionRepository;
     private final IngestRunRepository ingestRunRepository;
+    private final UserRepository userRepository;
     private final MeterRegistry meterRegistry;
     private final ChessComClient chessComClient;
     private final ArtifactWriter artifactWriter;
@@ -48,6 +53,7 @@ public class IngestService {
                          MoveRepository moveRepository,
                          PositionRepository positionRepository,
                          IngestRunRepository ingestRunRepository,
+                         UserRepository userRepository,
                          MeterRegistry meterRegistry,
                          ChessComClient chessComClient,
                          ArtifactWriter artifactWriter,
@@ -57,6 +63,7 @@ public class IngestService {
         this.moveRepository = moveRepository;
         this.positionRepository = positionRepository;
         this.ingestRunRepository = ingestRunRepository;
+        this.userRepository = userRepository;
         this.meterRegistry = meterRegistry;
         this.chessComClient = chessComClient;
         this.artifactWriter = artifactWriter;
@@ -65,6 +72,7 @@ public class IngestService {
 
     @Async("ingestExecutor")
     public void startIngest(UUID runId, String username, YearMonth from, YearMonth to, boolean offline) {
+        UUID userId = resolveUserId(username);
         MDC.put("run_id", runId.toString());
         MDC.put("username", username);
         MDC.put("component", "ingest");
@@ -75,7 +83,7 @@ public class IngestService {
         IngestRun run = ingestRunRepository.findById(runId).orElseThrow();
         run.setStatus("running");
         run.setStartedAt(Instant.now());
-        ingestRunRepository.save(run);
+        ingestRunRepository.saveAndFlush(run);
         log.info("event=ingest.status_updated status=running run_id={} username={}", runId, username);
 
         int gamesCount = 0;
@@ -103,14 +111,16 @@ public class IngestService {
 
                     Game g = new Game();
                     g.setId(gameId);
-                    g.setUserId(UUID.randomUUID()); // MVP: später echtes Mapping
+                    g.setUserId(userId);
                     g.setGameIdExt(parsed.gameIdExt());
                     g.setEndTime(parsed.endTime());
+                    g.setTimeCategory(deriveTimeCategory(parsed.timeControl()));
                     g.setTimeControl(parsed.timeControl());
                     g.setResult(mapPgnResult(parsed.result()));
                     g.setWhiteRating(parsed.whiteRating());
                     g.setBlackRating(parsed.blackRating());
                     g.setPgn(parsed.pgnRaw());
+                    g.setPlatform(Platform.CHESS_COM);
                     games.add(g);
 
                     for (PgnParser.ParsedMove m : parsed.moves()) {
@@ -196,14 +206,16 @@ public class IngestService {
                         var gameId = java.util.UUID.randomUUID();
                         var g = new com.chessapp.api.domain.entity.Game();
                         g.setId(gameId);
-                        g.setUserId(java.util.UUID.randomUUID()); // MVP default
+                        g.setUserId(userId);
                         g.setGameIdExt(parsed.gameIdExt());
                         g.setEndTime(parsed.endTime());
+                        g.setTimeCategory(deriveTimeCategory(parsed.timeControl()));
                         g.setTimeControl(parsed.timeControl());
-                        g.setResult(mapPgnResult(parsed.result()));
                         g.setWhiteRating(parsed.whiteRating());
                         g.setBlackRating(parsed.blackRating());
                         g.setPgn(parsed.pgnRaw());
+                        g.setResult(mapPgnResult(parsed.result()));
+                        g.setPlatform(Platform.CHESS_COM);
                         games.add(g);
 
                         for (var m : parsed.moves()) {
@@ -257,7 +269,7 @@ public class IngestService {
                 run.setMovesCount(movesCount);
                 run.setPositionsCount(positionsCount);
                 run.setFinishedAt(Instant.now());
-                ingestRunRepository.save(run);
+                ingestRunRepository.saveAndFlush(run);
                 meterRegistry.counter("chs_ingest_games_total").increment(gamesCount);meterRegistry.counter("chs_ingest_positions_total").increment(positionsCount);
                 log.info("event=ingest.completed mode=online report_uri={} games={} moves={} positions={} skipped={}",
                         reportUri, gamesCount, movesCount, positionsCount, skipped);
@@ -267,10 +279,12 @@ public class IngestService {
             run.setStatus("failed");
             run.setError(e.getMessage());
             run.setFinishedAt(Instant.now());
-            ingestRunRepository.save(run);
+            ingestRunRepository.saveAndFlush(run);
             log.info("event=ingest.status_updated status=failed run_id={} username={}", runId, username);
         } finally {
-            sample.stop(meterRegistry.timer("chs_ingest_duration_seconds"));
+            sample.stop(Timer.builder("chs_ingest_duration_seconds")
+                    .tag("application","api").tag("component","ingest").tag("username", username)
+                    .register(meterRegistry));
             MDC.clear();
         }
     }
@@ -324,6 +338,32 @@ public class IngestService {
             return Files.readString(fs, StandardCharsets.UTF_8);
         }
         throw new IllegalStateException("Offline PGN not found (classpath or filesystem).");
+    }
+
+    private TimeControlCategory deriveTimeCategory(String tc) {
+        try {
+            if (tc == null || tc.isBlank()) return TimeControlCategory.RAPID; // defensiver Default
+            String[] p = tc.split("\\+");
+            int base = Integer.parseInt(p[0]); // Sekunden
+            if (base < 180)  return TimeControlCategory.BULLET;
+            if (base < 480)  return TimeControlCategory.BLITZ;
+            if (base < 1500) return TimeControlCategory.RAPID;
+            return TimeControlCategory.CLASSICAL;
+        } catch (Exception e) {
+            try { return TimeControlCategory.valueOf("RAPID"); } catch (Exception ignore) { return TimeControlCategory.values()[0]; }
+        }
+    }
+
+    private UUID resolveUserId(String username) {
+        // Erwartet: Unique-Constraint auf users.username
+        return userRepository.findByChessUsername(username)
+                .map(User::getId)
+                .orElseGet(() -> {
+                    User u = new User();
+                    u.setId(UUID.randomUUID());
+                    u.setChessUsername(username);
+                    return userRepository.save(u).getId();
+                });
     }
 }
 
