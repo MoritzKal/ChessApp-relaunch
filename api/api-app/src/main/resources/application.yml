@@ -1,0 +1,28 @@
+server:
+  port: 8080
+spring:
+  datasource:
+    url: jdbc:postgresql://db:5432/${POSTGRES_DB:chs}
+    username: ${POSTGRES_USER:chs}
+    password: ${POSTGRES_PASSWORD:chs_password_change_me}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+management:
+  endpoints.web.exposure.include: health,info,prometheus
+  endpoint.health.probes.enabled: true
+  metrics.tags:
+    application: api
+    component: api
+    username: ${CHESS_USERNAME:M3NG00S3}
+logging:
+  level:
+    root: INFO
+    com.chessapp.api: INFO
+chs:
+  default-username: ${CHESS_USERNAME:M3NG00S3}
