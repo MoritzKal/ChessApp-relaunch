@@ -55,13 +55,20 @@ services:
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
     volumes:
       - minio-data:/data
-    networks: [chs_net]
+    networks: [ chs_net ]
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:9000/minio/health/ready || curl -fsS http://localhost:9000/minio/health/ready" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
 
   create-buckets:
     image: minio/mc:latest
     container_name: chs_minio_mc
     depends_on:
-      - minio
+      minio:
+        condition: service_healthy
     env_file:
       - "../.env"
     environment:
@@ -69,7 +76,7 @@ services:
       MINIO_ROOT_PASSWORD: MINIO_ROOT_PASSWORD
     entrypoint: >
       /bin/sh -c "
-      until (/usr/bin/mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD}); do echo '...waiting for minio'; sleep 2; done &&
+      until (/usr/bin/mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} >/dev/null 2>&1); do echo '...waiting for minio'; sleep 2; done &&
       /usr/bin/mc mb -p local/datasets || true &&
       /usr/bin/mc mb -p local/models || true &&
       /usr/bin/mc mb -p local/reports || true &&
@@ -99,8 +106,10 @@ services:
     volumes:
       - mlflow-data:/mlflow
     depends_on:
-      - minio
-      - create-buckets
+      minio:
+        condition: service_healthy
+      create-buckets:
+        condition: service_completed_successfully
     networks: [chs_net]
 
   prometheus:
@@ -190,13 +199,16 @@ services:
       POSTGRES_USER: POSTGRES_USER
       POSTGRES_PASSWORD: POSTGRES_PASSWORD
       POSTGRES_DB: POSTGRES_DB
-      CHESS_USERNAME: CHESS_USERNAME:-M3NG00S3
+      CHESS_USERNAME: ${CHESS_USERNAME:-M3NG00S3}
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/$${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: POSTGRES_USER
       SPRING_DATASOURCE_PASSWORD: POSTGRES_PASSWORD
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
     depends_on:
       db:
         condition: service_healthy
+      create-buckets:
+        condition: service_completed_successfully
     ports:
       - "8080:8080"
     networks: [ chs_net ]
