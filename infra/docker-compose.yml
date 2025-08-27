@@ -205,7 +205,13 @@ services:
       SPRING_DATASOURCE_PASSWORD: POSTGRES_PASSWORD
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       LOGGING_LEVEL_org.springdoc: DEBUG
-      LOGGING_LEVEL_org.springframework.web: INFO
+      LOGGING_LEVEL_org.springdoc_web: INFO
+      LOGGING_LEVEL_org_springframework: INFO
+      SPRINGDOC_SWAGGER_UI_URL: /v3/api-docs/v1
+      SPRINGDOC_SWAGGER_UI_DISABLE_SWAGGER_DEFAULT_URL: "true"
+      SPRINGDOC_GROUPS_ENABLED: "true"
+      SPRINGDOC_CACHE_DISABLED: "false"
+
     depends_on:
       db:
         condition: service_healthy
