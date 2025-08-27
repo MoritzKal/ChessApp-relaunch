@@ -25,5 +25,6 @@
         <logstash.encoder.version>7.4</logstash.encoder.version>
         <hibernate.types.version>2.21.1</hibernate.types.version>
         <aws.sdk.version>2.25.26</aws.sdk.version>
+        <chesslib.version>1.3.6</chesslib.version>
     </properties>
 </project>

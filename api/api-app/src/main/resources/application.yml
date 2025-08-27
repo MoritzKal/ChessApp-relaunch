@@ -32,3 +32,12 @@ logging:
     org.flywaydb: DEBUG
 chs:
   default-username: ${CHESS_USERNAME:M3NG00S3}
+chess:
+  ingest:
+    baseUrl: https://api.chess.com
+    s3:
+      bucket:
+        logs: logs
+        reports: reports
+      prefix:
+        ingest: ingest
