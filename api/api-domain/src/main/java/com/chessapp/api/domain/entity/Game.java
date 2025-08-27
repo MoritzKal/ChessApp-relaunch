@@ -25,6 +25,9 @@ public class Game {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
+    @Column(name = "game_id_ext")
+    private String gameIdExt;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Platform platform = Platform.CHESS_COM;
@@ -61,6 +64,8 @@ public class Game {
     public void setId(UUID id) { this.id = id; }
     public UUID getUserId() { return userId; }
     public void setUserId(UUID userId) { this.userId = userId; }
+    public String getGameIdExt() { return gameIdExt; }
+    public void setGameIdExt(String gameIdExt) { this.gameIdExt = gameIdExt; }
     public Platform getPlatform() { return platform; }
     public void setPlatform(Platform platform) { this.platform = platform; }
     public Instant getEndTime() { return endTime; }
