@@ -16,7 +16,10 @@ spring:
     baseline-on-migrate: true
     baseline-version: 0
 management:
-  endpoints.web.exposure.include: health,info,prometheus
+  endpoints.web.exposure.include: health,info,prometheus, env
+  endpoint:
+    env:
+      show-values: ALWAYS
   endpoint.health.probes.enabled: true
   metrics.tags:
     application: api
