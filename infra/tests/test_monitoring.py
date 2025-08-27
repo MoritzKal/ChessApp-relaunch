@@ -1,4 +1,5 @@
 import os
+import logging
 import urllib.request
 import urllib.error
 import pytest
@@ -12,7 +13,14 @@ def service_up(url, path=""):
     try:
         with urllib.request.urlopen(url + path, timeout=2):
             return True
-    except Exception:
+    except urllib.error.HTTPError as err:
+        logging.error("HTTPError when accessing %s%s: %s", url, path, err)
+        raise
+    except urllib.error.URLError as err:
+        logging.error("URLError when accessing %s%s: %s", url, path, err)
+        return False
+    except Exception as err:
+        logging.error("Unexpected error when accessing %s%s: %s", url, path, err)
         return False
 
 
