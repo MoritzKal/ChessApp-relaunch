@@ -21,15 +21,16 @@ logs: ## Tail logs
 	@docker compose -f infra/docker-compose.yml --env-file $(ENV) logs -f --tail=200
 
 ps: ## Show processes
-        @docker compose -f infra/docker-compose.yml --env-file $(ENV) ps
+	@docker compose -f infra/docker-compose.yml --env-file $(ENV) ps
 
 status: ## Print endpoints
-        @echo "Grafana:   http://localhost:3000 (admin:$GRAFANA_USER)"
-        @echo "Prometheus:http://localhost:9090"
-        @echo "Loki:      http://localhost:3100"
-        @echo "MinIO:     http://localhost:9001 (console)"
-        @echo "MLflow:    http://localhost:5000"
-        @echo "Postgres:  localhost:5432 (db=$POSTGRES_DB user=$POSTGRES_USER)"
+	@echo "Grafana:   http://localhost:3000 (admin:$GRAFANA_USER)"
+	@echo "Prometheus:http://localhost:9090"
+	@echo "Loki:      http://localhost:3100"
+	@echo "MinIO:     http://localhost:9001 (console)"
+	@echo "MLflow:    http://localhost:5000"
+	@echo "Postgres:  localhost:5432 (db=$POSTGRES_DB user=$POSTGRES_USER)"
 
-test: ## Run monitoring connectivity tests
-        @pytest infra/tests
+test: ## Run monitoring checks
+	python3 -m pip install -r infra/tests/requirements.txt
+	pytest infra/tests -q
