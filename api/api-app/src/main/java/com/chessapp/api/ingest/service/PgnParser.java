@@ -8,6 +8,9 @@ import com.github.bhlangonijr.chesslib.move.Move;
 import com.github.bhlangonijr.chesslib.move.MoveList;
 import com.github.bhlangonijr.chesslib.pgn.PgnHolder;
 import lombok.NonNull;
+import org.springframework.stereotype.Component;
+import com.github.bhlangonijr.chesslib.Piece;
+import com.github.bhlangonijr.chesslib.PieceType;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -31,6 +34,7 @@ import java.util.regex.Pattern;
  * - Kein SanUtils, kein loadPgnFromString, keine Game#getTags()
  * - Header werden direkt aus dem PGN-Text geparst
  */
+@Component
 public class PgnParser {
 
     // ===== Public API ========================================================
@@ -225,22 +229,28 @@ public class PgnParser {
     }
 
     private static String toUci(Move m) {
-        // UCI: e2e4[, promotion]
         Square from = m.getFrom();
         Square to = m.getTo();
         String uci = from.value().toLowerCase() + to.value().toLowerCase();
-        if (m.getPromotion() != null) {
-            char promo = switch (m.getPromotion().getPieceType()) {
-                case QUEEN -> 'q';
-                case ROOK -> 'r';
-                case BISHOP -> 'b';
-                case KNIGHT -> 'n';
-                default -> 0;
-            };
-            if (promo != 0) uci += promo;
+
+        // Promotion kann in 1.3.4 ein Piece mit NULL PieceType sein → defensiv prüfen
+        Piece promoPiece = m.getPromotion();
+        if (promoPiece != null) {
+            PieceType pt = promoPiece.getPieceType();
+            if (pt != null) {
+                char promo = switch (pt) {
+                    case QUEEN -> 'q';
+                    case ROOK -> 'r';
+                    case BISHOP -> 'b';
+                    case KNIGHT -> 'n';
+                    default -> 0;
+                };
+                if (promo != 0) uci += promo;
+            }
         }
         return uci;
     }
+
 
     private static String sha1(String s) {
         try {

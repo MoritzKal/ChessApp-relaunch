@@ -19,6 +19,9 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.core.io.ClassPathResource;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -61,7 +64,6 @@ public class IngestService {
     }
 
     @Async("ingestExecutor")
-    @Transactional
     public void startIngest(UUID runId, String username, YearMonth from, YearMonth to, boolean offline) {
         MDC.put("run_id", runId.toString());
         MDC.put("username", username);
@@ -74,6 +76,7 @@ public class IngestService {
         run.setStatus("running");
         run.setStartedAt(Instant.now());
         ingestRunRepository.save(run);
+        log.info("event=ingest.status_updated status=running run_id={} username={}", runId, username);
 
         int gamesCount = 0;
         long movesCount = 0;
@@ -81,13 +84,15 @@ public class IngestService {
         int skipped = 0;
 
         try {
-            if(offline) {
-                String data = Files.readString(Path.of("fixtures/pgn/sample_10_games.pgn"));
-                // Neu: in einem Rutsch alle Partien parsen (kompatibel zu chesslib 1.3.4)
+            if (offline) {
+                String data = loadOfflinePgn(); // <— NEU
+
                 List<PgnParser.ParsedGame> parsedGames = pgnParser.parseManyFromConcatPgn(data);
+
                 List<Game> games = new ArrayList<>();
                 List<Move> moves = new ArrayList<>();
                 List<Position> positions = new ArrayList<>();
+
                 for (PgnParser.ParsedGame parsed : parsedGames) {
                     if (parsed == null) continue;
                     if (parsed.gameIdExt() != null && gameRepository.findByGameIdExt(parsed.gameIdExt()).isPresent()) {
@@ -95,9 +100,10 @@ public class IngestService {
                         continue;
                     }
                     UUID gameId = UUID.randomUUID();
+
                     Game g = new Game();
                     g.setId(gameId);
-                    g.setUserId(UUID.randomUUID()); // MVP: Default-User, später via Mapping M3NG00S3
+                    g.setUserId(UUID.randomUUID()); // MVP: später echtes Mapping
                     g.setGameIdExt(parsed.gameIdExt());
                     g.setEndTime(parsed.endTime());
                     g.setTimeControl(parsed.timeControl());
@@ -106,13 +112,13 @@ public class IngestService {
                     g.setBlackRating(parsed.blackRating());
                     g.setPgn(parsed.pgnRaw());
                     games.add(g);
+
                     for (PgnParser.ParsedMove m : parsed.moves()) {
                         Move mv = new Move();
                         mv.setId(UUID.randomUUID());
                         mv.setGameId(gameId);
                         mv.setPly(m.ply());
-                        // SAN liefern wir im MVP nicht – leerer String vermeidet NOT NULL-Probleme
-                        mv.setSan("");
+                        mv.setSan(""); // SAN im MVP leer
                         mv.setUci(m.uci());
                         mv.setColor(mapColor(m.color()));
                         moves.add(mv);
@@ -122,19 +128,29 @@ public class IngestService {
                         pos.setId(UUID.randomUUID());
                         pos.setGameId(gameId);
                         pos.setPly(p.ply());
-                        pos.setFen(p.fen());              // NOT NULL gemäß V2
+                        pos.setFen(p.fen());
                         pos.setSideToMove(mapColor(p.sideToMove()));
-                        // legalMoves wird im MVP nicht befüllt; falls Spalte NOT NULL wäre -> "[]"
-                        // pos.setLegalMoves("[]");
                         positions.add(pos);
                     }
+
                     gamesCount++;
                     movesCount += parsed.moves().size();
                     positionsCount += parsed.positions().size();
                 }
+
                 if (!games.isEmpty()) gameRepository.saveAll(games);
                 if (!moves.isEmpty()) moveRepository.saveAll(moves);
                 if (!positions.isEmpty()) positionRepository.saveAll(positions);
+                run.setStatus("succeeded");
+                run.setGamesCount(gamesCount);
+                run.setMovesCount(movesCount);
+                run.setPositionsCount(positionsCount);
+                run.setFinishedAt(Instant.now());
+                ingestRunRepository.save(run);
+                meterRegistry.counter("chs_ingest_games_total").increment(gamesCount);
+                meterRegistry.counter("chs_ingest_positions_total").increment(positionsCount);
+                log.info("event=ingest.completed mode=offline games={} moves={} positions={} skipped={}",
+                         gamesCount, movesCount, positionsCount, skipped);
             } else {
                 // 1) Archive holen und auf [from..to] filtern
                 var archives = chessComClient.listArchives(username).blockOptional().orElseGet(java.util.List::of);
@@ -235,6 +251,16 @@ public class IngestService {
                 );
                 String reportUri = artifactWriter.putReport(runId.toString(), report);
                 run.setReportUri(reportUri);
+                log.info("event=ingest.status_updated status=succeeded run_id={} username={}", runId, username);
+                run.setStatus("succeeded");
+                run.setGamesCount(gamesCount);
+                run.setMovesCount(movesCount);
+                run.setPositionsCount(positionsCount);
+                run.setFinishedAt(Instant.now());
+                ingestRunRepository.save(run);
+                meterRegistry.counter("chs_ingest_games_total").increment(gamesCount);meterRegistry.counter("chs_ingest_positions_total").increment(positionsCount);
+                log.info("event=ingest.completed mode=online report_uri={} games={} moves={} positions={} skipped={}",
+                        reportUri, gamesCount, movesCount, positionsCount, skipped);
             }
         } catch (Exception e) {
             log.error("event=ingest.failed error={}", e.getMessage(), e);
@@ -242,6 +268,7 @@ public class IngestService {
             run.setError(e.getMessage());
             run.setFinishedAt(Instant.now());
             ingestRunRepository.save(run);
+            log.info("event=ingest.status_updated status=failed run_id={} username={}", runId, username);
         } finally {
             sample.stop(meterRegistry.timer("chs_ingest_duration_seconds"));
             MDC.clear();
@@ -280,6 +307,23 @@ public class IngestService {
         if (s.equals("W")) return Color.WHITE;
         if (s.equals("B")) return Color.BLACK;
         return Color.WHITE;
+    }
+
+
+    private String loadOfflinePgn() throws Exception {
+        // 1) Classpath
+        ClassPathResource res = new ClassPathResource("fixtures/pgn/sample_10_games.pgn");
+        if (res.exists()) {
+            try (InputStream is = res.getInputStream()) {
+                return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+            }
+        }
+        // 2) Filesystem-Fallback (für lokale Runs ohne Packaging)
+        Path fs = Path.of("fixtures/pgn/sample_10_games.pgn");
+        if (Files.exists(fs)) {
+            return Files.readString(fs, StandardCharsets.UTF_8);
+        }
+        throw new IllegalStateException("Offline PGN not found (classpath or filesystem).");
     }
 }
 
