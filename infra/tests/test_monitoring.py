@@ -1,4 +1,8 @@
-import os
+import os, pathlib
+from dotenv import load_dotenv
+ROOT = pathlib.Path(__file__).resolve().parents[2]
+load_dotenv(ROOT / ".env", override=True)
+
 import logging
 import urllib.request
 import urllib.error
