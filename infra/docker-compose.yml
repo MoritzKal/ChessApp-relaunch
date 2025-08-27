@@ -110,6 +110,12 @@ services:
       - ./loki/loki-config.yaml:/etc/loki/config/loki-config.yaml:ro
     ports:
       - "${LOKI_PORT:-3100}:3100"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3100/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
     networks: [chs_net]
 
   promtail:
@@ -137,6 +143,8 @@ services:
     ports:
       - "${GRAFANA_PORT:-3000}:3000"
     depends_on:
-      - prometheus
-      - loki
+      prometheus:
+        condition: service_started
+      loki:
+        condition: service_healthy
     networks: [chs_net]
