@@ -18,6 +18,7 @@ import org.slf4j.MDC;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,6 +35,9 @@ public class IngestService {
     private final PositionRepository positionRepository;
     private final IngestRunRepository ingestRunRepository;
     private final MeterRegistry meterRegistry;
+    private final ChessComClient chessComClient;
+    private final ArtifactWriter artifactWriter;
+    private final ObjectMapper objectMapper;
     private static final Logger log = LoggerFactory.getLogger(IngestService.class);
 
     public IngestService(PgnParser pgnParser,
@@ -41,13 +45,19 @@ public class IngestService {
                          MoveRepository moveRepository,
                          PositionRepository positionRepository,
                          IngestRunRepository ingestRunRepository,
-                         MeterRegistry meterRegistry) {
+                         MeterRegistry meterRegistry,
+                         ChessComClient chessComClient,
+                         ArtifactWriter artifactWriter,
+                         ObjectMapper objectMapper) {
         this.pgnParser = pgnParser;
         this.gameRepository = gameRepository;
         this.moveRepository = moveRepository;
         this.positionRepository = positionRepository;
         this.ingestRunRepository = ingestRunRepository;
         this.meterRegistry = meterRegistry;
+        this.chessComClient = chessComClient;
+        this.artifactWriter = artifactWriter;
+        this.objectMapper = objectMapper;
     }
 
     @Async("ingestExecutor")
@@ -125,7 +135,108 @@ public class IngestService {
                 if (!games.isEmpty()) gameRepository.saveAll(games);
                 if (!moves.isEmpty()) moveRepository.saveAll(moves);
                 if (!positions.isEmpty()) positionRepository.saveAll(positions);
-            }} catch (Exception e) {
+            } else {
+                // 1) Archive holen und auf [from..to] filtern
+                var archives = chessComClient.listArchives(username).blockOptional().orElseGet(java.util.List::of);
+                var want = new java.util.ArrayList<java.time.YearMonth>();
+                for (var a : archives) {
+                    // a ~ ".../YYYY/MM"
+                    var parts = a.split("/");
+                    if (parts.length >= 2) {
+                        int y = Integer.parseInt(parts[parts.length-2]);
+                        int m = Integer.parseInt(parts[parts.length-1]);
+                        var ym = java.time.YearMonth.of(y,m);
+                        if ((ym.equals(from) || ym.isAfter(from)) && (ym.equals(to) || ym.isBefore(to))) {
+                            want.add(ym);
+                        }
+                    }
+                }
+                // Artefakt: archives.json (gefilterte Monate)
+                artifactWriter.putJsonToLogs(runId.toString(), "archives.json", want);
+
+                // 2) Für jeden Monat alle PGNs einsammeln, zusammen parsen, persistieren
+                for (var ym : want) {
+                    var monthGames = chessComClient.fetchMonth(username, ym).collectList().block();
+                    if (monthGames == null || monthGames.isEmpty()) continue;
+
+                    StringBuilder sb = new StringBuilder();
+                    for (var node : monthGames) {
+                        var pgnNode = node.get("pgn");
+                        if (pgnNode != null && !pgnNode.isNull()) {
+                            sb.append(pgnNode.asText()).append("\n\n");
+                        }
+                    }
+                    var parsedGames = pgnParser.parseManyFromConcatPgn(sb.toString());
+
+                    java.util.List<com.chessapp.api.domain.entity.Game> games = new java.util.ArrayList<>();
+                    java.util.List<com.chessapp.api.domain.entity.Move> moves = new java.util.ArrayList<>();
+                    java.util.List<com.chessapp.api.domain.entity.Position> positions = new java.util.ArrayList<>();
+
+                    for (var parsed : parsedGames) {
+                        if (parsed == null) continue;
+                        if (parsed.gameIdExt() != null && gameRepository.findByGameIdExt(parsed.gameIdExt()).isPresent()) {
+                            skipped++; continue;
+                        }
+                        var gameId = java.util.UUID.randomUUID();
+                        var g = new com.chessapp.api.domain.entity.Game();
+                        g.setId(gameId);
+                        g.setUserId(java.util.UUID.randomUUID()); // MVP default
+                        g.setGameIdExt(parsed.gameIdExt());
+                        g.setEndTime(parsed.endTime());
+                        g.setTimeControl(parsed.timeControl());
+                        g.setResult(mapPgnResult(parsed.result()));
+                        g.setWhiteRating(parsed.whiteRating());
+                        g.setBlackRating(parsed.blackRating());
+                        g.setPgn(parsed.pgnRaw());
+                        games.add(g);
+
+                        for (var m : parsed.moves()) {
+                            var mv = new com.chessapp.api.domain.entity.Move();
+                            mv.setId(java.util.UUID.randomUUID());
+                            mv.setGameId(gameId);
+                            mv.setPly(m.ply());
+                            mv.setSan(""); // SAN im MVP leer
+                            mv.setUci(m.uci());
+                            mv.setColor(mapColor(m.color()));
+                            moves.add(mv);
+                        }
+                        for (var p : parsed.positions()) {
+                            var pos = new com.chessapp.api.domain.entity.Position();
+                            pos.setId(java.util.UUID.randomUUID());
+                            pos.setGameId(gameId);
+                            pos.setPly(p.ply());
+                            pos.setFen(p.fen());
+                            pos.setSideToMove(mapColor(p.sideToMove()));
+                            positions.add(pos);
+                        }
+                        gamesCount++;
+                        movesCount += parsed.moves().size();
+                        positionsCount += parsed.positions().size();
+                    }
+                    if (!games.isEmpty()) gameRepository.saveAll(games);
+                    if (!moves.isEmpty()) moveRepository.saveAll(moves);
+                    if (!positions.isEmpty()) positionRepository.saveAll(positions);
+                }
+
+                // 3) Abschluss-Report in S3 schreiben & in ingest_runs referenzieren
+                var report = java.util.Map.of(
+                    "runId", runId.toString(),
+                    "username", username,
+                    "from", from.toString(),
+                    "to", to.toString(),
+                    "counts", java.util.Map.of(
+                        "games", gamesCount,
+                        "moves", movesCount,
+                        "positions", positionsCount,
+                        "skipped", skipped
+                    ),
+                    "startedAt", run.getStartedAt(),
+                    "finishedAt", java.time.Instant.now()
+                );
+                String reportUri = artifactWriter.putReport(runId.toString(), report);
+                run.setReportUri(reportUri);
+            }
+        } catch (Exception e) {
             log.error("event=ingest.failed error={}", e.getMessage(), e);
             run.setStatus("failed");
             run.setError(e.getMessage());
