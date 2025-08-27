@@ -6,33 +6,60 @@
   "schemaVersion": 39,
   "version": 1,
   "refresh": "10s",
+  "time": { "from": "now-6h", "to": "now" },
   "panels": [
     {
       "type": "timeseries",
       "title": "Ingest Jobs (chs_ingest_jobs_total)",
-      "gridPos": {"x":0,"y":0,"w":12,"h":8},
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
       "targets": [
         {
-          "datasource": {"type":"prometheus","uid":"prometheus"},
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "chs_ingest_jobs_total",
-          "legendFormat": "{{application}}/{{component}} ({{username}})"
+          "legendFormat": "{{application}}/{{component}} ({{username}})",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Dataset Builds (chs_dataset_build_total)",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "chs_dataset_build_total",
+          "legendFormat": "{{application}}/{{component}} ({{username}})",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Dataset Rows (chs_dataset_rows)",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "chs_dataset_rows",
+          "legendFormat": "{{application}}/{{component}} ({{username}})",
+          "refId": "A"
         }
       ]
     },
     {
       "type": "logs",
       "title": "API Logs (Loki)",
-      "gridPos": {"x":0,"y":8,"w":24,"h":12},
+      "gridPos": { "x": 0, "y": 16, "w": 24, "h": 12 },
       "options": {
         "showLabels": true,
         "showTime": true,
-        "dedupStrategy": "none",
-        "prettifyLogMessage": true,
+        "wrapLogMessage": true,
         "enableLogDetails": true
       },
       "targets": [
         {
-          "datasource": {"type":"loki","uid":"loki"},
+          "datasource": { "type": "loki", "uid": "loki" },
           "expr": "{service=\"api\"} | json",
           "refId": "A"
         }

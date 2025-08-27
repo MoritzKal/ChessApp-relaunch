@@ -51,6 +51,8 @@ public class DatasetService {
     @Transactional
     public DatasetResponse create(DatasetCreateRequest req) {
         UUID id = UUID.randomUUID();
+        final String key = id + "/manifest.json";
+        final String locationUri = "s3://datasets/" + key;
         Dataset d = new Dataset();
         d.setId(id);
         d.setName(req.getName());
@@ -60,7 +62,7 @@ public class DatasetService {
         long rows = req.getSizeRows() != null ? req.getSizeRows() : 0L;
         d.setSizeRows(rows);
         d.setCreatedAt(Instant.now());
-        d.setLocationUri("s3://datasets/" + id + "/");
+        d.setLocationUri(locationUri);
         datasetRepository.save(d);
 
         Map<String, Object> manifest = new LinkedHashMap<>();
@@ -76,7 +78,7 @@ public class DatasetService {
             String json = objectMapper.writeValueAsString(manifest);
             PutObjectRequest request = PutObjectRequest.builder()
                     .bucket("datasets")
-                    .key(id + "/manifest.json")
+                    .key(key)
                     .contentType("application/json")
                     .build();
             s3Client.putObject(request, RequestBody.fromString(json));
