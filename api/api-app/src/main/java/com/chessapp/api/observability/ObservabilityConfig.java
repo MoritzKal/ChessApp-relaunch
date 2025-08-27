@@ -10,13 +10,14 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.config.MeterFilter;
+import io.micrometer.core.instrument.Tags;
 
 @Configuration
 public class ObservabilityConfig {
 
     @Bean
     public MeterFilter apiCommonTags() {
-        return MeterFilter.commonTags("application", "api");
+        return MeterFilter.commonTags(Tags.of("application", "api"));
     }
 
     @Bean
