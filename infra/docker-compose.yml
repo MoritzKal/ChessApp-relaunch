@@ -1,0 +1,142 @@
+version: "3.9"
+
+x-ports: &ports
+  prometheus: ${PROMETHEUS_PORT:-9090}
+  grafana: ${GRAFANA_PORT:-3000}
+  loki: ${LOKI_PORT:-3100}
+  mlflow: ${MLFLOW_PORT:-5000}
+  minio_s3: ${MINIO_S3_PORT:-9000}
+  minio_console: ${MINIO_CONSOLE_PORT:-9001}
+  postgres: ${POSTGRES_PORT:-5432}
+
+networks:
+  chs_net: {}
+
+volumes:
+  db-data: {}
+  minio-data: {}
+  grafana-data: {}
+  prometheus-data: {}
+  loki-data: {}
+  mlflow-data: {}
+
+services:
+  db:
+    image: postgres:16
+    container_name: chs_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${postgres}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks: [chs_net]
+
+  minio:
+    image: minio/minio:latest
+    container_name: chs_minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":${MINIO_CONSOLE_PORT:-9001}"
+    ports:
+      - "${minio_s3}:9000"
+      - "${minio_console}:9001"
+    volumes:
+      - minio-data:/data
+    networks: [chs_net]
+
+  create-buckets:
+    image: minio/mc:latest
+    container_name: chs_minio_mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until (/usr/bin/mc alias set local http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD}); do echo '...waiting for minio'; sleep 2; done &&
+      /usr/bin/mc mb -p local/datasets || true &&
+      /usr/bin/mc mb -p local/models || true &&
+      /usr/bin/mc mb -p local/reports || true &&
+      /usr/bin/mc mb -p local/logs || true &&
+      /usr/bin/mc mb -p local/mlflow || true &&
+      /usr/bin/mc anonymous set public local/mlflow || true &&
+      echo 'MinIO buckets ready'"
+    networks: [chs_net]
+
+  mlflow:
+    build: ./mlflow
+    container_name: chs_mlflow
+    environment:
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      AWS_DEFAULT_REGION: us-east-1
+    command: >
+      sh -c "mlflow server \
+      --backend-store-uri sqlite:////mlflow/mlflow.db \
+      --default-artifact-root s3://mlflow \
+      --host 0.0.0.0 --port ${MLFLOW_PORT:-5000}"
+    ports:
+      - "${mlflow}:5000"
+    volumes:
+      - mlflow-data:/mlflow
+    depends_on:
+      - minio
+      - create-buckets
+    networks: [chs_net]
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: chs_prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+    volumes:
+      - prometheus-data:/prometheus
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "${prometheus}:9090"
+    networks: [chs_net]
+
+  loki:
+    image: grafana/loki:latest
+    container_name: chs_loki
+    command: -config.file=/etc/loki/config/loki-config.yaml
+    volumes:
+      - loki-data:/loki
+      - ./loki/loki-config.yaml:/etc/loki/config/loki-config.yaml:ro
+    ports:
+      - "${loki}:3100"
+    networks: [chs_net]
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: chs_promtail
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+    depends_on:
+      - loki
+    networks: [chs_net]
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: chs_grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "${grafana}:3000"
+    depends_on:
+      - prometheus
+      - loki
+    networks: [chs_net]
