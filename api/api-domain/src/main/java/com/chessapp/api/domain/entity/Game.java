@@ -56,6 +56,9 @@ public class Game {
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> tags;
 
+    @Column(name = "game_id_ext", unique = true)
+    private String gameIdExt;
+
     // getters and setters
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
@@ -79,4 +82,6 @@ public class Game {
     public void setPgn(String pgn) { this.pgn = pgn; }
     public Map<String, Object> getTags() { return tags; }
     public void setTags(Map<String, Object> tags) { this.tags = tags; }
+    public String getGameIdExt() { return gameIdExt; }
+    public void setGameIdExt(String gameIdExt) { this.gameIdExt = gameIdExt; }
 }

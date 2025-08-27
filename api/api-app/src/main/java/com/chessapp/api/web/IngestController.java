@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.chessapp.api.service.IngestService;
+import com.chessapp.api.ingest.service.IngestService;
 
 @RestController
 @RequestMapping("/v1/data/import")

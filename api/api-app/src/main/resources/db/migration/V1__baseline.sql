@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS games (
   white_rating INT,
   black_rating INT,
   pgn TEXT,
-  tags JSONB
+  tags JSONB,
+  game_id_ext VARCHAR(100) UNIQUE
 );
 CREATE INDEX IF NOT EXISTS idx_games_user_time ON games(user_id, end_time DESC);
 
