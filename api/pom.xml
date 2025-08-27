@@ -24,5 +24,6 @@
         <springdoc.version>2.6.0</springdoc.version>
         <logstash.encoder.version>7.4</logstash.encoder.version>
         <hibernate.types.version>2.21.1</hibernate.types.version>
+        <aws.sdk.version>2.25.26</aws.sdk.version>
     </properties>
 </project>
