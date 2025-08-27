@@ -14,6 +14,14 @@
 - **Loki + Promtail** sammeln Docker‑Logs aller Services (Labels: `container`, `service`).
 - **Grafana** hat fertige Datasources (Prometheus, Loki). Dashboards folgen in einem späteren PR.
 
+## Grafana / Explore
+
+### Loki Query Quickstart
+Loki erfordert mindestens **eine** nicht-leere Matcher-Bedingung:
+- ✅ `{service=~".+"}`, `{service="prometheus"}`
+- ❌ `{service=~".*"}`
+Tipp: Label Browser nutzen und `service`/`container` auswählen.
+
 ## Artefakte & Buckets
 - MinIO Buckets: `datasets/`, `models/`, `reports/`, `logs/`, `mlflow/` (automatisch erstellt).
 
