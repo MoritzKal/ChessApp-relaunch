@@ -161,3 +161,17 @@ services:
       loki:
         condition: service_healthy
     networks: [chs_net]
+  api:
+    build: ../api/api-app
+    container_name: chs_api
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      CHESS_USERNAME: ${CHESS_USERNAME:-M3NG00S3}
+    depends_on:
+      db:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    networks: [chs_net]
