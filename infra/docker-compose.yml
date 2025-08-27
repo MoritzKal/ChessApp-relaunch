@@ -211,6 +211,11 @@ services:
       SPRINGDOC_SWAGGER_UI_DISABLE_SWAGGER_DEFAULT_URL: "true"
       SPRINGDOC_GROUPS_ENABLED: "true"
       SPRINGDOC_CACHE_DISABLED: "false"
+      
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      AWS_REGION: us-east-1
+      ML_S3_ENDPOINT: http://minio:9000
 
     depends_on:
       db:
