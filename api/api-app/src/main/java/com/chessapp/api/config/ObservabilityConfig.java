@@ -4,35 +4,19 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
-import io.micrometer.core.instrument.MeterRegistryCustomizer;
+import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer;
 
 @Configuration
 public class ObservabilityConfig {
 
     @Bean
-    MeterRegistryCustomizer<MeterRegistry> metricsCommonTags(
-            @Value("${chs.default-username:M3NG00S3}") String username) {
+    public MeterRegistryCustomizer<MeterRegistry> metricsCommonTags(
+            @Value("${CHESS_USERNAME:M3NG00S3}") String defaultUser) {
         return registry -> registry.config().commonTags(
                 "application", "api",
                 "component", "api",
-                "username", username);
-    }
-
-    @Bean
-    Counter ingestJobsCounter(MeterRegistry registry) {
-        return Counter.builder("chs_ingest_jobs_total").register(registry);
-    }
-
-    @Bean
-    Counter ingestGamesCounter(MeterRegistry registry) {
-        return Counter.builder("chs_ingest_games_total").register(registry);
-    }
-
-    @Bean
-    Timer predictLatencyTimer(MeterRegistry registry) {
-        return Timer.builder("chs_predict_latency_ms").register(registry);
+                "username",  defaultUser
+        );
     }
 }

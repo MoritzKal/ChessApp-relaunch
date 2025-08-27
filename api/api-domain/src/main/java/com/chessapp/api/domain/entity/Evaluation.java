@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
+import com.vladmihalcea.hibernate.type.json.JsonType;
 import org.hibernate.annotations.Type;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -22,7 +23,7 @@ public class Evaluation {
     @Column(name = "baseline_model_id")
     private UUID baselineModelId;
 
-    @Type(org.hibernate.type.JsonType.class)
+    @Type(JsonType.class)
     @Column(name = "metric_suite", columnDefinition = "jsonb")
     private Map<String, Object> metricSuite;
 

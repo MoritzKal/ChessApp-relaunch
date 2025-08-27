@@ -1,11 +1,20 @@
-FROM maven:3.9-eclipse-temurin-21 as build
-WORKDIR /app
-COPY .. /app
-RUN mvn -q -DskipTests clean package
+# syntax=docker/dockerfile:1
+
+FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /build
+
+# komplette API-Struktur rein (damit parent POM vorhanden ist)
+COPY api/ api/
+
+# Dependencies cachen (Reactor-Build: Aggregator-POM, Modul api-app)
+RUN mvn -q -f api/pom.xml -DskipTests -pl api-app -am dependency:go-offline
+
+# Build
+RUN mvn -q -f api/pom.xml -DskipTests -pl api-app -am clean package
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-ENV JAVA_OPTS="-Xms256m -Xmx512m"
-COPY --from=build /app/api-app/target/api-app-*.jar /app/app.jar
+# Spring Boot JAR aus api-app übernehmen (Version ist SNAPSHOT → Wildcard)
+COPY --from=build /build/api/api-app/target/*-SNAPSHOT.jar /app/app.jar
 EXPOSE 8080
-ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+ENTRYPOINT ["java","-jar","/app/app.jar"]

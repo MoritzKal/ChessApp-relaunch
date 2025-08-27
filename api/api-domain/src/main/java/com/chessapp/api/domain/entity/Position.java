@@ -3,6 +3,7 @@ package com.chessapp.api.domain.entity;
 import java.util.List;
 import java.util.UUID;
 
+import com.vladmihalcea.hibernate.type.json.JsonType;
 import org.hibernate.annotations.Type;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -30,7 +31,7 @@ public class Position {
     @Column(name = "side_to_move")
     private Color sideToMove;
 
-    @Type(org.hibernate.type.JsonType.class)
+    @Type(JsonType.class)
     @Column(name = "legal_moves", columnDefinition = "jsonb")
     private List<String> legalMoves;
 

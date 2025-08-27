@@ -9,6 +9,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import com.vladmihalcea.hibernate.type.json.JsonType;
 
 @Entity
 @Table(name = "datasets")
@@ -22,11 +23,11 @@ public class Dataset {
     @Column(nullable = false)
     private String version;
 
-    @Type(org.hibernate.type.JsonType.class)
+    @Type(JsonType.class)
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> filter;
 
-    @Type(org.hibernate.type.JsonType.class)
+    @Type(JsonType.class)
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> split;
 

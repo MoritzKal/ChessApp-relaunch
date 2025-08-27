@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
+import com.vladmihalcea.hibernate.type.json.JsonType;
 import org.hibernate.annotations.Type;
 import org.hibernate.type.SqlTypes;
 import jakarta.persistence.Column;
@@ -51,7 +52,7 @@ public class Game {
     @Lob
     private String pgn;
 
-    @Type(org.hibernate.type.JsonType.class)
+    @Type(JsonType.class)
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> tags;
 

@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
+import com.vladmihalcea.hibernate.type.json.JsonType;
 import org.hibernate.annotations.Type;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -24,7 +25,7 @@ public class Model {
 
     private String framework;
 
-    @Type(org.hibernate.type.JsonType.class)
+    @Type(JsonType.class)
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> metrics;
 
