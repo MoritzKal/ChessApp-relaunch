@@ -31,6 +31,7 @@ docker compose down
 curl http://localhost:8080/actuator/health
 curl http://localhost:8080/v3/api-docs | jq '.openapi'
 curl http://localhost:8080/swagger-ui.html >/dev/null && echo "Swagger OK"
+curl http://localhost:8080/actuator/prometheus | grep chs_api_http_requests_total
 ```
 
 Example run (this environment lacked Docker and Maven network access):

@@ -27,3 +27,7 @@ Tipp: Label Browser nutzen und `service`/`container` auswählen.
 
 ## Ports
 - Grafana 3000 · Prometheus 9090 · Loki 3100 · MLflow 5000 · MinIO S3 9000 · MinIO Console 9001 · Postgres 5432
+
+## Lokales Codex-Profil
+
+Hinweise zum lokalen Entwicklungsprofil findest du in [docs/CODEX-SETUP.md](docs/CODEX-SETUP.md).
