@@ -17,7 +17,7 @@ if (Get-Command docker -ErrorAction SilentlyContinue) {
 Write-Info "[B] API tests (Maven verify incl. codex tests only)"
 if (Get-Command mvn -ErrorAction SilentlyContinue) {
   mvn -f api/api-app/pom.xml `
-    -Dtest=com.chessapp.api.codex.* `
+    '-Dtest=com.chessapp.api.codex.*' `
     -DfailIfNoTests=false `
     -DskipITs=false -DskipTests=false verify
 } else {
