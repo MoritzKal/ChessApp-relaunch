@@ -1,0 +1,15 @@
+[Event "Codex Test Game"]
+[Site "https://www.chess.com/game/live/TEST-CODEX-0001"]
+[Date "2025.07.01"]
+[UTCDate "2025.07.01"]
+[UTCTime "12:34:56"]
+[White "M3NG00S3"]
+[Black "CodexOpponent"]
+[WhiteElo "1500"]
+[BlackElo "1520"]
+[TimeControl "600+0"]
+[Result "1-0"]
+[Termination "Normal"]
+
+1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 d6 8. c3 O-O 9. h3 h6 10. d4 Re8 1-0
+

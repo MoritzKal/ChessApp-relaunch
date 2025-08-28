@@ -53,4 +53,4 @@ chess:
 # codex-only test enhancement: offline PGN path
 ingest:
   offline:
-    pgn-path: classpath:/fixtures/pgn/sample_10_games.pgn
+    pgn-path: classpath:testdata/offline-sample-ok.pgn

@@ -2,9 +2,12 @@ package com.chessapp.api.games.api;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,14 +38,24 @@ public class GamesController {
 
     @GetMapping
     @Operation(summary = "List games for a user")
-    public List<GameSummaryDto> list(
-            @Parameter(description = "Username to fetch games for") @RequestParam String username,
+    public ResponseEntity<?> list(
+            @Parameter(description = "Username to fetch games for", required = true) @RequestParam(required = false) String username,
             @RequestParam(defaultValue = "50") int limit,
             @RequestParam(defaultValue = "0") int offset,
             @RequestParam(required = false) GameResult result,
             @RequestParam(required = false) Color color,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate since) {
-        return gameService.listGames(username, limit, offset, result, color, since);
+        if (username == null || username.isBlank()) {
+            return ResponseEntity.badRequest()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of(
+                            "status", 400,
+                            "error", "Bad Request",
+                            "message", "username is required"
+                    ));
+        }
+        List<GameSummaryDto> out = gameService.listGames(username, limit, offset, result, color, since);
+        return ResponseEntity.ok(out);
     }
 
     @GetMapping("/{id}")
