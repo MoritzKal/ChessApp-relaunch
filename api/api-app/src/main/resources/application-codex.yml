@@ -49,3 +49,8 @@ chess:
         reports: reports
       prefix:
         ingest: ingest
+
+# codex-only test enhancement: offline PGN path
+ingest:
+  offline:
+    pgn-path: classpath:testdata/offline-sample-ok.pgn

@@ -12,20 +12,24 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.http.MediaType;
+import static org.hamcrest.Matchers.containsString;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 import com.chessapp.api.domain.entity.Game;
 import com.chessapp.api.domain.entity.GameResult;
 import com.chessapp.api.domain.entity.Position;
 import com.chessapp.api.domain.entity.Color;
+import com.chessapp.api.domain.entity.Platform;
 import com.chessapp.api.domain.entity.User;
 import com.chessapp.api.domain.repo.GameRepository;
 import com.chessapp.api.domain.repo.PositionRepository;
 import com.chessapp.api.domain.repo.UserRepository;
 
-@SpringBootTest
-@org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
+@SpringBootTest(properties = {"logging.config=classpath:logback-spring.xml"}, classes = com.chessapp.api.codex.CodexApplication.class)
+@org.springframework.test.context.ActiveProfiles("codex")
 @AutoConfigureMockMvc
-class GamesControllerTest {
+class GamesControllerTest extends com.chessapp.api.testutil.AbstractIntegrationTest {
 
     @Autowired
     MockMvc mockMvc;
@@ -52,6 +56,7 @@ class GamesControllerTest {
         g.setResult(GameResult.DRAW);
         g.setWhiteRating(1500);
         g.setBlackRating(1500);
+        g.setPlatform(Platform.CHESS_COM);
         g.setPgn("pgn");
         gameRepository.save(g);
 
@@ -81,5 +86,13 @@ class GamesControllerTest {
         mockMvc.perform(get("/v1/games/" + g.getId() + "/positions"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].ply").value(1));
+    }
+
+    @Test
+    void list_withoutUsername_returns400WithHelpfulMessage() throws Exception {
+        mockMvc.perform(get("/v1/games").param("limit", "5"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(content().string(containsString("username")));
     }
 }

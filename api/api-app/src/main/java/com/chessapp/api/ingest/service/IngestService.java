@@ -22,6 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import com.chessapp.api.domain.entity.Platform;
@@ -50,6 +52,9 @@ public class IngestService {
     private final ObjectMapper objectMapper;
     private static final Logger log = LoggerFactory.getLogger(IngestService.class);
     private final ThreadPoolTaskExecutor ingestExecutor;
+    @Value("${ingest.offline.pgn-path:}")
+    private String offlinePgnPath;
+    private final Environment environment;
 
     public IngestService(PgnParser pgnParser,
                          GameRepository gameRepository,
@@ -61,7 +66,8 @@ public class IngestService {
                          ChessComClient chessComClient,
                          ArtifactWriter artifactWriter,
                          ObjectMapper objectMapper,
-                        @Qualifier("ingestExecutor") ThreadPoolTaskExecutor ingestExecutor ){
+                        @Qualifier("ingestExecutor") ThreadPoolTaskExecutor ingestExecutor,
+                         Environment environment ){
         log.info("IngestService wired (beanClass={})", this.getClass());
         this.pgnParser = pgnParser;
         this.gameRepository = gameRepository;
@@ -74,6 +80,7 @@ public class IngestService {
         this.artifactWriter = artifactWriter;
         this.objectMapper = objectMapper;
         this.ingestExecutor = ingestExecutor;
+        this.environment = environment;
         log.info("IngestService wired (beanClass={})", this.getClass());
     }
 
@@ -353,14 +360,36 @@ public class IngestService {
 
 
     private String loadOfflinePgn() throws Exception {
-        // 1) Classpath
+        // codex-profile enhancement: allow override via property "ingest.offline.pgn-path"
+        // Only takes effect if property is present (e.g., in application-codex.yml). Otherwise fallback to legacy logic.
+        String configured = (offlinePgnPath != null) ? offlinePgnPath.trim() : "";
+        if (!configured.isEmpty()) {
+            if (configured.startsWith("classpath:")) {
+                String cp = configured.substring("classpath:".length());
+                if (cp.startsWith("/")) cp = cp.substring(1);
+                ClassPathResource res = new ClassPathResource(cp);
+                if (res.exists()) {
+                    try (InputStream is = res.getInputStream()) {
+                        return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+                    }
+                }
+                throw new IllegalStateException("Configured offline PGN not found on classpath: " + configured);
+            } else {
+                Path fs = Path.of(configured);
+                if (Files.exists(fs)) {
+                    return Files.readString(fs, StandardCharsets.UTF_8);
+                }
+                throw new IllegalStateException("Configured offline PGN file not found: " + configured);
+            }
+        }
+
+        // Fallback: legacy default locations
         ClassPathResource res = new ClassPathResource("fixtures/pgn/sample_10_games.pgn");
         if (res.exists()) {
             try (InputStream is = res.getInputStream()) {
                 return new String(is.readAllBytes(), StandardCharsets.UTF_8);
             }
         }
-        // 2) Filesystem-Fallback (für lokale Runs ohne Packaging)
         Path fs = Path.of("fixtures/pgn/sample_10_games.pgn");
         if (Files.exists(fs)) {
             return Files.readString(fs, StandardCharsets.UTF_8);

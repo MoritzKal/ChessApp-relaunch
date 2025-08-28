@@ -28,8 +28,7 @@ public class Move {
     private String uci;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "color", columnDefinition = "color", nullable = false)
+    @Column(name = "color", nullable = false)
     private Color color;
 
     @Column(name = "clock_ms")
