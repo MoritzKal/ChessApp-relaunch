@@ -1,0 +1,15 @@
+{
+  "name": "chessapp-relaunch",
+  "version": "1.0.0",
+  "description": "1. `cp .env.example .env` und Secrets anpassen.\r 2. `make up` (oder `docker compose -f infra/docker-compose.yml --env-file .env up -d`).\r 3. Öffne:\r    - Grafana: http://localhost:3000 (admin: $GRAFANA_USER)\r    - Prometheus: http://localhost:9090\r    - MinIO Console: http://localhost:9001\r    - MLflow: http://localhost:5000",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
