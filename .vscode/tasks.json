@@ -1,0 +1,37 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "infra:up",
+      "type": "shell",
+      "command": "docker compose -f infra/docker-compose.yml --env-file infra/.env up -d db minio mlflow prometheus loki promtail grafana",
+      "options": { "cwd": "${workspaceFolder}" }
+    },
+    {
+      "label": "api:run (codex)",
+      "type": "shell",
+      "command": "mvn -f ./api/api-app/pom.xml org.springframework.boot:spring-boot-maven-plugin:3.5.5:run -Dspring-boot.run.main-class=com.chessapp.api.ApiApplication -Dspring-boot.run.profiles=codex",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "POSTGRES_USER": "chs",
+          "POSTGRES_PASSWORD": "chs-secret",
+          "POSTGRES_DB": "chsdb"
+        }
+      },
+      "problemMatcher": []
+    },
+      {
+        "label": "frontend:dev (codex)",
+        "type": "shell",
+        "command": "npm --prefix frontend run dev -- --mode codex",
+        "options": { "cwd": "${workspaceFolder}" }
+      },
+      {
+        "label": "infra:down",
+        "type": "shell",
+        "command": "docker compose -f infra/docker-compose.yml down",
+        "options": { "cwd": "${workspaceFolder}" }
+      }
+    ]
+  }

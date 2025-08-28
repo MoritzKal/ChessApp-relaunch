@@ -1,0 +1,9 @@
+<configuration>
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder"/>
+  </appender>
+  <root level="INFO"><appender-ref ref="STDOUT"/></root>
+  <springProfile name="codex">
+    <root level="DEBUG"><appender-ref ref="STDOUT"/></root>
+  </springProfile>
+</configuration>

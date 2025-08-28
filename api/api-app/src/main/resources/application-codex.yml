@@ -1,10 +1,11 @@
 server:
   port: 8080
+
 spring:
   datasource:
-    url: jdbc:postgresql://db:5432/${POSTGRES_DB:chs}
+    url: jdbc:postgresql://localhost:5432/${POSTGRES_DB:chsdb}
     username: ${POSTGRES_USER:chs}
-    password: ${POSTGRES_PASSWORD:chs_password_change_me}
+    password: ${POSTGRES_PASSWORD:chs-secret}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -15,6 +16,9 @@ spring:
     schemas: public
     baseline-on-migrate: true
     baseline-version: 0
+  main:
+    allow-bean-definition-overriding: true   # für dev, löst den IngestService-Konflikt
+
 management:
   endpoints.web.exposure.include: health,info,prometheus, env, metrics,beans,mappings, threaddump
   endpoint:
@@ -25,13 +29,17 @@ management:
     application: api
     component: api
     username: ${CHESS_USERNAME:M3NG00S3}
+
 logging:
+  config: classpath:logback-codex.xml
   level:
     root: INFO
     com.chessapp.api: INFO
     org.flywaydb: DEBUG
+
 chs:
   default-username: ${CHESS_USERNAME:M3NG00S3}
+
 chess:
   ingest:
     baseUrl: https://api.chess.com
