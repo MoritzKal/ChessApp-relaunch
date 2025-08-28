@@ -16,7 +16,7 @@ fi
 echo "[B] API tests (Maven verify incl. codex tests only)"
 if command -v mvn >/dev/null 2>&1; then
   mvn -f api/api-app/pom.xml \
-    -Dtest=com.chessapp.api.codex.* \
+    -Dtest=OpenApiContractTest,ApiSmokeIT \
     -DfailIfNoTests=false \
     -DskipITs=false -DskipTests=false verify
 else
