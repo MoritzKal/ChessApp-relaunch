@@ -48,6 +48,11 @@ public class ObservabilityConfig {
     }
 
     @Bean
+    public Counter ingestSkippedCounter(MeterRegistry registry) {
+        return Counter.builder("chs_ingest_skipped_total").register(registry);
+    }
+
+    @Bean
     public Timer ingestDurationTimer(MeterRegistry registry) {
         return Timer.builder("chs_ingest_duration_seconds")
                 .publishPercentiles(0.5, 0.95)

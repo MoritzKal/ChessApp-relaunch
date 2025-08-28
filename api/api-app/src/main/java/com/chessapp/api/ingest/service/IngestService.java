@@ -138,8 +138,12 @@ public class IngestService {
 
                 for (PgnParser.ParsedGame parsed : parsedGames) {
                     if (parsed == null) continue;
-                    if (parsed.gameIdExt() != null && gameRepository.findByGameIdExt(parsed.gameIdExt()).isPresent()) {
+                    if (parsed.gameIdExt() != null &&
+                            gameRepository.findByPlatformAndGameIdExt(Platform.CHESS_COM, parsed.gameIdExt()).isPresent()) {
                         skipped++;
+                        meterRegistry.counter("chs_ingest_skipped_total").increment();
+                        log.info("event=ingest.duplicate_skipped game_id_ext={} platform={} run_id={} username={}",
+                                parsed.gameIdExt(), "CHESS_COM", runId, username);
                         continue;
                     }
                     UUID gameId = UUID.randomUUID();
@@ -235,8 +239,13 @@ public class IngestService {
 
                     for (var parsed : parsedGames) {
                         if (parsed == null) continue;
-                        if (parsed.gameIdExt() != null && gameRepository.findByGameIdExt(parsed.gameIdExt()).isPresent()) {
-                            skipped++; continue;
+                        if (parsed.gameIdExt() != null &&
+                                gameRepository.findByPlatformAndGameIdExt(Platform.CHESS_COM, parsed.gameIdExt()).isPresent()) {
+                            skipped++;
+                            meterRegistry.counter("chs_ingest_skipped_total").increment();
+                            log.info("event=ingest.duplicate_skipped game_id_ext={} platform={} run_id={} username={}",
+                                    parsed.gameIdExt(), "CHESS_COM", runId, username);
+                            continue;
                         }
                         var gameId = java.util.UUID.randomUUID();
                         var g = new com.chessapp.api.domain.entity.Game();
