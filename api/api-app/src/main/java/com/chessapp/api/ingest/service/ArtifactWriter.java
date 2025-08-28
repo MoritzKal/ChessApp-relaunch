@@ -38,4 +38,13 @@ public class ArtifactWriter {
         s3.putObject(PutObjectRequest.builder().bucket(reportsBucket).key(key).build(), RequestBody.fromBytes(data));
         return "s3://" + reportsBucket + "/" + key;
     }
+
+    /**
+     * Build the expected S3 URI for the ingest report without performing any network call.
+     * Useful to pre-populate run.reportUri even if the upload fails, so clients see the intended location.
+     */
+    public String expectedReportUri(String runId) {
+        String key = ingestPrefix + "/" + runId + "/report.json";
+        return "s3://" + reportsBucket + "/" + key;
+    }
 }

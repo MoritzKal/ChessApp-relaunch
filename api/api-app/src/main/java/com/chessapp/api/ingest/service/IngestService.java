@@ -223,6 +223,8 @@ public class IngestService {
                         "finishedAt", finishedAt
                 );
                 String reportUri="";
+                // Pre-populate expected URI so clients always see intended location, even if upload fails
+                try { run.setReportUri(artifactWriter.expectedReportUri(runId.toString())); } catch (Exception ignore) {}
                 try {
                     reportUri = artifactWriter.putReport(runId.toString(), report);
                     run.setReportUri(reportUri);
@@ -350,6 +352,8 @@ public class IngestService {
                     "finishedAt", java.time.Instant.now()
                 );
                 String reportUri="";
+                // Pre-populate expected URI so clients always see intended location, even if upload fails
+                try { run.setReportUri(artifactWriter.expectedReportUri(runId.toString())); } catch (Exception ignore) {}
                 try {
                     reportUri = artifactWriter.putReport(runId.toString(), report);
                     run.setReportUri(reportUri);
