@@ -15,10 +15,8 @@ import io.micrometer.core.instrument.Tags;
 @Configuration
 public class ObservabilityConfig {
 
-    @Bean
-    public MeterFilter apiCommonTags() {
-        return MeterFilter.commonTags(Tags.of("application", "api"));
-    }
+    // Rely on management.metrics.tags.* from application.yml for common tags to avoid duplication.
+    // (Previously added application tag here caused duplicate label keys on Prometheus scrape.)
 
     @Bean
     public Counter datasetBuildCounter(MeterRegistry registry) {
@@ -45,6 +43,13 @@ public class ObservabilityConfig {
     @Bean
     public Counter ingestPositionsCounter(MeterRegistry registry) {
         return Counter.builder("chs_ingest_positions_total").register(registry);
+    }
+
+    @Bean
+    public Counter ingestSkippedCounter(MeterRegistry registry) {
+        return Counter.builder("chs_ingest_skipped_total")
+                .description("Number of games skipped due to duplicate (platform + game_id_ext)")
+                .register(registry);
     }
 
     @Bean
