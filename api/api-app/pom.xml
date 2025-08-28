@@ -9,6 +9,7 @@
     <artifactId>api-app</artifactId>
     <properties>
         <flyway.version>11.10.0</flyway.version>
+        <app.main.class>com.chessapp.api.ApiApplication</app.main.class>
     </properties>
     <dependencies>
         <dependency>
@@ -107,7 +108,19 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>${app.main.class}</mainClass>
+                </configuration>
             </plugin>
         </plugins>
     </build>
+     <profiles>
+    <profile>
+      <id>codex</id>
+      <properties>
+        <!-- Für ein optionales Codex-Packaging -->
+        <app.main.class>com.chessapp.api.codex.CodexApplication</app.main.class>
+      </properties>
+    </profile>
+  </profiles>
 </project>
