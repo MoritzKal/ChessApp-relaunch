@@ -25,7 +25,8 @@ Write-Info "[C] Frontend tests (if present)"
 if (Test-Path "frontend/package.json") {
   if (Get-Command npm -ErrorAction SilentlyContinue) {
     npm --prefix frontend ci
-    npm --prefix frontend test --if-present || Write-Warn "frontend tests failed or missing"
+    npm --prefix frontend test --if-present
+    if ($LASTEXITCODE -ne 0) { Write-Warn "frontend tests failed or missing" }
   } else {
     Write-Warn "npm not found; skipping frontend"
   }
@@ -72,4 +73,3 @@ if (Get-Command curl -ErrorAction SilentlyContinue) {
 }
 
 Write-Host "All checks finished."
-
