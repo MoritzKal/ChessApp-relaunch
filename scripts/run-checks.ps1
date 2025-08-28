@@ -19,7 +19,9 @@ if (Get-Command mvn -ErrorAction SilentlyContinue) {
   mvn -f api/api-app/pom.xml `
     '-Dtest=OpenApiContractTest,ApiSmokeIT' `
     -DfailIfNoTests=false `
-    -DskipITs=false -DskipTests=false verify
+    -DskipITs=false -DskipTests=false `
+    -Dspring-boot.repackage.skip=true `
+    verify
 } else {
   Write-Warn "mvn not found; skipping API tests"
 }

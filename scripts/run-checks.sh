@@ -18,7 +18,9 @@ if command -v mvn >/dev/null 2>&1; then
   mvn -f api/api-app/pom.xml \
     -Dtest=OpenApiContractTest,ApiSmokeIT \
     -DfailIfNoTests=false \
-    -DskipITs=false -DskipTests=false verify
+    -DskipITs=false -DskipTests=false \
+    -Dspring-boot.repackage.skip=true \
+    verify
 else
   echo "WARN: mvn not found; skipping API tests"
 fi
