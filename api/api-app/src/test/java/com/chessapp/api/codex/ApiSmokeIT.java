@@ -21,7 +21,14 @@ import java.sql.Statement;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = CodexApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+        classes = CodexApplication.class,
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = {
+                // Avoid minimal logback-codex.xml provider error in tests
+                "logging.config=classpath:logback-spring.xml"
+        }
+)
 @ActiveProfiles("codex")
 @Testcontainers
 class ApiSmokeIT {
@@ -69,4 +76,3 @@ class ApiSmokeIT {
         assertThat(resp.getBody()).contains("\"status\":\"UP\"");
     }
 }
-
