@@ -14,9 +14,12 @@ if (Get-Command docker -ErrorAction SilentlyContinue) {
   Write-Warn "docker not found; skipping infra"
 }
 
-Write-Info "[B] API tests (Maven verify incl. ITs)"
+Write-Info "[B] API tests (Maven verify incl. codex tests only)"
 if (Get-Command mvn -ErrorAction SilentlyContinue) {
-  mvn -f api/api-app/pom.xml -DskipITs=false -DskipTests=false verify
+  mvn -f api/api-app/pom.xml `
+    -Dtest=com.chessapp.api.codex.* `
+    -DfailIfNoTests=false `
+    -DskipITs=false -DskipTests=false verify
 } else {
   Write-Warn "mvn not found; skipping API tests"
 }

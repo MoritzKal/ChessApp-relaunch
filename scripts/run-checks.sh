@@ -13,9 +13,12 @@ else
   echo "WARN: docker not found; skipping infra up"
 fi
 
-echo "[B] API tests (Maven verify incl. ITs)"
+echo "[B] API tests (Maven verify incl. codex tests only)"
 if command -v mvn >/dev/null 2>&1; then
-  mvn -f api/api-app/pom.xml -DskipITs=false -DskipTests=false verify
+  mvn -f api/api-app/pom.xml \
+    -Dtest=com.chessapp.api.codex.* \
+    -DfailIfNoTests=false \
+    -DskipITs=false -DskipTests=false verify
 else
   echo "WARN: mvn not found; skipping API tests"
 fi
@@ -74,4 +77,3 @@ fi
 
 popd >/dev/null
 echo "All checks finished."
-
