@@ -20,15 +20,25 @@ spring:
     allow-bean-definition-overriding: true   # für dev, löst den IngestService-Konflikt
 
 management:
-  endpoints.web.exposure.include: health,info,prometheus, env, metrics,beans,mappings, threaddump
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,env,metrics,beans,mappings,threaddump
   endpoint:
     env:
       show-values: ALWAYS
-  endpoint.health.probes.enabled: true
-  metrics.tags:
-    application: api
-    component: api
-    username: ${CHESS_USERNAME:M3NG00S3}
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: api
+      component: api
+      username: ${CHESS_USERNAME:M3NG00S3}
+  prometheus:
+    metrics:
+      export:
+        enabled: true
 
 logging:
   config: classpath:logback-codex.xml
