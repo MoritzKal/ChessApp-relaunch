@@ -173,7 +173,7 @@ public class IngestService {
                         mv.setId(UUID.randomUUID());
                         mv.setGameId(gameId);
                         mv.setPly(m.ply());
-                        mv.setSan(""); // SAN im MVP leer
+                        mv.setSan(m.san());
                         mv.setUci(m.uci());
                         mv.setColor(mapColor(m.color()));
                         moves.add(mv);
@@ -187,6 +187,9 @@ public class IngestService {
                         pos.setSideToMove(mapColor(p.sideToMove()));
                         positions.add(pos);
                     }
+
+                    int sumLegal = parsed.positions().stream().mapToInt(PgnParser.ParsedPosition::legalMovesCount).sum();
+                    meterRegistry.counter("chs_positions_legal_moves_total", "username", username).increment(sumLegal);
 
                     gamesCount++;
                     movesCount += parsed.moves().size();

@@ -1,0 +1,3 @@
+-- Welle 4: SAN pro Zug
+ALTER TABLE moves
+  ADD COLUMN IF NOT EXISTS san TEXT;

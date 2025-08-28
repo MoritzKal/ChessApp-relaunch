@@ -54,5 +54,12 @@ public class ObservabilityConfig {
                 .publishPercentileHistogram()
                 .register(registry);
     }
+
+    @Bean
+    public Counter positionsLegalMovesCounter(MeterRegistry registry) {
+        return Counter.builder("chs_positions_legal_moves_total")
+                .description("Sum of legal moves across positions")
+                .register(registry);
+    }
 }
 
