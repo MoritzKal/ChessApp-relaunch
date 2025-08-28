@@ -308,7 +308,7 @@ public class PgnParser {
         Board after = new Board();
         after.loadFromFen(boardBefore.getFen());
         after.doMove(move);
-        boolean check = after.isKingAttacked(after.getSideToMove());
+        boolean check = after.isKingAttacked();
         if (check) {
             boolean mate = after.legalMoves().isEmpty();
             san.append(mate ? '#' : '+');

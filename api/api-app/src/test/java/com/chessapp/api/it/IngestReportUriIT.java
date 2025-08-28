@@ -18,7 +18,7 @@ import static org.mockito.Mockito.*;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         classes = com.chessapp.api.codex.CodexApplication.class)
 @ActiveProfiles("codex")
-class IngestReportUriIT {
+class IngestReportUriIT extends com.chessapp.api.testutil.AbstractIntegrationTest {
 
   @Autowired TestRestTemplate rest;
 
