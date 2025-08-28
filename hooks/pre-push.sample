@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Sample pre-push hook. Not enabled by default.
+# Copy to .git/hooks/pre-push and make executable to activate.
+
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
+
+if command -v pwsh >/dev/null 2>&1; then
+  echo "Running PowerShell checks via scripts/run-checks.ps1"
+  pwsh -File "$ROOT_DIR/scripts/run-checks.ps1"
+elif command -v powershell >/dev/null 2>&1; then
+  echo "Running PowerShell checks via scripts/run-checks.ps1"
+  powershell -ExecutionPolicy Bypass -File "$ROOT_DIR/scripts/run-checks.ps1"
+else
+  echo "Running Bash checks via scripts/run-checks.sh"
+  bash "$ROOT_DIR/scripts/run-checks.sh"
+fi
+
