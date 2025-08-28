@@ -20,9 +20,11 @@ import com.chessapp.api.service.dto.PositionDto;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/v1/games")
+@Tag(name = "games")
 public class GamesController {
 
     private final GameService gameService;
