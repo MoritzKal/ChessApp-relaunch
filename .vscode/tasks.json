@@ -21,11 +21,17 @@
       },
       "problemMatcher": []
     },
-    {
-    "label": "infra:down",
-    "type": "shell",
-    "command": "docker compose -f infra/docker-compose.yml down",
-    "options": { "cwd": "${workspaceFolder}" }
-  },
-  ]
-}
+      {
+        "label": "frontend:dev (codex)",
+        "type": "shell",
+        "command": "npm --prefix frontend run dev -- --mode codex",
+        "options": { "cwd": "${workspaceFolder}" }
+      },
+      {
+        "label": "infra:down",
+        "type": "shell",
+        "command": "docker compose -f infra/docker-compose.yml down",
+        "options": { "cwd": "${workspaceFolder}" }
+      }
+    ]
+  }
