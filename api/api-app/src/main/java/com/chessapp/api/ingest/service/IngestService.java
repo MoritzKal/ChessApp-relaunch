@@ -138,9 +138,19 @@ public class IngestService {
 
                 for (PgnParser.ParsedGame parsed : parsedGames) {
                     if (parsed == null) continue;
-                    if (parsed.gameIdExt() != null && gameRepository.findByGameIdExt(parsed.gameIdExt()).isPresent()) {
-                        skipped++;
-                        continue;
+                    if (parsed.gameIdExt() != null) {
+                        var platform = Platform.CHESS_COM;
+                        if (gameRepository.findByPlatformAndGameIdExt(platform, parsed.gameIdExt()).isPresent()) {
+                            io.micrometer.core.instrument.Counter.builder("chs_ingest_skipped_total")
+                                .description("Number of games skipped due to duplicate (platform + game_id_ext)")
+                                .tag("username", username)
+                                .register(meterRegistry)
+                                .increment();
+                            log.info("event=ingest.duplicate_skipped platform={} game_id_ext={} run_id={} username={}",
+                                    platform.name(), parsed.gameIdExt(), runId, username);
+                            skipped++;
+                            continue;
+                        }
                     }
                     UUID gameId = UUID.randomUUID();
 
@@ -235,8 +245,18 @@ public class IngestService {
 
                     for (var parsed : parsedGames) {
                         if (parsed == null) continue;
-                        if (parsed.gameIdExt() != null && gameRepository.findByGameIdExt(parsed.gameIdExt()).isPresent()) {
-                            skipped++; continue;
+                        if (parsed.gameIdExt() != null) {
+                            var platform = Platform.CHESS_COM;
+                            if (gameRepository.findByPlatformAndGameIdExt(platform, parsed.gameIdExt()).isPresent()) {
+                                io.micrometer.core.instrument.Counter.builder("chs_ingest_skipped_total")
+                                    .description("Number of games skipped due to duplicate (platform + game_id_ext)")
+                                    .tag("username", username)
+                                    .register(meterRegistry)
+                                    .increment();
+                                log.info("event=ingest.duplicate_skipped platform={} game_id_ext={} run_id={} username={}",
+                                        platform.name(), parsed.gameIdExt(), runId, username);
+                                skipped++; continue;
+                            }
                         }
                         var gameId = java.util.UUID.randomUUID();
                         var g = new com.chessapp.api.domain.entity.Game();
