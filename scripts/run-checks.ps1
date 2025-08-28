@@ -20,7 +20,7 @@ if (Get-Command mvn -ErrorAction SilentlyContinue) {
     '-Dtest=OpenApiContractTest,ApiSmokeIT' `
     -DfailIfNoTests=false `
     -DskipITs=false -DskipTests=false `
-    -Dspring-boot.repackage.skip=true `
+    '-Dspring-boot.repackage.skip=true' `
     verify
 } else {
   Write-Warn "mvn not found; skipping API tests"
