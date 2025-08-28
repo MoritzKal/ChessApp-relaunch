@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.vladmihalcea.hibernate.type.json.JsonType;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Type;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -11,6 +12,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "positions")
@@ -28,7 +30,8 @@ public class Position {
     private String fen;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "side_to_move")
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "side_to_move", columnDefinition = "color", nullable = false)
     private Color sideToMove;
 
     @Type(JsonType.class)

@@ -6,14 +6,18 @@ import java.util.UUID;
 
 import com.vladmihalcea.hibernate.type.json.JsonType;
 import org.hibernate.annotations.Type;
-import org.hibernate.type.SqlTypes;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import com.chessapp.api.domain.entity.Platform;
+import com.chessapp.api.domain.entity.GameResult;
+import com.chessapp.api.domain.entity.TimeControlCategory;
 
 @Entity
 @Table(name = "games")
@@ -25,9 +29,13 @@ public class Game {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
+    @Column(name = "game_id_ext")
+    private String gameIdExt;
+
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Platform platform = Platform.CHESS_COM;
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "platform", columnDefinition = "platform")
+    private Platform platform;
 
     @Column(name = "end_time")
     private Instant endTime;
@@ -36,11 +44,13 @@ public class Game {
     private String timeControl;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "time_category")
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "time_category", columnDefinition = "time_category")
     private TimeControlCategory timeCategory;
 
     @Enumerated(EnumType.STRING)
-    @Column
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "result", columnDefinition = "game_result")
     private GameResult result;
 
     @Column(name = "white_rating")
@@ -61,6 +71,8 @@ public class Game {
     public void setId(UUID id) { this.id = id; }
     public UUID getUserId() { return userId; }
     public void setUserId(UUID userId) { this.userId = userId; }
+    public String getGameIdExt() { return gameIdExt; }
+    public void setGameIdExt(String gameIdExt) { this.gameIdExt = gameIdExt; }
     public Platform getPlatform() { return platform; }
     public void setPlatform(Platform platform) { this.platform = platform; }
     public Instant getEndTime() { return endTime; }
