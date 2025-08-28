@@ -6,11 +6,15 @@
       "name": "API (Spring Boot - codex)",
       "request": "launch",
       "mainClass": "com.chessapp.api.ApiApplication",
-      "projectName": "api",
+      "projectName": "api-app",
       "vmArgs": "-Dspring.profiles.active=codex"
     }
   ],
   "compounds": [
-    { "name": "Dev (Infra + API)", "configurations": ["API (Spring Boot - codex)"], "preLaunchTask": "infra:up" }
+    {
+      "name": "Dev (Infra + API)",
+      "configurations": ["API (Spring Boot - codex)"],
+      "preLaunchTask": "infra:up"
+    }
   ]
 }
