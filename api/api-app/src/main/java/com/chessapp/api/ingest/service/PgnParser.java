@@ -52,8 +52,8 @@ public class PgnParser {
             List<ParsedPosition> positions
     ) {}
 
-    public record ParsedMove(int ply, String uci, String color) {}
-    public record ParsedPosition(int ply, String fen, String sideToMove) {}
+    public record ParsedMove(int ply, String uci, String san, String color) {}
+    public record ParsedPosition(int ply, String fen, String sideToMove, int legalMovesCount) {}
 
     /**
      * Parst einen einzelnen PGN-String in ein ParsedGame.
@@ -102,14 +102,16 @@ public class PgnParser {
                 ply++;
                 // Color ist die Seite, die VOR dem Zug am Zug war
                 Side mover = board.getSideToMove();
-                parsedMoves.add(new ParsedMove(ply, toUci(m), mover.name()));
+                String san = toSan(board, m);
+                parsedMoves.add(new ParsedMove(ply, toUci(m), san, mover.name()));
 
                 board.doMove(m); // Zug ausführen
 
                 positions.add(new ParsedPosition(
                         ply,
                         board.getFen(),
-                        board.getSideToMove().name()
+                        board.getSideToMove().name(),
+                        board.legalMoves().size()
                 ));
             }
 
@@ -226,6 +228,93 @@ public class PgnParser {
         String base = q >= 0 ? url.substring(0, q) : url;
         int i = base.lastIndexOf('/');
         return i >= 0 && i < base.length() - 1 ? base.substring(i + 1) : base;
+    }
+
+    private static String toSan(Board boardBefore, Move move) {
+        Square from = move.getFrom();
+        Square to = move.getTo();
+        String fromStr = from.value().toLowerCase();
+        String toStr = to.value().toLowerCase();
+
+        Piece piece = boardBefore.getPiece(from);
+        PieceType type = piece.getPieceType();
+
+        // Castling
+        if (type == PieceType.KING) {
+            if (("e1".equals(fromStr) && "g1".equals(toStr)) || ("e8".equals(fromStr) && "g8".equals(toStr))) {
+                return "O-O";
+            }
+            if (("e1".equals(fromStr) && "c1".equals(toStr)) || ("e8".equals(fromStr) && "c8".equals(toStr))) {
+                return "O-O-O";
+            }
+        }
+
+        boolean isCapture = boardBefore.getPiece(to) != Piece.NONE;
+        // En passant capture
+        if (type == PieceType.PAWN && fromStr.charAt(0) != toStr.charAt(0)) {
+            isCapture = true;
+        }
+
+        String pieceLetter = switch (type) {
+            case KNIGHT -> "N";
+            case BISHOP -> "B";
+            case ROOK -> "R";
+            case QUEEN -> "Q";
+            case KING -> "K";
+            default -> "";
+        };
+
+        StringBuilder san = new StringBuilder();
+        if (type != PieceType.PAWN) {
+            san.append(pieceLetter);
+            // Disambiguation
+            List<Move> same = boardBefore.legalMoves().stream()
+                    .filter(m -> m.getTo() == to
+                            && boardBefore.getPiece(m.getFrom()).getPieceType() == type
+                            && m.getFrom() != from)
+                    .toList();
+            if (!same.isEmpty()) {
+                boolean sameFile = same.stream().anyMatch(m -> m.getFrom().value().toLowerCase().charAt(0) == fromStr.charAt(0));
+                boolean sameRank = same.stream().anyMatch(m -> m.getFrom().value().toLowerCase().charAt(1) == fromStr.charAt(1));
+                if (sameFile && sameRank) {
+                    san.append(fromStr);
+                } else if (sameFile) {
+                    san.append(fromStr.charAt(1));
+                } else if (sameRank) {
+                    san.append(fromStr.charAt(0));
+                } else {
+                    san.append(fromStr.charAt(0));
+                }
+            }
+        } else if (isCapture) {
+            san.append(fromStr.charAt(0));
+        }
+
+        if (isCapture) san.append('x');
+        san.append(toStr);
+
+        Piece promo = move.getPromotion();
+        if (promo != null && promo.getPieceType() != null) {
+            san.append('=');
+            san.append(switch (promo.getPieceType()) {
+                case KNIGHT -> "N";
+                case BISHOP -> "B";
+                case ROOK -> "R";
+                case QUEEN -> "Q";
+                default -> "";
+            });
+        }
+
+        Board after = new Board();
+        after.loadFromFen(boardBefore.getFen());
+        after.doMove(move);
+        boolean check = after.isKingAttacked();
+        if (check) {
+            boolean mate = after.legalMoves().isEmpty();
+            san.append(mate ? '#' : '+');
+        }
+
+        return san.toString();
     }
 
     private static String toUci(Move m) {

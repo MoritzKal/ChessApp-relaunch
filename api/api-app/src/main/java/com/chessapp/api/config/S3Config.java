@@ -18,10 +18,10 @@ public class S3Config {
 
     @Bean
     public S3Client s3Client(
-            @Value("${s3.endpoint:http://minio:9000}") String endpoint,
-            @Value("${s3.region:us-east-1}") String region,
-            @Value("${s3.accessKey:minioadmin}") String accessKey,
-            @Value("${s3.secretKey:minioadmin}") String secretKey
+            @Value("${S3_ENDPOINT:${s3.endpoint:http://minio:9000}}") String endpoint,
+            @Value("${S3_REGION:${s3.region:us-east-1}}") String region,
+            @Value("${S3_ACCESS_KEY:${s3.accessKey:${AWS_ACCESS_KEY_ID:minioadmin}}}") String accessKey,
+            @Value("${S3_SECRET_KEY:${s3.secretKey:${AWS_SECRET_ACCESS_KEY:minioadmin}}}") String secretKey
     ) {
         return S3Client.builder()
                 .httpClientBuilder(UrlConnectionHttpClient.builder())
