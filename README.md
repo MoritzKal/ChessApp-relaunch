@@ -31,3 +31,11 @@ Tipp: Label Browser nutzen und `service`/`container` auswählen.
 ## Lokales Codex-Profil
 
 Hinweise zum lokalen Entwicklungsprofil findest du in [docs/CODEX-SETUP.md](docs/CODEX-SETUP.md).
+
+## Offline Ingest lokal
+
+Siehe `docs/offline-ingest.md`:
+- MinIO starten und Buckets `reports`/`logs` sicherstellen
+- API im Profil `codex` starten (enthält lokale S3-Defaults)
+- Offline-Ingest via `curl` starten und Status pollen
+- `reportUri` prüfen (`s3://reports/ingest/<runId>/report.json`)

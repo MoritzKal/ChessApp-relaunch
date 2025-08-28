@@ -25,6 +25,10 @@ management:
     application: api
     component: api
     username: ${CHESS_USERNAME:M3NG00S3}
+  prometheus:
+    metrics:
+      export:
+        enabled: true
 logging:
   level:
     root: INFO

@@ -13,12 +13,15 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.lang.Nullable;
 
 import com.chessapp.api.domain.entity.Game;
+import com.chessapp.api.domain.entity.Platform;
 
 public interface GameRepository extends JpaRepository<Game, UUID> {
 
     Optional<Game> findByGameIdExt(String gameIdExt);
     Page<Game> findAllByOrderByEndTimeDesc(Pageable pageable);
     Page<Game> findByUserIdOrderByEndTimeDesc(UUID userId, Pageable pageable);
+
+    Optional<Game> findByPlatformAndGameIdExt(Platform platform, String gameIdExt);
 
     @Query(value = """
             SELECT * FROM games

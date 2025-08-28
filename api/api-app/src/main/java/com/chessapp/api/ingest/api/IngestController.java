@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
 import java.time.YearMonth;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -78,21 +77,31 @@ public class IngestController {
 
     @GetMapping(value = "/{runId}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Get ingest status", responses = {
-            @ApiResponse(responseCode = "200", description = "Status", content = @Content(schema = @Schema(implementation = Map.class)))
+            @ApiResponse(responseCode = "200", description = "Status", content = @Content(schema = @Schema(implementation = IngestStatusResponse.class)))
     })
-    public Map<String, Object> status(@PathVariable UUID runId) {
+    public IngestStatusResponse status(@PathVariable UUID runId) {
         IngestRun run = ingestRunRepository.findById(runId).orElseThrow();
-        Map<String, Object> counts = new HashMap<>();
-        counts.put("games", run.getGamesCount());
-        counts.put("moves", run.getMovesCount());
-        counts.put("positions", run.getPositionsCount());
-        Map<String, Object> resp = new HashMap<>();
-        resp.put("status", run.getStatus());
-        resp.put("counts", counts);
-        resp.put("startedAt", run.getStartedAt());
-        if (run.getFinishedAt() != null) resp.put("finishedAt", run.getFinishedAt());
-        if (run.getError() != null)      resp.put("error", run.getError());
-        if (run.getReportUri() != null)  resp.put("report_uri", run.getReportUri());
-        return resp;
+        Map<String, Number> counts = Map.of(
+                "games", run.getGamesCount(),
+                "moves", run.getMovesCount(),
+                "positions", run.getPositionsCount()
+        );
+        return new IngestStatusResponse(
+                run.getStatus(),
+                counts,
+                run.getStartedAt(),
+                run.getFinishedAt(),
+                run.getError(),
+                run.getReportUri()
+        );
     }
+
+    public record IngestStatusResponse(
+            String status,
+            Map<String, Number> counts,
+            Instant startedAt,
+            Instant finishedAt,
+            String error,
+            String reportUri
+    ) {}
 }
