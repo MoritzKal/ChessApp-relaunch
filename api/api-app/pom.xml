@@ -9,6 +9,7 @@
     <artifactId>api-app</artifactId>
     <properties>
         <flyway.version>11.10.0</flyway.version>
+        <!-- Prod/Docker: ApiApplication ist die Start-Class -->
         <app.main.class>com.chessapp.api.ApiApplication</app.main.class>
     </properties>
     <dependencies>
@@ -101,7 +102,11 @@
             <artifactId>lombok</artifactId>
             <version>1.18.34</version>
         </dependency>
-
+        <dependency>
+            <groupId>com.github.bhlangonijr</groupId>
+            <artifactId>chesslib</artifactId>
+            <version>${chesslib.version}</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -114,11 +119,22 @@
             </plugin>
         </plugins>
     </build>
+    <repositories>
+        <repository> 
+            <id>central</id>
+            <name>Maven Central Repository</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </repository>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
      <profiles>
     <profile>
       <id>codex</id>
       <properties>
-        <!-- Für ein optionales Codex-Packaging -->
+        <!-- Local Codex profile uses CodexApplication as main -->
         <app.main.class>com.chessapp.api.codex.CodexApplication</app.main.class>
       </properties>
     </profile>
