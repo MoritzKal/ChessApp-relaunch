@@ -1,0 +1,27 @@
+spring:
+  profiles:
+    group:
+      codex: codex
+  datasource:
+    url: jdbc:postgresql://localhost:5432/chs
+    username: ${DB_USER:postgres}
+    password: ${DB_PASS:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+server:
+  port: 8080
+management:
+  endpoints.web.exposure.include: "*"
+  metrics.tags:
+    application: api
+    component: api
+    username: M3NG00S3
+springdoc:
+  api-docs.path: /v3/api-docs
+  swagger-ui.path: /swagger-ui.html
+chs:
+  username-default: M3NG00S3
+logging:
+  level:
+    root: INFO

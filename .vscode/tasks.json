@@ -1,0 +1,14 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "infra:up",   "type": "shell",
+      "command": "docker compose up -d db minio mlflow prometheus loki grafana" },
+    { "label": "infra:down", "type": "shell", "command": "docker compose down" },
+    { "label": "api:run (codex)", "type": "shell",
+      "command": "mvn -q -pl api spring-boot:run -Dspring-boot.run.profiles=codex" },
+    { "label": "frontend:dev (codex)", "type": "shell",
+      "command": "npm --prefix frontend run dev -- --mode codex" },
+    { "label": "ml:serve (codex)", "type": "shell",
+      "command": "uvicorn ml.app:app --reload --port 8001", "problemMatcher": [] }
+  ]
+}
