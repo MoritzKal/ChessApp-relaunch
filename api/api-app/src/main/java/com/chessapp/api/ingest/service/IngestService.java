@@ -199,16 +199,39 @@ public class IngestService {
                 if (!games.isEmpty()) gameRepository.saveAll(games);
                 if (!moves.isEmpty()) moveRepository.saveAll(moves);
                 if (!positions.isEmpty()) positionRepository.saveAll(positions);
+
                 run.setStatus("succeeded");
                 run.setGamesCount(gamesCount);
                 run.setMovesCount(movesCount);
                 run.setPositionsCount(positionsCount);
-                run.setFinishedAt(Instant.now());
+                Instant finishedAt = Instant.now();
+                run.setFinishedAt(finishedAt);
+
+                long durationMs = java.time.Duration.between(run.getStartedAt(), finishedAt).toMillis();
+                Map<String, Object> report = Map.of(
+                        "runId", runId.toString(),
+                        "username", username,
+                        "from", from != null ? from.toString() : null,
+                        "to", to != null ? to.toString() : null,
+                        "counts", Map.of(
+                                "games", gamesCount,
+                                "moves", movesCount,
+                                "positions", positionsCount,
+                                "skipped", skipped
+                        ),
+                        "durationMs", durationMs,
+                        "startedAt", run.getStartedAt(),
+                        "finishedAt", finishedAt
+                );
+                String reportUri = artifactWriter.putReport(runId.toString(), report);
+                run.setReportUri(reportUri);
                 ingestRunRepository.save(run);
+                log.info("event=ingest.report_written run_id={} username={} report_uri={}", runId, username, reportUri);
+
                 meterRegistry.counter("chs_ingest_games_total").increment(gamesCount);
                 meterRegistry.counter("chs_ingest_positions_total").increment(positionsCount);
-                log.info("event=ingest.completed mode=offline games={} moves={} positions={} skipped={}",
-                         gamesCount, movesCount, positionsCount, skipped);
+                log.info("event=ingest.completed run_id={} username={} games={} moves={} positions={} skipped={} report_uri={}",
+                        runId, username, gamesCount, movesCount, positionsCount, skipped, reportUri);
             } else {
                 // 1) Archive holen und auf [from..to] filtern
                 var archives = chessComClient.listArchives(username).blockOptional().orElseGet(java.util.List::of);
