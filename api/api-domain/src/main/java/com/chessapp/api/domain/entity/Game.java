@@ -34,7 +34,7 @@ public class Game {
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "platform", columnDefinition = "platform", nullable = false)
+    @Column(name = "platform", columnDefinition = "platform")
     private Platform platform;
 
     @Column(name = "end_time")
@@ -45,12 +45,12 @@ public class Game {
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "time_category", columnDefinition = "time_control_category")
+    @Column(name = "time_category", columnDefinition = "time_category")
     private TimeControlCategory timeCategory;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "result", columnDefinition = "game_result", nullable = false) // DB-Typnamen ggf. prüfen
+    @Column(name = "result", columnDefinition = "game_result")
     private GameResult result;
 
     @Column(name = "white_rating")

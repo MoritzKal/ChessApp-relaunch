@@ -15,7 +15,9 @@ import org.slf4j.LoggerFactory;
 import com.chessapp.api.domain.entity.Color;
 import com.chessapp.api.domain.entity.GameResult;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,6 +49,7 @@ public class IngestService {
     private final ArtifactWriter artifactWriter;
     private final ObjectMapper objectMapper;
     private static final Logger log = LoggerFactory.getLogger(IngestService.class);
+    private final ThreadPoolTaskExecutor ingestExecutor;
 
     public IngestService(PgnParser pgnParser,
                          GameRepository gameRepository,
@@ -57,7 +60,9 @@ public class IngestService {
                          MeterRegistry meterRegistry,
                          ChessComClient chessComClient,
                          ArtifactWriter artifactWriter,
-                         ObjectMapper objectMapper) {
+                         ObjectMapper objectMapper,
+                        @Qualifier("ingestExecutor") ThreadPoolTaskExecutor ingestExecutor ){
+        log.info("IngestService wired (beanClass={})", this.getClass());
         this.pgnParser = pgnParser;
         this.gameRepository = gameRepository;
         this.moveRepository = moveRepository;
@@ -68,11 +73,34 @@ public class IngestService {
         this.chessComClient = chessComClient;
         this.artifactWriter = artifactWriter;
         this.objectMapper = objectMapper;
+        this.ingestExecutor = ingestExecutor;
+        log.info("IngestService wired (beanClass={})", this.getClass());
     }
 
-    @Async("ingestExecutor")
+    public void enqueueIngest(UUID runId, String username, YearMonth from, YearMonth to, boolean offline) {
+        ingestExecutor.execute(() -> {
+            try {
+                startIngest(runId, username, from, to, offline); // synchroner Body
+            } catch (Exception e) {
+                log.error("event=ingest.failed error={}", e.getMessage(), e);
+                try {
+                    var run = ingestRunRepository.findById(runId).orElse(null);
+                    if (run != null) {
+                        run.setStatus("failed");
+                        run.setError(e.getMessage());
+                        run.setFinishedAt(Instant.now());
+                        ingestRunRepository.saveAndFlush(run);
+                    }
+                } catch (Exception ignore) {}
+            }
+        });
+    }
+
+    //@Async("ingestExecutor")
+    @Transactional
     public void startIngest(UUID runId, String username, YearMonth from, YearMonth to, boolean offline) {
         UUID userId = resolveUserId(username);
+        log.info("event=ingest.started thread={}", Thread.currentThread().getName());
         MDC.put("run_id", runId.toString());
         MDC.put("username", username);
         MDC.put("component", "ingest");
@@ -282,7 +310,7 @@ public class IngestService {
             ingestRunRepository.saveAndFlush(run);
             log.info("event=ingest.status_updated status=failed run_id={} username={}", runId, username);
         } finally {
-            sample.stop(Timer.builder("chs_ingest_duration_seconds")
+            sample.stop(io.micrometer.core.instrument.Timer.builder("chs_ingest_duration_seconds")
                     .tag("application","api").tag("component","ingest").tag("username", username)
                     .register(meterRegistry));
             MDC.clear();
@@ -355,14 +383,15 @@ public class IngestService {
     }
 
     private UUID resolveUserId(String username) {
-        // Erwartet: Unique-Constraint auf users.username
         return userRepository.findByChessUsername(username)
-                .map(User::getId)
+                .map(com.chessapp.api.domain.entity.User::getId)
                 .orElseGet(() -> {
-                    User u = new User();
-                    u.setId(UUID.randomUUID());
+                    var u = new com.chessapp.api.domain.entity.User();
+                    u.setId(java.util.UUID.randomUUID());
                     u.setChessUsername(username);
-                    return userRepository.save(u).getId();
+                    u.setCreatedAt(java.time.Instant.now()); // <— WICHTIG
+                    userRepository.saveAndFlush(u);
+                    return u.getId();
                 });
     }
 }
