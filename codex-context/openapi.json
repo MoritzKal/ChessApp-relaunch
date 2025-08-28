@@ -1,0 +1,10 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "ChessApp API (snapshot)",
+    "version": "0.0.0-local"
+  },
+  "paths": {},
+  "components": {}
+}
+
