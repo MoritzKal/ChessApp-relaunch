@@ -34,8 +34,12 @@ logging:
     root: INFO
     com.chessapp.api: INFO
     org.flywaydb: DEBUG
+  pattern:
+    console: "{\"ts\":\"%d{yyyy-MM-dd'T'HH:mm:ss.SSSX}\",\"level\":\"%p\",\"logger\":\"%c{1}\",\"msg\":%m,\"run_id\":\"%X{run_id}\",\"component\":\"training\"}%n"
 chs:
   default-username: ${CHESS_USERNAME:M3NG00S3}
+  ml:
+    base-url: ${ML_BASE_URL:http://ml:8000}
 chess:
   ingest:
     baseUrl: https://api.chess.com
