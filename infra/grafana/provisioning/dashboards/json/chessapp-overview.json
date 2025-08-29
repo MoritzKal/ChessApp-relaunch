@@ -50,7 +50,7 @@
     {
       "type": "logs",
       "title": "API Logs (Loki)",
-      "gridPos": { "x": 0, "y": 29, "w": 24, "h": 12 },
+      "gridPos": { "x": 0, "y": 37, "w": 24, "h": 12 },
       "options": {
         "showLabels": true,
         "showTime": true,
@@ -87,6 +87,49 @@
       "gridPos": { "x": 0, "y": 24, "w": 6, "h": 5 },
       "targets": [
         { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "sum(chs_training_runs_total)" }
+      ]
+    },
+    {
+      "uid": "serveReq",
+      "type": "timeseries",
+      "title": "Serve Requests/min (by status)",
+      "gridPos": { "x": 0, "y": 29, "w": 8, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (status) (rate(chs_predict_requests_total[1m]))",
+          "legendFormat": "{{status}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "uid": "serveLat",
+      "type": "heatmap",
+      "title": "Predict Latency",
+      "gridPos": { "x": 8, "y": 29, "w": 8, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(rate(chs_predict_latency_seconds_bucket[1m])) by (le)",
+          "legendFormat": "{{le}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "uid": "serveIll",
+      "type": "stat",
+      "title": "Illegal Requests (sum)",
+      "gridPos": { "x": 16, "y": 29, "w": 8, "h": 8 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(chs_predict_illegal_requests_total)",
+          "refId": "A"
+        }
       ]
     }
   ]
