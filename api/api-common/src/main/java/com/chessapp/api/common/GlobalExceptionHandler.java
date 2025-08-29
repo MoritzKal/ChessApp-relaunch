@@ -3,6 +3,8 @@ package com.chessapp.api.common;
 import java.time.Instant;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -14,6 +16,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
@@ -69,6 +73,7 @@ public class GlobalExceptionHandler {
         if (ex instanceof ResponseStatusException rse) {
             return handleResponseStatus(rse);
         }
+        log.error("Unhandled exception", ex);
         return ResponseEntity.internalServerError().body(Map.of(
                 "timestamp", Instant.now().toString(),
                 "status", HttpStatus.INTERNAL_SERVER_ERROR.value(),
