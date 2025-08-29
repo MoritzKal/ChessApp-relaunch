@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+python-chess
+prometheus_client
+boto3
+pydantic
+python-json-logger
+httpx
+pytest
+pytest-asyncio
