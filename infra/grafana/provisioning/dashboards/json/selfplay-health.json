@@ -1,0 +1,21 @@
+{
+  "title": "Self-Play Health",
+  "timezone": "browser",
+  "editable": true,
+  "panels": [
+    { "type": "stat", "title": "Runs Active",
+      "targets": [{"expr": "sum(chs_selfplay_runs_active)"}], "gridPos": {"w": 8, "h": 4, "x": 0, "y": 0} },
+    { "type": "graph", "title": "Games/sec",
+      "targets": [{"expr": "sum(rate(chs_selfplay_games_total[1m]))"}], "gridPos": {"w": 8, "h": 8, "x": 8, "y": 0} },
+    { "type": "graph", "title": "Moves/sec",
+      "targets": [{"expr": "sum(rate(chs_selfplay_moves_total[1m]))"}], "gridPos": {"w": 8, "h": 8, "x": 0, "y": 4} },
+    { "type": "gauge", "title": "White Win Rate",
+      "targets": [{"expr": "avg(chs_selfplay_win_rate)"}], "gridPos": {"w": 8, "h": 8, "x": 8, "y": 8} },
+    { "type": "graph", "title": "Dataset Rows/sec",
+      "targets": [{"expr": "sum(rate(chs_selfplay_dataset_rows_total[1m]))"}], "gridPos": {"w": 8, "h": 8, "x": 0, "y": 12} },
+    { "type": "stat", "title": "Failures (total)",
+      "targets": [{"expr": "sum(chs_selfplay_failures_total)"}], "gridPos": {"w": 8, "h": 4, "x": 8, "y": 16} }
+  ],
+  "schemaVersion": 38,
+  "version": 1
+}
