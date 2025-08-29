@@ -71,6 +71,9 @@ def selfplay_loop(cfg: SelfPlayConfig):
             chs_selfplay_games_total.labels(**labels).inc()
             if total_finished > 0:
                 chs_selfplay_win_rate.labels(**labels).set(white_wins / total_finished)
+            # lightweight flush cadence for scrapers
+            if g % 10 == 0:
+                time.sleep(0.01)
         if parquet_rows:
             import pyarrow as pa, pyarrow.parquet as pq
             table = pa.Table.from_pylist(parquet_rows)
