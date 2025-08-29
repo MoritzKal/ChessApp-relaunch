@@ -40,6 +40,8 @@ chs:
   default-username: ${CHESS_USERNAME:M3NG00S3}
   ml:
     base-url: ${ML_BASE_URL:http://ml:8000}
+  serve:
+    baseUrl: ${CHS_SERVE_BASEURL:http://serve:8001}
 chess:
   ingest:
     baseUrl: https://api.chess.com
