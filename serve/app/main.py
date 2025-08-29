@@ -8,7 +8,15 @@ import chess
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from prometheus_client import Counter, Histogram, CONTENT_TYPE_LATEST, generate_latest
+from prometheus_client import Counter, Histogram, make_asgi_app
+from .metrics_stub import (
+    chs_selfplay_games_total,
+    chs_selfplay_wins_total,
+    chs_selfplay_failures_total,
+    chs_dataset_rows,
+    chs_dataset_invalid_rows_total,
+    chs_dataset_export_duration_seconds,
+)
 
 # --- Config ---
 ML_S3_ENDPOINT = os.getenv("ML_S3_ENDPOINT", "http://minio:9000")
@@ -75,17 +83,15 @@ class PredictResponse(BaseModel):
 current_model = ModelState(modelId="dummy", modelVersion="0")
 
 app = FastAPI(title="ChessApp Serve", version="0.1")
+app.mount("/metrics", make_asgi_app())
+
+# minimal baseline metric to prevent empty dashboards
+chs_dataset_rows.labels(dataset_id="bootstrap").inc()
 
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
-
-
-@app.get("/metrics")
-def metrics():
-    data = generate_latest()
-    return Response(data, media_type=CONTENT_TYPE_LATEST)
 
 
 @app.post("/models/load")
