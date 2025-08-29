@@ -61,7 +61,7 @@
       "title": "Last Export Duration (ms)",
       "targets": [
         {
-          "expr": "sum(chs_dataset_export_duration_seconds_sum) / sum(chs_dataset_export_duration_seconds_count) * 1000"
+          "expr": "sum(chs_dataset_export_duration_ms_sum) / sum(chs_dataset_export_duration_ms_count)"
         }
       ]
     }

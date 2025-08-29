@@ -15,9 +15,9 @@ chs_dataset_invalid_rows_total = Counter(
     labelnames=("dataset_id", "run_id", "reason"),
 )
 
-chs_dataset_export_duration_seconds = Summary(
-    "chs_dataset_export_duration_seconds",
-    "Export duration in seconds",
+chs_dataset_export_duration_ms = Summary(
+    "chs_dataset_export_duration_ms",
+    "Export duration in milliseconds",
     labelnames=("dataset_id", "run_id"),
 )
 
@@ -31,13 +31,17 @@ class MetricsPayload(BaseModel):
     invalid: Optional[InvalidReasons] = InvalidReasons()
     export_duration_ms: Optional[float] = 0.0
 
+# To keep label cardinality bounded, only allow known reasons; others map to 'other'
+ALLOWED_INVALID_REASONS = {"uci_not_legal"}
+
 def observe(payload: MetricsPayload):
     labels = dict(dataset_id=payload.dataset_id, run_id=payload.run_id or "local")
     # Rows
     chs_dataset_rows_total.labels(**labels).inc(payload.rows)
-    # Invalid split by reason (bounded cardinality expected)
+    # Invalid split by reason with bounded cardinality
     for reason, count in (payload.invalid.reasons or {}).items():
-        chs_dataset_invalid_rows_total.labels(reason=reason, **labels).inc(count)
+        safe_reason = reason if reason in ALLOWED_INVALID_REASONS else "other"
+        chs_dataset_invalid_rows_total.labels(reason=safe_reason, **labels).inc(count)
     # Duration
     if payload.export_duration_ms is not None:
-        chs_dataset_export_duration_seconds.labels(**labels).observe((payload.export_duration_ms or 0.0) / 1000.0)
+        chs_dataset_export_duration_ms.labels(**labels).observe(payload.export_duration_ms or 0.0)
