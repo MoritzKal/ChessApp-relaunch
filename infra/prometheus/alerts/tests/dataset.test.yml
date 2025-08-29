@@ -1,0 +1,14 @@
+rule_files:
+  - /etc/prometheus/alerts/dataset.yml
+evaluation_interval: 1m
+tests:
+- interval: 1m
+  input_series:
+  - series: 'chs_dataset_invalid_rows_total{dataset_id="test"}'
+    values: '0 0 0 0 1 2 2 2'
+  alert_rule_test:
+  - eval_time: 5m
+    alertname: DatasetInvalidRowsDetected
+    exp_alerts:
+    - exp_labels:
+        severity: warn
