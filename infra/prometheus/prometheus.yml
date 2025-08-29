@@ -19,3 +19,6 @@ scrape_configs:
     metrics_path: /metrics
     static_configs:
       - targets: ['ml:8000']
+  - job_name: serve
+    static_configs:
+      - targets: ['serve:8001']
