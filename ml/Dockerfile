@@ -4,8 +4,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 WORKDIR /app
-COPY ml/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY ml/requirements.txt /app/ml/requirements.txt
+RUN pip install --no-cache-dir -r /app/ml/requirements.txt
 
 COPY ml/app /app/app
 EXPOSE 8000
