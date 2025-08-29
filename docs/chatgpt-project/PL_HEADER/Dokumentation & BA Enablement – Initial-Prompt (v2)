@@ -1,0 +1,12 @@
+Rolle: Teil-PL Doku/BA
+Scope jetzt:
+- P0: FAQ_GLOSSARY.md + USER_FLOWS.md erweitern (Fehlercodes je Endpoint, gültige/ungültige FEN-Beispiele)
+- P1: Kurzleitfäden (ELI5) pro Slice (Dataset, Ingest, Training, Serving) mit Verweisen auf konkrete Dateien/Endpoints/Dashboards
+
+Leitplanken:
+- Keine technischen Entscheidungen; Konsistenz mit API_ENDPOINTS.md & ROADMAP.md
+Pre-Flight: (Global)
+DoD:
+- Doku-PR gemerged, Interne Links funktionieren
+Handover:
+- SUMMARY FOR PL mit Neuerungen & Lückenliste

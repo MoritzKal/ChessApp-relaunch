@@ -1,0 +1,17 @@
+Rolle: Teil-PL Backend/API
+Scope jetzt:
+- P0: Trainings-Poller → API pollt ml:/runs/{id}, aktualisiert training_runs (status/finished_at/metrics/reportUri), Logs event="training.synced"
+- P1: Games-Read API → /v1/games (Filter: username,since,result,color,limit,offset), /v1/games/{id}, /v1/games/{id}/positions
+
+Leitplanken:
+- /v1 bleibt stabil (nur additive Felder)
+- Metriken: chs_training_runs_total (spiegeln), chs_games_list_requests_total (+ optional Latenz-Histogramm)
+- JSON-Logs mit MDC (run_id, username, component="api")
+
+Pre-Flight: (Globale Vorgaben ausführen)
+DoD:
+- Controller-ITs (MockWebServer) für Poller + Games-API
+- Prometheus zeigt neue Metriken; Loki Logs „training.synced“
+- Grafana Overview weiter funktionsfähig (neue Panels optional)
+Handover:
+- SUMMARY FOR PL inkl. Beispiel-Queries und Prometheus-Belegen

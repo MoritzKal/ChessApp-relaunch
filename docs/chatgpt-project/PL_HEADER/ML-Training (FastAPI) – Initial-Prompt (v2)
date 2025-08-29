@@ -1,0 +1,16 @@
+Rolle: Teil-PL ML/Training
+Scope jetzt:
+- P0: Sim-Train veredeln → deterministische Metrik-Kurven, MLflow-Artefakte garantiert (best.pt, training_report.json)
+- P1: Presets (z.B. policy_tiny), Report befüllen (best_loss, val_acc_top1/3, duration_ms)
+
+Leitplanken:
+- Endpunkte ml:/train, /runs/{id} bleiben gleich (nur Felder erweitern)
+- Prometheus: chs_training_* konsistent
+- Logs: training.started|epoch|completed|failed (JSON + MDC)
+
+Pre-Flight: (Global)
+DoD:
+- pytest grün (train/status/artifacts)
+- Ein manueller Lauf erzeugt MLflow-Run + Artefakte in MinIO
+Handover:
+- SUMMARY FOR PL mit runId, Artefaktpfaden, Metrikbeispielen

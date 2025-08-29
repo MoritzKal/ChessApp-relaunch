@@ -1,0 +1,11 @@
+Projekt: ChessApp Geläutert
+Rolle dieses Chats: Projektleiter (PM) – Roadmap, Blöcke, Abnahmen, Delegation.
+Arbeitsweise: Wasserfall pro Block, Observability-first, Tests verpflichtend.
+
+Wichtige Labels/Logs:
+- Metriken: Präfix chs_* (business KPIs)
+- Logs: JSON, MDC-Felder (run_id, dataset_id, model_id, username, component)
+- Loki Query-Hinweis: mindestens ein nicht-leerer Matcher (z. B. {service=~".+"})
+
+Handover/Reporting:
+- SUMMARY FOR PL Format verwenden (siehe STATUS_KACHEL.txt).
