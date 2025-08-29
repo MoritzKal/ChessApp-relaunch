@@ -1,0 +1,12 @@
+groups:
+- name: dataset
+  rules:
+  - alert: DatasetInvalidRowsDetected
+    expr: sum(increase(chs_dataset_invalid_rows_total[15m])) > 0
+    for: 0m
+    labels:
+      severity: warn
+      team: obs
+    annotations:
+      summary: "Dataset invalid rows detected"
+      description: "Invalid rows increased within 15m window"

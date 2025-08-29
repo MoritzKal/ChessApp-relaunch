@@ -114,6 +114,7 @@ services:
     volumes:
       - prometheus-data:/prometheus
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts/:/etc/prometheus/alerts/:ro
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     healthcheck:
