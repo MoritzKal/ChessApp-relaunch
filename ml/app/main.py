@@ -2,11 +2,11 @@ import os, time, json, uuid, logging
 from datetime import datetime
 from typing import Optional, Dict, Any
 
-from fastapi import FastAPI, BackgroundTasks, HTTPException
+from fastapi import FastAPI, BackgroundTasks, HTTPException, Response
 from pydantic import BaseModel, Field
-from prometheus_client import Counter, Gauge, Histogram, CollectorRegistry, CONTENT_TYPE_LATEST, generate_latest
-from starlette.responses import Response
+from prometheus_client import Counter, Gauge, Histogram, CONTENT_TYPE_LATEST, generate_latest
 import mlflow
+from .metrics_registry import REGISTRY
 
 try:
     import boto3
@@ -42,16 +42,15 @@ def log_event(event: str, **extra):
     logger.info(json.dumps(payload))
 
 # --- Prometheus registry/metrics ---
-registry = CollectorRegistry()
 
 RUNS_TOTAL = Counter("chs_training_runs_total", "Total training runs started",
-                     ["username", "component"], registry=registry)
+                     ["username", "component"], registry=REGISTRY)
 LOSS = Gauge("chs_training_loss", "Training loss (last step)",
-             ["run_id", "dataset_id", "username", "component"], registry=registry)
+             ["run_id", "dataset_id", "username", "component"], registry=REGISTRY)
 VAL_ACC = Gauge("chs_training_val_accuracy", "Validation accuracy (last step)",
-                ["run_id", "dataset_id", "username", "component"], registry=registry)
+                ["run_id", "dataset_id", "username", "component"], registry=REGISTRY)
 STEP_SEC = Histogram("chs_training_step_duration_seconds", "Per-step duration seconds",
-                     ["run_id", "dataset_id", "username", "component"], registry=registry)
+                     ["run_id", "dataset_id", "username", "component"], registry=REGISTRY)
 
 # --- In-memory run store (MVP) ---
 class RunState(BaseModel):
@@ -87,8 +86,7 @@ def health():
 
 @app.get("/metrics")
 def metrics():
-    data = generate_latest(registry)
-    return Response(data, media_type=CONTENT_TYPE_LATEST)
+    return Response(generate_latest(REGISTRY), media_type=CONTENT_TYPE_LATEST)
 
 @app.post("/train")
 def train(req: TrainRequest, bg: BackgroundTasks):
