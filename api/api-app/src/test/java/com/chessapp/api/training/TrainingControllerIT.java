@@ -5,15 +5,18 @@ import com.chessapp.api.training.service.MlClient;
 import com.chessapp.api.training.service.TrainingService;
 import com.chessapp.api.testutil.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.ParameterizedTypeReference;
 
 import java.util.Map;
 import java.util.UUID;
 
+@SpringBootTest(properties = {"logging.config=classpath:logback-spring.xml"}, classes = com.chessapp.api.codex.CodexApplication.class)
 class TrainingControllerIT extends AbstractIntegrationTest {
 
     @TestConfiguration
@@ -40,13 +43,15 @@ class TrainingControllerIT extends AbstractIntegrationTest {
         WebTestClient client = WebTestClient.bindToApplicationContext(ctx).build();
 
         var req = new TrainingStartRequest(null, "policy_tiny", Map.of("epochs",2,"stepsPerEpoch",3,"lr",1e-3));
-        String runId = client.post().uri("/v1/trainings")
+        var startResp = client.post().uri("/v1/trainings")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(req)
                 .exchange()
                 .expectStatus().isAccepted()
-                .expectBody()
-                .jsonPath("$.runId").value(String::valueOf);
+                .expectBody(new ParameterizedTypeReference<Map<String,Object>>() {})
+                .returnResult()
+                .getResponseBody();
+        String runId = String.valueOf(startResp.get("runId"));
 
         client.get().uri("/v1/trainings/{id}", runId)
                 .exchange()
