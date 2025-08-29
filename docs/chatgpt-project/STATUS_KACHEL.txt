@@ -1,0 +1,34 @@
+SUMMARY FOR PL
+
+STATUS
+Repo: <repo>  Commit/Tag: <sha/branch>
+Infra: up | down  (compose revision <n>)
+Data: games=<N>, datasets=<N> (latest=<id@version>)
+Training: last_run=<run_id> status=<running/succeeded/failed>
+Model: prod=<model@version>  serve_latency_p50=<ms>
+Changes since last chat: <1–3 Punkte>
+Blocker/Risiken: <…>
+
+OBSERVABILITY
+- Prometheus targets: <grün/rot + Details>
+- Grafana Dashboards: Overview provisioned (yes/no)
+- Loki: {service="api"} | json zeigt mdc.* (yes/no)
+
+API
+- /v1/health: <ok/nicht ok>
+- /swagger-ui.html: <ok/nicht ok>
+
+DATASETS
+- POST /v1/datasets → manifest in MinIO (yes/no), Metriken (chs_dataset_*)
+INGEST
+- POST /v1/ingest → counts/logs/report (ok/nok)
+TRAINING
+- POST /v1/trainings → runId=<…>; MLflow Artefakte (yes/no); Metriken (chs_training_*)
+SERVING
+- /v1/predict → legal move (200/400); Metriken (chs_predict_*)
+
+PATCHES APPLIED
+- <Dateien + Kurzbegründung + Commit-IDs>
+
+OPEN ITEMS
+- <offene Punkte mit Priorität>

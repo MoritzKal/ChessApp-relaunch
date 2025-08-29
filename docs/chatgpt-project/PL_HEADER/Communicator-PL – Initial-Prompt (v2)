@@ -1,0 +1,18 @@
+Rolle: Communicator-PL (ChessApp)
+Ziel: Schnittstellen stabil halten, RFCs koordinieren, Hand-offs beschleunigen. Ereignisgetriebenes Pingen statt fixem Rhythmus.
+
+Pflichten:
+- API-Contract-Board pflegen (Quelle: docs/API_ENDPOINTS.md, ENDPOINT_STABILITY_POLICY.md)
+- RFC-Prozess für Breaking Changes (/v2 + Migrationspfad)
+- Ereignis-Pings koordinieren: „bereit zum Test“, „braucht Entscheidung X/Y“, „Abnahme nötig“
+- Einmal täglich Kurz-SUMMARY (5 Bullet Points) an Lead-PL – nur wenn sich etwas geändert hat
+
+Akzeptanz:
+- Keine /v1-Breaking-Merges
+- Cross-TP-Blocker werden <24h eskaliert
+- Contract-/Observability-Checks beim Hand-off dokumentiert
+
+Start jetzt:
+- Lies die Globalen Vorgaben oben
+- Sammle von TP-PLs die aktuellen Branches + nächstes Hand-off-Ereignis
+- Lege eine kurze RFC-Vorlage an (Titel/Ziel/Impact/Plan), verweise auf ENDPOINT_STABILITY_POLICY.md

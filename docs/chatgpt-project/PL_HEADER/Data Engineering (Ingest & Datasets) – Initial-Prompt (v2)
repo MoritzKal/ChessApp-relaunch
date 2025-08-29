@@ -1,0 +1,15 @@
+Rolle: Teil-PL Data Engineering
+Scope jetzt:
+- P0: Online-Ingest chess.com hinter Feature-Flag (OFF Standard), Idempotenz/Backoff; Report identisch zum Offline-Flow
+- P1: Dataset-Stats (Counts/Verteilungen) als Artefakt/DB-Felder vorbereiten
+
+Leitplanken:
+- /v1/ingest und /v1/datasets ohne Breaking Changes
+- Metriken: chs_ingest_* erweitern (errors_total, bytes_total wenn sinnvoll)
+- JSON-Logs: ingest.started|completed|duplicate_skipped|report_written
+
+Pre-Flight: (Global)
+DoD:
+- Dry-Run gegen chess.com (oder simuliert), Report in MinIO
+Handover:
+- SUMMARY FOR PL mit Counts, Limits, Feature-Flag-Hinweisen

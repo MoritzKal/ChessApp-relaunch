@@ -1,0 +1,82 @@
+TL;DR
+MVP mit Observability-first: Alles, was ein Prozess erzeugt, wird persistiert und als Metrik/Log/Artefakt exponiert. Frontend greift nur noch „fertige“ Backends/Endpunkte ab. Default-User: M3NG00S3.
+
+Quellen & Artefakte
+
+Projektkontext (Architektur, API, Roadmap): siehe „Kontext.txt“ / Repo-Docs.
+
+Repo: <REPO_URL> (Monorepo empfohlen: /api, /ml, /frontend, /infra, /docs).
+
+Infra (Compose): Postgres, MinIO, MLflow, Prometheus, Grafana, Loki. Services: api, ml, db, minio, mlflow, prometheus, grafana, loki.
+
+Prinzipien (entscheidend für schnelle Iterationen)
+
+Daten fallen an → sind sie interessant? → sofort tracken.
+
+Persistenz (DB/MinIO), Metriken (Prometheus), Logs (Loki), Artefakte (MLflow).
+
+Modular & erweiterbar. Jede Funktion = klarer Endpoint + Events + Telemetrie.
+
+Frontend als dünne Schicht. UI zeigt, was Backend bereits sauber liefert (Listen, Statistiken, Charts).
+
+„Observability-Gate“. Eine Story ist erst „Done“, wenn Telemetrie & Doku stehen.
+
+Konventionen (Backend/Telemetry)
+
+IDs & Labels überall mitgeben: run_id, dataset_id, model_id, username=M3NG00S3, component (ingest|dataset|training|serve|play).
+
+Metrik-Prefix: chs_… (z. B. chs_ingest_games_total, chs_training_loss, chs_predict_latency_ms).
+
+Logs: strukturierte JSON-Logs mit obigen Labels.
+
+Artefakte (MinIO Buckets): datasets/, models/, reports/, logs/.
+
+API-Namespace: /v1 (Data, Datasets, Training, Models, Eval, Play). Beispielendpunkte sind im Kontext dokumentiert.
+
+Datenorte (MVP)
+
+DB (Postgres): games, moves, positions, datasets, models, training_runs, evaluations.
+
+Object Storage (MinIO): Datensätze & Modellgewichte versioniert ablegen (URI am Entity-Record).
+
+Experimente (MLflow): Params, Metrics, Artifacts, Registry (staging/prod).
+
+Default-Annahmen
+
+chess.com Username: M3NG00S3 (UI-Default & Import-Jobs).
+
+Security: Single-User-JWT, Secrets via .env/Docker-Secrets.
+
+Zeitachse: 8-Wochen-MVP, vertikaler Slice Ingest → Train → Serve → Play.
+
+Wie ihr mich „up to date“ haltet (Ritual)
+
+Postet bei neuen Chats eine Status-Kachel (Copy/Paste):
+
+STATUS
+Repo: <REPO_URL>  Commit/Tag: <abc123>
+Infra: up | down  (compose revision <n>)
+Data: games=<N>, datasets=<N> (latest=<id@version>)
+Training: last_run=<run_id> status=<running/succeeded/failed>
+Model: prod=<model@version>  serve_latency_p50=<ms>
+Changes since last chat: <kurzer Changelog-Stichpunkt>
+Blocker/Risiken: <…>
+
+
+Optional zusätzlich im Repo:
+
+/docs/CHANGELOG.md (Kurzlog je Merge)
+
+/docs/ADRs/ADR-XXXX.md (wichtige Architekturentscheidungen)
+
+/docs/STATE.md (aktuelle Services, Ports, Credentials-Hinweise)
+
+„Definition of Done“ (pro Story)
+
+Endpoint vorhanden & in OpenAPI dokumentiert.
+
+DB/MinIO-Persistenz + Prometheus-Metriken + Loki-Logs + (falls ML) MLflow-Artefakte.
+
+Kurze Doku/README-Abschnitt + Beispiel-cURL.
+
+Frontend-Widget zeigt die Daten (oder Mock, wenn UI-Story später).

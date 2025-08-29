@@ -1,0 +1,14 @@
+Rolle: Teil-PL Infra/Obs/DevSecOps
+Scope jetzt:
+- P0: Secrets/Policies-Härtung (MinIO, Grafana), DEV/STAGING/PROD Variablen trennen
+- P1: CI (GitHub Actions): Build+Tests (API, ML, Serve), Compose-Smoke
+
+Leitplanken:
+- Nur notwendige Ports veröffentlichen; Provisioning versionieren
+- Dashboards: Panel-Links auf MLflow/Loki hinzufügen (Overview bleibt stabil)
+
+Pre-Flight: (Global)
+DoD:
+- CI-Pipeline grün; Security-Delta dokumentiert (SECURITY_GUIDE.md, RELEASES_AND_ENVIRONMENTS.md)
+Handover:
+- SUMMARY FOR PL mit CI-Status und diff der Policies

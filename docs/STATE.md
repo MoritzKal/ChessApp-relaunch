@@ -1,21 +1,8 @@
-# STATE – Infra Services (local)
+# Projektstatus (Stand: 2025-08-29)
 
-| Service    | URL                          | Notes |
-|------------|------------------------------|-------|
-| Grafana    | http://localhost:3000        | admin: $GRAFANA_USER |
-| Prometheus | http://localhost:9090        | scrape interval 5s |
-| Loki       | http://localhost:3100        | via Promtail docker discovery |
-| MinIO S3   | http://localhost:9000        | access key in `.env` |
-| MinIO UI   | http://localhost:9001        | console |
-| MLflow     | http://localhost:5000        | artifacts → MinIO bucket `mlflow` |
-| Postgres   | localhost:5432               | db: $POSTGRES_DB |
-
-## Buckets (MinIO)
-- datasets/
-- models/
-- reports/
-- logs/
-- mlflow/
-
-## Nächste Schritte
-- `api` & `ml` Services hinzufügen, Prometheus‑Metrics (`chs_*`) und strukturierte JSON‑Logs (Labels: `run_id`, `dataset_id`, `model_id`, `username`, `component`).
+- Infra: **up**
+- Datasets: **live** (z. B. Demonstrationseinträge vorhanden)
+- Ingest: **offline-Slice live** (idempotent, SAN, Positions, Report)
+- Training: **Skeleton live** (Prometheus `chs_training_*`, MLflow-Integration, Artefakte nach erstem Lauf)
+- Serving: **Skeleton live** (legal move, `chs_predict_*` + Logs, API-Proxy)
+- Dashboards: **ChessApp – Overview** provisioniert

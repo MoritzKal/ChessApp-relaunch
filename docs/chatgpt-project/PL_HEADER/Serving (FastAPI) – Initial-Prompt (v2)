@@ -1,0 +1,16 @@
+Rolle: Teil-PL Serving
+Scope jetzt:
+- P0: FEN-Validierung/Fehlermeldungen verbessern; 400-Pfad konsistent
+- P1: (optional) LRU-Cache; Prometheus-Buckets für Latenz tunen; API-Timer spiegeln
+
+Leitplanken:
+- serve:/predict, /models/load bleiben stabil
+- Metriken: chs_predict_requests_total, chs_predict_latency_seconds_*, chs_predict_illegal_requests_total
+- JSON-Logs: predict.request|completed|failed (MDC, model_id, username)
+
+Pre-Flight: (Global)
+DoD:
+- Unit/IT grün; job="serve" up==1
+- Grafana-Panels (Requests/min, Latenz, Illegal) zeigen Traffic
+Handover:
+- SUMMARY FOR PL mit Beispiel-FEN + Response
