@@ -8,4 +8,5 @@ version = "0.1.0"
 
 [project.scripts]
 dataset_validate = "ml.tools.dataset_validate:main"
+dataset_export = "ml.tools.dataset_export:main"
 
