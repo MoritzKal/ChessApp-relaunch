@@ -6,7 +6,7 @@ from fastapi import FastAPI, BackgroundTasks, HTTPException, Response
 from pydantic import BaseModel, Field
 from prometheus_client import Counter, Gauge, Histogram, CONTENT_TYPE_LATEST, generate_latest
 import mlflow
-from .metrics_registry import REGISTRY
+from .metrics_registry import get_registry
 
 try:
     import boto3
@@ -43,14 +43,23 @@ def log_event(event: str, **extra):
 
 # --- Prometheus registry/metrics ---
 
+IS_MULTIPROC = bool(os.environ.get("PROMETHEUS_MULTIPROC_DIR"))
+try:
+    # Only defined in single-process mode
+    from .metrics_registry import REGISTRY as _SINGLE_REGISTRY  # type: ignore
+except Exception:
+    _SINGLE_REGISTRY = None
+
+_metric_kwargs = {"registry": _SINGLE_REGISTRY} if _SINGLE_REGISTRY is not None else {}
+
 RUNS_TOTAL = Counter("chs_training_runs_total", "Total training runs started",
-                     ["username", "component"], registry=REGISTRY)
+                     ["username", "component"], **_metric_kwargs)
 LOSS = Gauge("chs_training_loss", "Training loss (last step)",
-             ["run_id", "dataset_id", "username", "component"], registry=REGISTRY)
+             ["run_id", "dataset_id", "username", "component"], **_metric_kwargs)
 VAL_ACC = Gauge("chs_training_val_accuracy", "Validation accuracy (last step)",
-                ["run_id", "dataset_id", "username", "component"], registry=REGISTRY)
+                ["run_id", "dataset_id", "username", "component"], **_metric_kwargs)
 STEP_SEC = Histogram("chs_training_step_duration_seconds", "Per-step duration seconds",
-                     ["run_id", "dataset_id", "username", "component"], registry=REGISTRY)
+                     ["run_id", "dataset_id", "username", "component"], **_metric_kwargs)
 
 # --- In-memory run store (MVP) ---
 class RunState(BaseModel):
@@ -86,7 +95,8 @@ def health():
 
 @app.get("/metrics")
 def metrics():
-    return Response(generate_latest(REGISTRY), media_type=CONTENT_TYPE_LATEST)
+    reg = get_registry()
+    return Response(generate_latest(reg), media_type=CONTENT_TYPE_LATEST)
 
 @app.post("/train")
 def train(req: TrainRequest, bg: BackgroundTasks):

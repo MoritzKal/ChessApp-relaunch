@@ -24,6 +24,13 @@ def selfplay_loop(cfg: SelfPlayConfig):
     parquet_rows = []
     white_wins = total_finished = 0
     chs_selfplay_runs_active.labels(**labels).inc()
+   # Prime metrics so they always appear in /metrics for this labelset
+    chs_selfplay_runs_active.labels(**labels).inc()
+    chs_selfplay_games_total.labels(**labels).inc(0)
+    chs_selfplay_moves_total.labels(**labels).inc(0)
+    chs_selfplay_dataset_rows_total.labels(**labels).inc(0)
+    chs_selfplay_failures_total.labels(**labels).inc(0)
+    chs_selfplay_win_rate.labels(**labels).set(0.0)
     log_event("selfplay.started", **labels, games=cfg.games, max_moves=cfg.max_moves)
     t0 = time.time()
     try:
