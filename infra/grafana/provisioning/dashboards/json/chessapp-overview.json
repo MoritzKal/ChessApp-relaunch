@@ -50,7 +50,7 @@
     {
       "type": "logs",
       "title": "API Logs (Loki)",
-      "gridPos": { "x": 0, "y": 16, "w": 24, "h": 12 },
+      "gridPos": { "x": 0, "y": 29, "w": 24, "h": 12 },
       "options": {
         "showLabels": true,
         "showTime": true,
@@ -63,6 +63,30 @@
           "expr": "{service=\"api\"} | json",
           "refId": "A"
         }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Training Loss (chs_training_loss)",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "chs_training_loss" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Val Accuracy (chs_training_val_accuracy)",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "chs_training_val_accuracy" }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Runs total (chs_training_runs_total)",
+      "gridPos": { "x": 0, "y": 24, "w": 6, "h": 5 },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "sum(chs_training_runs_total)" }
       ]
     }
   ]

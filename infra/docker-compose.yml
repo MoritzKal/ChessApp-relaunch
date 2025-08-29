@@ -178,6 +178,30 @@ services:
       loki:
         condition: service_healthy
     networks: [chs_net]
+  ml:
+    build:
+      context: ../
+      dockerfile: ml/Dockerfile
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      ML_S3_ENDPOINT: http://minio:9000
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      AWS_REGION: us-east-1
+      DEFAULT_USERNAME: ${CHESS_USERNAME:-M3NG00S3}
+      ML_ARTIFACT_BUCKET: mlflow
+    depends_on:
+      - minio
+      - mlflow
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "8000:8000"
+    networks: [ chs_net ]
+    restart: unless-stopped
   api:
     build:
       context: ..
