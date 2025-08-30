@@ -8,3 +8,5 @@ python-json-logger==2.0.7
 python-chess
 pandas
 pyarrow
+requests
+pytest
