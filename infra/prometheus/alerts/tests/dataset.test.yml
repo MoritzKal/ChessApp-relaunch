@@ -12,3 +12,7 @@ tests:
     exp_alerts:
     - exp_labels:
         severity: warn
+        team: obs
+      exp_annotations:
+        summary: Dataset invalid rows detected
+        description: Invalid rows increased within 15m window

@@ -34,3 +34,7 @@ status: ## Print endpoints
 test: ## Run monitoring checks
 	python3 -m pip install -r infra/tests/requirements.txt
 	pytest infra/tests -q
+
+.PHONY: obs-e2e-test
+obs-e2e-test:
+	bash scripts/obs_e2e_test.sh

@@ -12,5 +12,7 @@ tests:
     exp_alerts:
     - exp_labels:
         severity: page
+        team: obs
       exp_annotations:
         summary: Self-Play Failures detected
+        description: Failures > 0 in the last 5m
