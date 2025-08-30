@@ -4,6 +4,7 @@ import com.chessapp.api.models.service.ModelNotFoundException;
 import com.chessapp.api.models.service.RegistryUnavailableException;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -25,7 +26,7 @@ public class RegistryExceptionHandler {
 
     @ExceptionHandler(ModelNotFoundException.class)
     public ResponseEntity<Map<String, Object>> notFound(ModelNotFoundException ex) {
-        metrics.counter("chs_model_registry_requests_total", "endpoint", MDC.getOrDefault("endpoint", "unknown"), "status", "404")
+        metrics.counter("chs_model_registry_requests_total", "endpoint", Objects.toString(MDC.get("endpoint"), "unknown"), "status", "404")
                 .increment();
         log.warn("registry.error", ex);
         MDC.clear();
@@ -35,7 +36,7 @@ public class RegistryExceptionHandler {
 
     @ExceptionHandler(RegistryUnavailableException.class)
     public ResponseEntity<Map<String, Object>> regDown(RegistryUnavailableException ex) {
-        metrics.counter("chs_model_registry_requests_total", "endpoint", MDC.getOrDefault("endpoint", "unknown"), "status", "500")
+        metrics.counter("chs_model_registry_requests_total", "endpoint", Objects.toString(MDC.get("endpoint"), "unknown"), "status", "500")
                 .increment();
         log.error("registry.error", ex);
         MDC.clear();

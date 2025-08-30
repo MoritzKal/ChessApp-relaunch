@@ -39,7 +39,10 @@ class ModelsControllerIT extends AbstractIntegrationTest {
     mvc.perform(get("/v1/models")).andExpect(status().isOk());
     mvc.perform(get("/actuator/prometheus"))
         .andExpect(status().isOk())
-        .andExpect(content().string(containsString(
-            "chs_model_registry_requests_total{endpoint=\"/v1/models\",status=\"200\"}")));
+        // Global metric tags (application, component, username, ...) are present,
+        // so we assert key substrings rather than exact label set/order.
+        .andExpect(content().string(containsString("chs_model_registry_requests_total{")))
+        .andExpect(content().string(containsString("endpoint=\"/v1/models\"")))
+        .andExpect(content().string(containsString("status=\"200\"")));
   }
 }
