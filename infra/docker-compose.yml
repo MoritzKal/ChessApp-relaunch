@@ -114,6 +114,8 @@ services:
     volumes:
       - prometheus-data:/prometheus
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts/:/etc/prometheus/alerts/:ro
+      - ./prometheus/alerts/tests/:/etc/prometheus/alerts/tests/:ro
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     healthcheck:
@@ -142,15 +144,17 @@ services:
     networks: [chs_net]
 
   promtail:
-    image: grafana/promtail:2.9.6
+    image: grafana/promtail:latest
     container_name: chs_promtail
     command: -config.file=/etc/promtail/config.yml
     volumes:
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
     depends_on:
       - loki
+    ports:
+      - "9080:9080"
     networks: [chs_net]
 
   grafana:
@@ -163,7 +167,8 @@ services:
       GF_AUTH_ANONYMOUS_ORG_ROLE: "Editor"
     volumes:
       - grafana-data:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
     ports:
       - "${GRAFANA_PORT:-3000}:3000"
     healthcheck:
