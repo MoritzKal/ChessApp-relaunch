@@ -71,9 +71,14 @@ chs_dataset_rows.labels(dataset_id="bootstrap").inc()
 chs_selfplay_games_total.labels(result="draw", run_id="bootstrap").inc(0)
 
 ENABLE_LRU = os.getenv("SERVE_ENABLE_LRU", "false").lower() == "true"
+FAKE_FAST = os.getenv("SERVE_FAKE_FAST", "false").lower() == "true"
 
 
 def _predict_core_impl(fen: str, model_id: str, model_version: str):
+    if FAKE_FAST:
+        board = chess.Board(fen=fen)  # still validate FEN
+        move = next(iter(board.legal_moves)).uci()
+        return move, [move]
     board = chess.Board(fen=fen)
     legal_moves = [m.uci() for m in board.legal_moves]
     if not legal_moves:
