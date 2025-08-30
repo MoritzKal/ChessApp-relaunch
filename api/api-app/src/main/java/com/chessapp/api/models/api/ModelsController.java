@@ -11,6 +11,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,10 +28,13 @@ public class ModelsController {
 
     private final ModelRegistryService service;
     private final MeterRegistry metrics;
+    private final String defaultUsername;
 
-    public ModelsController(ModelRegistryService service, MeterRegistry metrics) {
+    public ModelsController(ModelRegistryService service, MeterRegistry metrics,
+                            @Value("${chs.default-username:M3NG00S3}") String defaultUsername) {
         this.service = service;
         this.metrics = metrics;
+        this.defaultUsername = defaultUsername;
     }
 
     @Operation(summary = "List available models")
@@ -39,9 +43,10 @@ public class ModelsController {
             @RequestHeader(value = "X-Username", required = false) String username) {
         MDC.put("run_id", UUID.randomUUID().toString());
         MDC.put("component", "api.registry");
-        MDC.put("username", username != null ? username : MDC.get("username"));
+        String user = username != null ? username : defaultUsername;
+        MDC.put("username", user);
         MDC.put("endpoint", "/v1/models");
-        var out = service.listModels();
+        List<ModelSummary> out = service.listModels();
         log.info("registry.request");
         metrics.counter("chs_model_registry_requests_total", "endpoint", "/v1/models", "status", "200")
                 .increment();
@@ -56,10 +61,11 @@ public class ModelsController {
             @RequestHeader(value = "X-Username", required = false) String username) {
         MDC.put("run_id", UUID.randomUUID().toString());
         MDC.put("component", "api.registry");
-        MDC.put("username", username != null ? username : MDC.get("username"));
+        String user = username != null ? username : defaultUsername;
+        MDC.put("username", user);
         MDC.put("endpoint", "/v1/models/{id}/versions");
         MDC.put("model_id", modelId);
-        var out = service.listVersions(modelId);
+        List<ModelVersionSummary> out = service.listVersions(modelId);
         log.info("registry.request");
         metrics.counter("chs_model_registry_requests_total", "endpoint", "/v1/models/{id}/versions", "status", "200")
                 .increment();

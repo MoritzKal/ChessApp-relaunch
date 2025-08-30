@@ -10,6 +10,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,21 +36,21 @@ public class ModelRegistryService {
     }
 
     public List<ModelSummary> listModels() {
-        var reg = get();
-        var out = new ArrayList<ModelSummary>();
-        for (var m : reg.models) {
+        Registry reg = get();
+        List<ModelSummary> out = new ArrayList<>();
+        for (Model m : reg.models) {
             out.add(new ModelSummary(m.modelId, m.displayName, m.tags == null ? List.of() : m.tags));
         }
         return out;
     }
 
     public List<ModelVersionSummary> listVersions(String modelId) {
-        var reg = get();
-        for (var m : reg.models) {
+        Registry reg = get();
+        for (Model m : reg.models) {
             if (m.modelId.equals(modelId)) {
-                var out = new ArrayList<ModelVersionSummary>();
+                List<ModelVersionSummary> out = new ArrayList<>();
                 if (m.versions != null) {
-                    for (var v : m.versions) {
+                    for (ModelVersion v : m.versions) {
                         out.add(new ModelVersionSummary(v.modelVersion, v.createdAt, v.metrics));
                     }
                 }
@@ -65,7 +66,7 @@ public class ModelRegistryService {
 
     private synchronized Registry tryLoad() {
         try {
-            var reg = load();
+            Registry reg = load();
             cached = reg;
             registerGauges(reg);
             return reg;
@@ -76,26 +77,26 @@ public class ModelRegistryService {
 
     private Registry load() throws IOException {
         if (registryPath != null && !registryPath.isBlank()) {
-            var f = new File(registryPath);
+            File f = new File(registryPath);
             if (!f.exists() || !f.isFile()) {
                 throw new IOException("Registry file not found: " + registryPath);
             }
-            try (var in = new FileInputStream(f)) {
+            try (FileInputStream in = new FileInputStream(f)) {
                 return mapper.readValue(in, Registry.class);
             }
         } else {
-            var res = new ClassPathResource("registry/registry.json");
+            ClassPathResource res = new ClassPathResource("registry/registry.json");
             if (!res.exists()) {
                 throw new IOException("Classpath registry not found at registry/registry.json");
             }
-            try (var in = res.getInputStream()) {
+            try (InputStream in = res.getInputStream()) {
                 return mapper.readValue(in, Registry.class);
             }
         }
     }
 
     private void registerGauges(Registry reg) {
-        for (var m : reg.models) {
+        for (Model m : reg.models) {
             int c = m.versions == null ? 0 : m.versions.size();
             Gauge.builder("chs_model_registry_versions_total", () -> c)
                     .tag("model_id", m.modelId)
