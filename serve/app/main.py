@@ -48,7 +48,10 @@ PREDICT_ERRORS = Counter(
     "chs_predict_errors_total", "Total predict errors", ["model_id", "model_version"]
 )
 PREDICT_LATENCY = Histogram(
-    "chs_predict_latency_seconds", "Prediction latency seconds", ["model_id", "model_version"]
+    "chs_predict_latency_seconds",
+    "Prediction latency seconds",
+    ["model_id", "model_version"],
+    buckets=[0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0],
 )
 PREDICT_LATENCY_MS = Summary(
     "chs_predict_latency_ms", "Prediction latency milliseconds", ["model_id", "model_version"]

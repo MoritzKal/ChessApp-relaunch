@@ -10,7 +10,7 @@
    - MLflow: http://localhost:5000
 
 ## Observability
-- **Prometheus** scrapt (zunächst) Prometheus selbst – später `api:8080`, `ml:8000`, `mlflow`.
+- **Prometheus** scrapes itself plus `serve:8001`, `api:8080`, and `ml:8000`. Prediction latency is exported via `chs_predict_latency_seconds` with buckets `[0.005,0.01,0.02,0.05,0.1,0.2,0.5,1.0]`. Use `make smoke-prom` to run basic queries like `sum by(job)(up)` and sample `chs_*` metrics.
 - **Loki + Promtail** sammeln Docker‑Logs aller Services (Labels: `container`, `service`).
 - **Grafana** hat fertige Datasources (Prometheus, Loki). Dashboards: Grafana → Dashboards → Ordner "ChessApp" → "ChessApp – Overview".
 

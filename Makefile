@@ -35,9 +35,12 @@ test: ## Run monitoring checks
 	python3 -m pip install -r infra/tests/requirements.txt
 	pytest infra/tests -q
 
-.PHONY: obs-e2e-test smoke-serve
+.PHONY: obs-e2e-test smoke-serve smoke-prom
 obs-e2e-test:
 	bash scripts/obs_e2e_test.sh
 
 smoke-serve: ## Smoke test serve and api
 	bash scripts/smoke_serve.sh
+
+smoke-prom: ## Smoke test Prometheus scraping
+	bash scripts/smoke_prom.sh
