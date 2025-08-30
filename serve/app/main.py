@@ -8,7 +8,7 @@ import chess
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from prometheus_client import Counter, Histogram, make_asgi_app
+from prometheus_client import Counter, Histogram, Summary, make_asgi_app
 
 from serve.model_loader import MODEL_RELOAD_FAILURES, ModelLoader
 from .metrics_stub import (
@@ -41,11 +41,19 @@ def log_event(event: str, **extra) -> None:
 
 # --- metrics -----------------------------------------------------
 PREDICT_REQUESTS = Counter(
-    "chs_predict_requests_total", "Total predict requests", ["username", "model_id", "status"]
+    "chs_predict_requests_total", "Total predict requests", ["model_id", "model_version"]
 )
-PREDICT_LATENCY = Histogram("chs_predict_latency_seconds", "Prediction latency seconds")
+PREDICT_ERRORS = Counter(
+    "chs_predict_errors_total", "Total predict errors", ["model_id", "model_version"]
+)
+PREDICT_LATENCY = Histogram(
+    "chs_predict_latency_seconds", "Prediction latency seconds", ["model_id", "model_version"]
+)
+PREDICT_LATENCY_MS = Summary(
+    "chs_predict_latency_ms", "Prediction latency milliseconds", ["model_id", "model_version"]
+)
 ILLEGAL_REQUESTS = Counter(
-    "chs_predict_illegal_requests_total", "Illegal predict requests"
+    "chs_predict_illegal_requests_total", "Illegal predict requests", ["model_id", "model_version"]
 )
 
 # baseline metrics so Prometheus queries yield zero instead of empty
@@ -115,79 +123,64 @@ def predict(req: PredictRequest, request: Request, response: Response) -> Predic
     start = time.perf_counter()
     run_id = request.headers.get("X-Run-Id")
     username = request.headers.get("X-Username", DEFAULT_USERNAME)
-    status = "ok"
     mid, ver, _ = loader.get_active()
+    labels = {"model_id": mid, "model_version": ver}
+    log_event(
+        "predict.request",
+        run_id=run_id,
+        username=username,
+        fen=req.fen,
+        model_id=mid,
+        model_version=ver,
+    )
+    PREDICT_REQUESTS.labels(**labels).inc()
     try:
-        log_event("predict.request", run_id=run_id, username=username, model_id=mid)
-        try:
-            board = chess.Board(fen=req.fen)
-        except Exception as e:
-            status = "error"
-            ILLEGAL_REQUESTS.inc()
-            PREDICT_REQUESTS.labels(username=username, model_id=mid, status=status).inc()
-            log_event(
-                "predict.failed",
-                run_id=run_id,
-                username=username,
-                model_id=mid,
-                model_version=ver,
-                reason="INVALID_FEN",
-                fen=req.fen,
-            )
-            return JSONResponse(
-                status_code=400,
-                content={
-                    "error": {
-                        "code": "INVALID_FEN",
-                        "message": str(e),
-                        "detail": {"fen": req.fen},
-                    }
-                },
-                headers={"X-Component": "serve"},
-            )
-
+        board = chess.Board(fen=req.fen)
         legal_moves = [m.uci() for m in board.legal_moves]
         if not legal_moves:
-            status = "error"
-            ILLEGAL_REQUESTS.inc()
-            PREDICT_REQUESTS.labels(username=username, model_id=mid, status=status).inc()
-            log_event(
-                "predict.failed",
-                run_id=run_id,
-                username=username,
-                model_id=mid,
-                model_version=ver,
-                reason="INVALID_FEN",
-                fen=req.fen,
-            )
-            return JSONResponse(
-                status_code=400,
-                content={
-                    "error": {
-                        "code": "INVALID_FEN",
-                        "message": "No legal moves available",
-                        "detail": {"fen": req.fen},
-                    }
-                },
-                headers={"X-Component": "serve"},
-            )
-
+            raise ValueError("No legal moves available")
         move = legal_moves[0]
         response.headers["X-Component"] = "serve"
-        PREDICT_REQUESTS.labels(username=username, model_id=mid, status=status).inc()
+        elapsed = time.perf_counter() - start
         log_event(
             "predict.completed",
             run_id=run_id,
             username=username,
             model_id=mid,
-            move=move,
+            model_version=ver,
+            top_move=move,
+            lat_ms=elapsed * 1000,
         )
         return PredictResponse(
             move=move, legal=legal_moves, modelId=mid, modelVersion=ver
         )
+    except Exception as e:
+        PREDICT_ERRORS.labels(**labels).inc()
+        ILLEGAL_REQUESTS.labels(**labels).inc()
+        log_event(
+            "predict.failed",
+            run_id=run_id,
+            username=username,
+            model_id=mid,
+            model_version=ver,
+            reason="INVALID_FEN",
+            fen=req.fen,
+        )
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": {
+                    "code": "INVALID_FEN",
+                    "message": str(e),
+                    "detail": {"fen": req.fen},
+                }
+            },
+            headers={"X-Component": "serve"},
+        )
     finally:
         elapsed = time.perf_counter() - start
-        PREDICT_LATENCY.observe(elapsed)
+        PREDICT_LATENCY.labels(**labels).observe(elapsed)
+        PREDICT_LATENCY_MS.labels(**labels).observe(elapsed * 1000)
 
 
 # Optional dataset API router
