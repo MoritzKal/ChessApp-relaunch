@@ -7,12 +7,8 @@ HOST="${HOST:-localhost}"
 # Serve health
 curl -fs "http://${HOST}:8001/health" >/dev/null
 
-# Serve metrics (optional prefix check)
-if curl -fs "http://${HOST}:8001/metrics" | grep -q '^chs_predict_'; then
-  echo "chs_predict_* metrics found"
-else
-  echo "chs_predict_* metrics missing"
-fi
+# Serve metrics (fail if chs_predict_* series missing)
+curl -fs "http://${HOST}:8001/metrics" | grep '^chs_predict_' >/dev/null
 
 # API health
 curl -fs "http://${HOST}:8080/v1/health" >/dev/null
