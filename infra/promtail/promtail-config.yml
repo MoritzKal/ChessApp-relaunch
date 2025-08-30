@@ -12,7 +12,7 @@ scrape_configs:
   - job_name: docker
     docker_sd_configs:
       - host: unix:///var/run/docker.sock
-        refresh_interval: 5s
+        refresh_interval: 1s
     relabel_configs:
       - source_labels: ['__meta_docker_container_name']
         regex: '/(.*)'
@@ -23,3 +23,25 @@ scrape_configs:
         target_label: project
     pipeline_stages:
       - docker: {}
+      - json:
+          expressions:
+            level: level
+            message: message
+            run_id: run_id
+            dataset_id: dataset_id
+            model_id: model_id
+            model_version: model_version
+            username: username
+            component: component
+      - labels:
+          level:
+          run_id:
+          dataset_id:
+          model_id:
+          model_version:
+          username:
+          component:
+  - job_name: 'serve'
+    static_configs:
+      - targets: ['serve:8001']
+    metrics_path: /metrics/

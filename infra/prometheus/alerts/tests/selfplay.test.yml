@@ -1,0 +1,18 @@
+rule_files:
+  - /etc/prometheus/alerts/selfplay.yml
+evaluation_interval: 1m
+tests:
+- interval: 1m
+  input_series:
+  - series: 'chs_selfplay_failures_total{}'
+    values: '0 0 0 1 2 3 3 3'
+  alert_rule_test:
+  - eval_time: 5m
+    alertname: SelfPlayFailuresHigh
+    exp_alerts:
+    - exp_labels:
+        severity: page
+        team: obs
+      exp_annotations:
+        summary: Self-Play Failures detected
+        description: Failures > 0 in the last 5m

@@ -2,11 +2,11 @@ import os, time, json, uuid, logging
 from datetime import datetime
 from typing import Optional, Dict, Any
 
-from fastapi import FastAPI, BackgroundTasks, HTTPException
+from fastapi import FastAPI, BackgroundTasks, HTTPException, Response, APIRouter
 from pydantic import BaseModel, Field
-from prometheus_client import Counter, Gauge, Histogram, CollectorRegistry, CONTENT_TYPE_LATEST, generate_latest
-from starlette.responses import Response
+from prometheus_client import Counter, Gauge, Histogram, CONTENT_TYPE_LATEST, CollectorRegistry, generate_latest, REGISTRY
 import mlflow
+from .metrics_registry import get_registry
 
 try:
     import boto3
@@ -42,16 +42,24 @@ def log_event(event: str, **extra):
     logger.info(json.dumps(payload))
 
 # --- Prometheus registry/metrics ---
-registry = CollectorRegistry()
+
+IS_MULTIPROC = bool(os.environ.get("PROMETHEUS_MULTIPROC_DIR"))
+try:
+    # Only defined in single-process mode
+    from .metrics_registry import REGISTRY as _SINGLE_REGISTRY  # type: ignore
+except Exception:
+    _SINGLE_REGISTRY = None
+
+_metric_kwargs = {"registry": _SINGLE_REGISTRY} if _SINGLE_REGISTRY is not None else {}
 
 RUNS_TOTAL = Counter("chs_training_runs_total", "Total training runs started",
-                     ["username", "component"], registry=registry)
+                     ["username", "component"], **_metric_kwargs)
 LOSS = Gauge("chs_training_loss", "Training loss (last step)",
-             ["run_id", "dataset_id", "username", "component"], registry=registry)
+             ["run_id", "dataset_id", "username", "component"], **_metric_kwargs)
 VAL_ACC = Gauge("chs_training_val_accuracy", "Validation accuracy (last step)",
-                ["run_id", "dataset_id", "username", "component"], registry=registry)
+                ["run_id", "dataset_id", "username", "component"], **_metric_kwargs)
 STEP_SEC = Histogram("chs_training_step_duration_seconds", "Per-step duration seconds",
-                     ["run_id", "dataset_id", "username", "component"], registry=registry)
+                     ["run_id", "dataset_id", "username", "component"], **_metric_kwargs)
 
 # --- In-memory run store (MVP) ---
 class RunState(BaseModel):
@@ -80,15 +88,44 @@ class TrainRequest(BaseModel):
     lr: float = 1e-3
 
 app = FastAPI(title="ChessApp ML", version="0.1")
+router = APIRouter(prefix="/internal", tags=["internal"])
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
 @app.get("/metrics")
+@app.get("/metrics/")
 def metrics():
-    data = generate_latest(registry)
+    # Expose metrics from the appropriate registry.
+    # - Multi-process: aggregate from default via MultiProcessCollector
+    # - Single-process: include both our custom registry and the default one
+    if IS_MULTIPROC:
+        data = generate_latest(get_registry())
+    else:
+        reg_training = get_registry()
+        data = generate_latest(reg_training) + generate_latest(REGISTRY)
     return Response(data, media_type=CONTENT_TYPE_LATEST)
+
+# Ensure baseline self-play counter exists so Prometheus queries don't return empty.
+try:
+    from .metrics_registry import chs_selfplay_games_total, labelset
+    chs_selfplay_games_total.labels(**labelset(run_id="bootstrap", policy="baseline", username=DEFAULT_USERNAME, component="ml")).inc(0)
+except Exception:
+    pass
+
+# Internal dataset metrics endpoint (A2)
+try:
+    from ml.service.metrics_dataset import MetricsPayload, observe as observe_dataset_metrics
+
+    @router.post("/dataset/metrics")
+    def dataset_metrics(payload: MetricsPayload):
+        observe_dataset_metrics(payload)
+        return {"ok": True}
+    app.include_router(router)
+except Exception as _e:
+    # If metrics module not available, we simply don't expose the route.
+    pass
 
 @app.post("/train")
 def train(req: TrainRequest, bg: BackgroundTasks):
@@ -195,3 +232,15 @@ def _training_loop(state: RunState, run_name: Optional[str]):
         state.status = "failed"
         state.finishedAt = datetime.utcnow().isoformat()+"Z"
         log_event("training.failed", run_id=state.runId, dataset_id=state.datasetId, error=str(e))
+try:
+    from app.selfplay.api import router as selfplay_router
+    app.include_router(selfplay_router)
+except Exception:
+    # dev-safe: falls Module nicht vorhanden/fehlerhaft, App bleibt startbar
+    pass
+try:
+    from app.dataset_api import router as dataset_router
+    app.include_router(dataset_router)
+except Exception:
+    # dev-safe: ML läuft auch ohne den Endpoint weiter
+    pass

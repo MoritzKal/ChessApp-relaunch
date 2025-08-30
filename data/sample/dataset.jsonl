@@ -1,0 +1,2 @@
+{"game_id": "s1", "ply": 1, "fen": "rn1qkbnr/ppp1pppp/8/3p4/3P4/5N2/PPP1PPPP/RNBQKB1R w KQkq - 1 3", "uci": "g2g3", "color": "white", "result": "draw", "time_category": "blitz", "white_rating": 1200, "black_rating": 1180}
+{"game_id": "s1", "ply": 2, "fen": "rn1qkbnr/ppp1pppp/8/3p4/3P4/5N2/PPP1PPPP/RNBQKB1R b KQkq - 1 3", "uci": "g8f6", "color": "black", "result": "draw", "time_category": "blitz", "white_rating": 1200, "black_rating": 1180}

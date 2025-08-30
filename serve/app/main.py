@@ -3,12 +3,21 @@ import logging
 import os
 import time
 from typing import List, Optional
+from fastapi import FastAPI, Response
 
 import chess
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from prometheus_client import Counter, Histogram, CONTENT_TYPE_LATEST, generate_latest
+from prometheus_client import Counter, Histogram, make_asgi_app
+from .metrics_stub import (
+    chs_selfplay_games_total,
+    chs_selfplay_wins_total,
+    chs_selfplay_failures_total,
+    chs_dataset_rows,
+    chs_dataset_invalid_rows_total,
+    chs_dataset_export_duration_seconds,
+)
 
 # --- Config ---
 ML_S3_ENDPOINT = os.getenv("ML_S3_ENDPOINT", "http://minio:9000")
@@ -16,7 +25,7 @@ AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 DEFAULT_USERNAME = os.getenv("DEFAULT_USERNAME", "M3NG00S3")
-
+app = FastAPI()
 # --- Logging ---
 logger = logging.getLogger("serve")
 logger.setLevel(logging.INFO)
@@ -75,17 +84,18 @@ class PredictResponse(BaseModel):
 current_model = ModelState(modelId="dummy", modelVersion="0")
 
 app = FastAPI(title="ChessApp Serve", version="0.1")
+app.mount("/metrics", make_asgi_app())
+
+# minimal baseline metric to prevent empty dashboards
+chs_dataset_rows.labels(dataset_id="bootstrap").inc()
+# Ensure a baseline series exists for self-play metrics so Prometheus queries
+# like increase(chs_selfplay_games_total[5m]) return 0 instead of empty result.
+chs_selfplay_games_total.labels(result="draw", run_id="bootstrap").inc(0)
 
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
-
-
-@app.get("/metrics")
-def metrics():
-    data = generate_latest()
-    return Response(data, media_type=CONTENT_TYPE_LATEST)
 
 
 @app.post("/models/load")
@@ -178,3 +188,10 @@ def predict(req: PredictRequest, request: Request, response: Response):
     finally:
         elapsed = time.perf_counter() - start
         PREDICT_LATENCY.observe(elapsed)
+
+try:
+    from app.dataset_api import router as dataset_router
+    app.include_router(dataset_router)
+except Exception:
+    # Fail-safe in DEV, damit der Serve trotzdem startet
+    pass

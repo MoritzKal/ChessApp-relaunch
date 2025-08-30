@@ -23,6 +23,9 @@ public abstract class AbstractIntegrationTest {
         registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
         registry.add("spring.flyway.enabled", () -> true);
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
+        // Prefer native Postgres enums for @Enumerated fields
+        registry.add("spring.jpa.properties.hibernate.prefer_native_enum_types", () -> "true");
+        registry.add("spring.jpa.properties.hibernate.type.preferred_enum_jdbc_type", () -> "postgres_enum");
     }
 }
 

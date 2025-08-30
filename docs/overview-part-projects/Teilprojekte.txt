@@ -1,0 +1,59 @@
+2) Aufspaltung in Teilprojekte (inkl. Mini-Roadmaps)
+
+Gemeinsame Regeln: /v1 bleibt abwärtskompatibel (Attribute hinzufügen ok; Breaking → RFC & /v2), chs_*-Metriken, JSON-Logs mit MDC (run_id, dataset_id, model_id, username, component), Dashboard „ChessApp – Overview“ stets pflegen.
+
+TP-A: Backend/API (Spring)
+
+P0: Trainings-Poller (RUNNING→SUCCEEDED/FAILED, metrics/reportUri persistieren).
+
+P1: Games-Read API (List/Detail/Positions) stabilisieren; Pagination/Filter (username, since, result).
+
+P1: Endpoint-Policy & Contract-Tests (Controller-IT) durchziehen.
+
+Outcome: stabile /v1-Schicht für Frontend, ML & Serving.
+
+TP-B: ML/Training (FastAPI + MLflow)
+
+P0: „Sim-Train“ veredeln (deterministische Kurven + Artefakte garantiert).
+
+P1: Training Params Presets & Report anreichern (loss curves, best metrics).
+
+P2: (Vorbereitung) echtes PyTorch-Train (kleines Policy-Net), nur wenn freigegeben.
+
+TP-C: Serving (FastAPI Inference)
+
+P0: API-Timer spiegeln (optional) + bessere Fehlertexte (FEN-Validation).
+
+P1: „Model Loader“ tolerant mit MinIO-Artefakten (wenn Registry da ist).
+
+P2: Caching/Latency-Profil, Prometheus-Buckets feintunen.
+
+(Je nach Teamgröße darf B+C als „ML/Serving“ zusammengeführt werden.)
+
+TP-D: Data Engineering (Ingest & Datasets)
+
+P0: Online-Ingest (chess.com API) hinter Feature-Flag; Rate-Limit/Backoff.
+
+P1: Dataset-Stats (Größen, Verteilungen) vorbereiten (später fürs Dashboard/UI).
+
+P2: Optionale PGN-Edgecases/ECO-Tags robuster machen.
+
+TP-E: Infra/Observability/DevSecOps
+
+P0: Secrets-Härtung & Policies (MinIO, Grafana); ENV-Separation DEV/STAGING/PROD.
+
+P1: CI (GitHub Actions): Build & Tests (API, ML, Serve), Compose-Smoke.
+
+P2: Grafana-Panel-Links (MLflow/Loki), Bucket-Retention & Runbooks finalisieren.
+
+TP-F: Dokumentation & BA Enablement
+
+P0: FAQ/Glossar pflegen; User-Flows erweitern; Role-Headers aktuell halten.
+
+P1: „How-To Troubleshoot“ Kurzleitfaden (Loki/Prometheus/Grafana).
+
+P2: Mini-Guides „Wie erkläre ich ChessApp in 2 Minuten?“.
+
+TP-G: Frontend/UI (Vue/Vuetify) – zurückgestellt bis API „feature-complete“
+
+Prep (ohne Implementierung): UI-Spez/Mockups, API-Vertragsspiegel, Metrik-Overlays-Plan.

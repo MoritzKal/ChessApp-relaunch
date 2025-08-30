@@ -1,0 +1,12 @@
+groups:
+- name: selfplay
+  rules:
+  - alert: SelfPlayFailuresHigh
+    expr: sum(rate(chs_selfplay_failures_total[5m])) > 0
+    for: 2m
+    labels:
+      severity: page
+      team: obs
+    annotations:
+      summary: "Self-Play Failures detected"
+      description: "Failures > 0 in the last 5m"
