@@ -1,0 +1,29 @@
+groups:
+  - name: predict-by-version
+    rules:
+      - alert: PredictHighErrorRate
+        expr: sum by(model_id,model_version)(rate(chs_predict_errors_total[5m])) > 0.2
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: "High predict error rate"
+          description: "model={{ $labels.model_id }} v{{ $labels.model_version }} > 0.2/s (5m)"
+
+      - alert: PredictLatencyP95High
+        expr: histogram_quantile(
+                0.95,
+                sum by (le,model_id,model_version)(rate(chs_predict_latency_ms_bucket[5m]))
+              ) > 150
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: "Predict p95 latency high"
+          description: "model={{ $labels.model_id }} v{{ $labels.model_version }} p95>150ms (10m)"
+
+      - alert: ModelReloadFailuresSpike
+        expr: increase(chs_model_reload_failures_total[30m]) > 3
+        for: 0m
+        labels: {severity: critical}
+        annotations:
+          summary: "Model reload failures spike"
+          description: "Recent reload failures for model={{ $labels.model_id }} v{{ $labels.model_version }}"
