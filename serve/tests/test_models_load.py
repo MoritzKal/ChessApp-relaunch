@@ -1,21 +1,25 @@
 import os
+import os
+import os
 import pytest
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 
 from serve.app.main import app
 
 
 @pytest.mark.asyncio
 async def test_models_load_dummy():
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    transport = ASGITransport(app=app, raise_app_exceptions=False)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
         resp = await ac.post("/models/load", json={})
     assert resp.status_code == 200
-    assert resp.json()["modelId"] == "dummy"
+    assert resp.json()["modelId"] == "default"
 
 
 @pytest.mark.asyncio
 async def test_models_load_artifact_uri_tolerance():
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    transport = ASGITransport(app=app, raise_app_exceptions=False)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
         resp = await ac.post(
             "/models/load", json={"artifactUri": "s3://bucket/key", "modelId": "foo"}
         )
@@ -28,7 +32,8 @@ async def test_models_load_with_minio():
     uri = os.getenv("MINIO_MODEL_URI")
     if not uri:
         pytest.skip("MINIO_MODEL_URI not set")
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    transport = ASGITransport(app=app, raise_app_exceptions=False)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
         resp = await ac.post("/models/load", json={"artifactUri": uri, "modelId": "x"})
     assert resp.status_code == 200
-    assert resp.json()["modelId"] != "dummy"
+    assert resp.json()["modelId"] != "default"
