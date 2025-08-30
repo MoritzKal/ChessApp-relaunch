@@ -1,15 +1,16 @@
-import json
 import logging
 import os
 import time
 from typing import List, Optional
-from fastapi import FastAPI, Response
 
 import chess
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from prometheus_client import Counter, Histogram, make_asgi_app
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+
+from .logging_config import bind_context, reset_context, setup_logging
+from .metrics import observe_predict, inc_model_loaded, inc_reload_failure
 from .metrics_stub import (
     chs_selfplay_games_total,
     chs_selfplay_wins_total,
@@ -25,37 +26,9 @@ AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 DEFAULT_USERNAME = os.getenv("DEFAULT_USERNAME", "M3NG00S3")
-app = FastAPI()
-# --- Logging ---
+
+setup_logging()
 logger = logging.getLogger("serve")
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler()
-try:
-    from python_json_logger import jsonlogger
-    handler.setFormatter(jsonlogger.JsonFormatter())
-except Exception:
-    handler.setFormatter(logging.Formatter("%(message)s"))
-logger.handlers = [handler]
-
-
-def log_event(event: str, **extra):
-    payload = {"event": event, "component": "serve"}
-    payload.update({k: v for k, v in extra.items() if v is not None})
-    logger.info(json.dumps(payload))
-
-
-# --- Metrics ---
-PREDICT_REQUESTS = Counter(
-    "chs_predict_requests_total",
-    "Total predict requests",
-    ["username", "model_id", "status"],
-)
-PREDICT_LATENCY = Histogram(
-    "chs_predict_latency_seconds", "Prediction latency seconds"
-)
-ILLEGAL_REQUESTS = Counter(
-    "chs_predict_illegal_requests_total", "Illegal predict requests"
-)
 
 
 # --- Models ---
@@ -81,16 +54,55 @@ class PredictResponse(BaseModel):
     modelVersion: str
 
 
-current_model = ModelState(modelId="dummy", modelVersion="0")
+current_model = ModelState(modelId="default", modelVersion="0")
+inc_model_loaded("default", "0")
 
 app = FastAPI(title="ChessApp Serve", version="0.1")
-app.mount("/metrics", make_asgi_app())
 
-# minimal baseline metric to prevent empty dashboards
+# baseline metrics to avoid empty queries
 chs_dataset_rows.labels(dataset_id="bootstrap").inc()
-# Ensure a baseline series exists for self-play metrics so Prometheus queries
-# like increase(chs_selfplay_games_total[5m]) return 0 instead of empty result.
 chs_selfplay_games_total.labels(result="draw", run_id="bootstrap").inc(0)
+
+
+@app.middleware("http")
+async def logging_middleware(request: Request, call_next):
+    try:
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        model_id = (
+            body.get("model_id")
+            or body.get("modelId")
+            or current_model.modelId
+            or "default"
+        )
+        model_version = (
+            body.get("model_version")
+            or body.get("modelVersion")
+            or current_model.modelVersion
+            or "0"
+        )
+        bind_context(
+            run_id=request.headers.get("X-Run-Id"),
+            dataset_id=request.headers.get("X-Dataset-Id"),
+            username=request.headers.get("X-Username", DEFAULT_USERNAME),
+            path=request.url.path,
+            method=request.method,
+            model_id=model_id,
+            model_version=model_version,
+        )
+        try:
+            response = await call_next(request)
+            bind_context(status=response.status_code)
+            logger.info("request")
+            return response
+        except Exception:
+            bind_context(status=500)
+            logger.info("request")
+            raise
+    finally:
+        reset_context()
 
 
 @app.get("/health")
@@ -115,82 +127,78 @@ def models_load(req: LoadModelRequest):
             )
             s3.download_file(bucket, key, "/tmp/model.weights")
             current_model = ModelState(
-                modelId=req.modelId or "model", modelVersion="1", artifactUri=req.artifactUri
+                modelId=req.modelId or "model",
+                modelVersion="1",
+                artifactUri=req.artifactUri,
             )
         except Exception:
-            current_model = ModelState(modelId="dummy", modelVersion="0")
+            current_model = ModelState(modelId="default", modelVersion="0")
     else:
-        current_model = ModelState(modelId="dummy", modelVersion="0")
+        current_model = ModelState(modelId="default", modelVersion="0")
+    inc_model_loaded(current_model.modelId, current_model.modelVersion)
     return current_model.dict()
 
 
-@app.post("/predict", response_model=PredictResponse)
-def predict(req: PredictRequest, request: Request, response: Response):
-    start = time.perf_counter()
-    run_id = request.headers.get("X-Run-Id")
-    username = request.headers.get("X-Username", DEFAULT_USERNAME)
-    status = "ok"
+def reload_model() -> None:
+    """Placeholder for model reload."""
     try:
-        log_event("predict.request", run_id=run_id, username=username, model_id=current_model.modelId)
+        # TODO: implement model reload
+        pass
+    except Exception as exc:  # pragma: no cover - placeholder
+        inc_reload_failure(current_model.modelId, current_model.modelVersion, str(exc))
+        raise
+
+
+@app.post("/predict", response_model=PredictResponse)
+def predict(req: PredictRequest, response: Response):
+    start = time.perf_counter()
+    model_id = current_model.modelId or "default"
+    model_version = current_model.modelVersion or "0"
+    status_code = 200
+    error_code = None
+    try:
         try:
             board = chess.Board(fen=req.fen)
         except Exception:
-            status = "error"
-            ILLEGAL_REQUESTS.inc()
-            PREDICT_REQUESTS.labels(username=username, model_id=current_model.modelId, status=status).inc()
-            log_event(
-                "predict.failed",
-                run_id=run_id,
-                username=username,
-                model_id=current_model.modelId,
-                error="invalid_fen",
-            )
+            status_code = 400
             return JSONResponse(
-                status_code=400,
+                status_code=status_code,
                 content={"error": "invalid_fen"},
                 headers={"X-Component": "serve"},
             )
-
         legal_moves = [m.uci() for m in board.legal_moves]
         if not legal_moves:
-            status = "error"
-            ILLEGAL_REQUESTS.inc()
-            PREDICT_REQUESTS.labels(username=username, model_id=current_model.modelId, status=status).inc()
-            log_event(
-                "predict.failed",
-                run_id=run_id,
-                username=username,
-                model_id=current_model.modelId,
-                error="invalid_fen",
-            )
+            status_code = 400
             return JSONResponse(
-                status_code=400,
+                status_code=status_code,
                 content={"error": "invalid_fen"},
                 headers={"X-Component": "serve"},
             )
-
         move = legal_moves[0]
         response.headers["X-Component"] = "serve"
-        PREDICT_REQUESTS.labels(username=username, model_id=current_model.modelId, status=status).inc()
-        log_event(
-            "predict.completed",
-            run_id=run_id,
-            username=username,
-            model_id=current_model.modelId,
-            move=move,
-        )
         return {
             "move": move,
             "legal": legal_moves,
-            "modelId": current_model.modelId,
-            "modelVersion": current_model.modelVersion,
+            "modelId": model_id,
+            "modelVersion": model_version,
         }
+    except Exception:
+        status_code = 500
+        error_code = "exception"
+        raise
     finally:
-        elapsed = time.perf_counter() - start
-        PREDICT_LATENCY.observe(elapsed)
+        ms = (time.perf_counter() - start) * 1000
+        observe_predict(ms, model_id, model_version, status_code, error_code)
+
+
+@app.get("/metrics")
+def metrics():
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
 
 try:
     from app.dataset_api import router as dataset_router
+
     app.include_router(dataset_router)
 except Exception:
     # Fail-safe in DEV, damit der Serve trotzdem startet
