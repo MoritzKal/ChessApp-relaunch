@@ -203,6 +203,9 @@ services:
       retries: 10
     ports:
       - "8000:8000"
+    volumes:
+      - ../data:/app/ml/data
+      - ../out:/app/ml/out
     networks: [ chs_net ]
     restart: unless-stopped
 

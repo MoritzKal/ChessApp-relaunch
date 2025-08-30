@@ -10,8 +10,8 @@ ENV PYTHONPATH=/app:${PYTHONPATH}
 ENV PROMETHEUS_MULTIPROC_DIR=/tmp/chs_prom
 RUN mkdir -p /tmp/chs_prom
 
-COPY ml/requirements.txt /app/ml/requirements.txt
-RUN pip install --no-cache-dir -r /app/ml/requirements.txt
+COPY ml/requirements.txt requirements.txt
+RUN python3 -m pip install --no-cache-dir -r requirements.txt
 
 COPY ml/app /app/app
 # Include tests for in-container pytest runs
