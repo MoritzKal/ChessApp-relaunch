@@ -78,11 +78,13 @@ class ServingControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void predict_error_path() {
+    void predict_error_path() throws InterruptedException {
         serve.enqueue(new MockResponse().setResponseCode(400));
         ResponseEntity<String> resp = rest.postForEntity("/v1/predict",
                 new PredictRequest("bad"), String.class);
         assertThat(resp.getStatusCode().value()).isEqualTo(400);
+        // Drain the request so following tests don't read this one
+        serve.takeRequest();
     }
 
     @Test

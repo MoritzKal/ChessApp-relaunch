@@ -95,11 +95,24 @@ def health():
     return {"status": "ok"}
 
 @app.get("/metrics")
+@app.get("/metrics/")
 def metrics():
-    # Expose both training registry and default registry (dataset metrics)
-    data_training = generate_latest(registry)
-    data_default = generate_latest(REGISTRY)
-    return Response(data_training + data_default, media_type=CONTENT_TYPE_LATEST)
+    # Expose metrics from the appropriate registry.
+    # - Multi-process: aggregate from default via MultiProcessCollector
+    # - Single-process: include both our custom registry and the default one
+    if IS_MULTIPROC:
+        data = generate_latest(get_registry())
+    else:
+        reg_training = get_registry()
+        data = generate_latest(reg_training) + generate_latest(REGISTRY)
+    return Response(data, media_type=CONTENT_TYPE_LATEST)
+
+# Ensure baseline self-play counter exists so Prometheus queries don't return empty.
+try:
+    from .metrics_registry import chs_selfplay_games_total, labelset
+    chs_selfplay_games_total.labels(**labelset(run_id="bootstrap", policy="baseline", username=DEFAULT_USERNAME, component="ml")).inc(0)
+except Exception:
+    pass
 
 # Internal dataset metrics endpoint (A2)
 try:
@@ -219,3 +232,15 @@ def _training_loop(state: RunState, run_name: Optional[str]):
         state.status = "failed"
         state.finishedAt = datetime.utcnow().isoformat()+"Z"
         log_event("training.failed", run_id=state.runId, dataset_id=state.datasetId, error=str(e))
+try:
+    from app.selfplay.api import router as selfplay_router
+    app.include_router(selfplay_router)
+except Exception:
+    # dev-safe: falls Module nicht vorhanden/fehlerhaft, App bleibt startbar
+    pass
+try:
+    from app.dataset_api import router as dataset_router
+    app.include_router(dataset_router)
+except Exception:
+    # dev-safe: ML läuft auch ohne den Endpoint weiter
+    pass

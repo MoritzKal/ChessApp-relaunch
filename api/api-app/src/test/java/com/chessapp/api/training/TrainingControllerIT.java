@@ -8,20 +8,26 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 
 import java.util.Map;
 import java.util.UUID;
 
-@SpringBootTest(properties = {"logging.config=classpath:logback-spring.xml"}, classes = com.chessapp.api.codex.CodexApplication.class)
+@SpringBootTest(
+        properties = {"logging.config=classpath:logback-spring.xml"},
+        classes = com.chessapp.api.codex.CodexApplication.class,
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
+)
 class TrainingControllerIT extends AbstractIntegrationTest {
 
     @TestConfiguration
     static class Cfg {
         @Bean
+        @Primary
         MlClient fake() {
             return new MlClient() {
                 @Override public void postTrain(UUID runId, UUID datasetId, Map<String,Object> params) { /* no-op */ }
@@ -36,30 +42,26 @@ class TrainingControllerIT extends AbstractIntegrationTest {
     TrainingService service;
 
     @Autowired
-    org.springframework.context.ApplicationContext ctx;
+    TestRestTemplate rest;
 
     @Test
     void start_and_status_ok() {
-        WebTestClient client = WebTestClient.bindToApplicationContext(ctx).build();
-
         var req = new TrainingStartRequest(null, "policy_tiny", Map.of("epochs",2,"stepsPerEpoch",3,"lr",1e-3));
-        var startResp = client.post().uri("/v1/trainings")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(req)
-                .exchange()
-                .expectStatus().isAccepted()
-                .expectBody(new ParameterizedTypeReference<Map<String,Object>>() {})
-                .returnResult()
-                .getResponseBody();
-        String runId = String.valueOf(startResp.get("runId"));
+        var startResp = rest.postForEntity("/v1/trainings", req, Map.class);
+        org.assertj.core.api.Assertions.assertThat(startResp.getStatusCode().value()).isEqualTo(202);
+        @SuppressWarnings("unchecked")
+        String runId = String.valueOf(((Map<String,Object>) startResp.getBody()).get("runId"));
 
-        client.get().uri("/v1/trainings/{id}", runId)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.status").isEqualTo("succeeded")
-                .jsonPath("$.metrics.loss").exists()
-                .jsonPath("$.metrics.val_acc").exists();
+        var statusResp = rest.getForEntity("/v1/trainings/{id}", Map.class, runId);
+        org.assertj.core.api.Assertions.assertThat(statusResp.getStatusCode().value()).isEqualTo(200);
+        @SuppressWarnings("unchecked")
+        Map<String,Object> body = (Map<String,Object>) statusResp.getBody();
+        org.assertj.core.api.Assertions.assertThat(body.get("status")).isEqualTo("succeeded");
+        @SuppressWarnings("unchecked")
+        Map<String,Object> metrics = (Map<String,Object>) body.get("metrics");
+        org.assertj.core.api.Assertions.assertThat(metrics).isNotNull();
+        org.assertj.core.api.Assertions.assertThat(metrics.containsKey("loss")).isTrue();
+        org.assertj.core.api.Assertions.assertThat(metrics.containsKey("val_acc")).isTrue();
     }
 }
 
