@@ -8,7 +8,8 @@ Quick start for running the ChessApp components locally without touching existin
 docker compose up -d db minio mlflow prometheus loki grafana
 mvn -q -pl api spring-boot:run -Dspring-boot.run.profiles=codex
 npm --prefix frontend run dev -- --mode codex
-uvicorn ml.app:app --reload --port 8001
+# ML-Training (FastAPI) lokal starten (einheitlicher Importpfad `app.*`)
+uvicorn app.main:app --reload --port 8001
 ```
 
 ## Stop

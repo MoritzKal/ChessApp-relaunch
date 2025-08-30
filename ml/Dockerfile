@@ -4,14 +4,17 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 WORKDIR /app
+
+# Ensure stable imports: top-level /app on sys.path
+ENV PYTHONPATH=/app:${PYTHONPATH}
+ENV PROMETHEUS_MULTIPROC_DIR=/tmp/chs_prom
+RUN mkdir -p /tmp/chs_prom
+
 COPY ml/requirements.txt requirements.txt
 RUN python3 -m pip install --no-cache-dir -r requirements.txt
 
-# Include full ml tree (app, service, tools, tests)
-COPY ml /app/ml
-
-# Ensure Python can import from /app/ml while working from /app
-ENV PYTHONPATH=/app/ml
-WORKDIR /app
+COPY ml/app /app/app
+# Include tests for in-container pytest runs
+COPY ml/tests /app/ml/tests
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
