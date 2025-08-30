@@ -39,3 +39,11 @@ Siehe `docs/offline-ingest.md`:
 - API im Profil `codex` starten (enthält lokale S3-Defaults)
 - Offline-Ingest via `curl` starten und Status pollen
 - `reportUri` prüfen (`s3://reports/ingest/<runId>/report.json`)
+
+## Windows Notes (Git-Bash)
+- Git-Bash rewritet absolute UNIX-Pfade (MSYS Path Conversion). Vor Docker-Kommandos setzen:
+  - `export MSYS_NO_PATHCONV=1`
+  - `export MSYS2_ARG_CONV_EXCL="*"`
+- Für ML-Dataset-Export nutze das Skript `scripts/a2_verify_min.sh` oder folgenden Befehl:
+  - `docker compose -f infra/docker-compose.yml exec -T ml sh -lc 'python ml/tools/dataset_export.py --input /app/ml/data/sample --output /app/ml/out/a2/compact.parquet --dataset-id ds_v0_local --manifest /app/ml/out/a2/manifest.json --push-metrics http://ml:8000/internal/dataset/metrics'`
+- Details: `docs/troubleshooting/WINDOWS_GIT_BASH.md`

@@ -2,9 +2,9 @@ import os, time, json, uuid, logging
 from datetime import datetime
 from typing import Optional, Dict, Any
 
-from fastapi import FastAPI, BackgroundTasks, HTTPException
+from fastapi import FastAPI, BackgroundTasks, HTTPException, APIRouter
 from pydantic import BaseModel, Field
-from prometheus_client import Counter, Gauge, Histogram, CollectorRegistry, CONTENT_TYPE_LATEST, generate_latest
+from prometheus_client import Counter, Gauge, Histogram, CollectorRegistry, CONTENT_TYPE_LATEST, generate_latest, REGISTRY
 from starlette.responses import Response
 import mlflow
 
@@ -80,6 +80,7 @@ class TrainRequest(BaseModel):
     lr: float = 1e-3
 
 app = FastAPI(title="ChessApp ML", version="0.1")
+router = APIRouter(prefix="/internal", tags=["internal"])
 
 @app.get("/health")
 def health():
@@ -87,8 +88,23 @@ def health():
 
 @app.get("/metrics")
 def metrics():
-    data = generate_latest(registry)
-    return Response(data, media_type=CONTENT_TYPE_LATEST)
+    # Expose both training registry and default registry (dataset metrics)
+    data_training = generate_latest(registry)
+    data_default = generate_latest(REGISTRY)
+    return Response(data_training + data_default, media_type=CONTENT_TYPE_LATEST)
+
+# Internal dataset metrics endpoint (A2)
+try:
+    from ml.service.metrics_dataset import MetricsPayload, observe as observe_dataset_metrics
+
+    @router.post("/dataset/metrics")
+    def dataset_metrics(payload: MetricsPayload):
+        observe_dataset_metrics(payload)
+        return {"ok": True}
+    app.include_router(router)
+except Exception as _e:
+    # If metrics module not available, we simply don't expose the route.
+    pass
 
 @app.post("/train")
 def train(req: TrainRequest, bg: BackgroundTasks):
