@@ -134,20 +134,30 @@ def predict(req: PredictRequest, request: Request, response: Response):
         log_event("predict.request", run_id=run_id, username=username, model_id=current_model.modelId)
         try:
             board = chess.Board(fen=req.fen)
-        except Exception:
+        except Exception as e:
             status = "error"
             ILLEGAL_REQUESTS.inc()
-            PREDICT_REQUESTS.labels(username=username, model_id=current_model.modelId, status=status).inc()
+            PREDICT_REQUESTS.labels(
+                username=username, model_id=current_model.modelId, status=status
+            ).inc()
             log_event(
                 "predict.failed",
                 run_id=run_id,
                 username=username,
                 model_id=current_model.modelId,
-                error="invalid_fen",
+                model_version=current_model.modelVersion,
+                reason="INVALID_FEN",
+                fen=req.fen,
             )
             return JSONResponse(
                 status_code=400,
-                content={"error": "invalid_fen"},
+                content={
+                    "error": {
+                        "code": "INVALID_FEN",
+                        "message": str(e),
+                        "detail": {"fen": req.fen},
+                    }
+                },
                 headers={"X-Component": "serve"},
             )
 
@@ -155,17 +165,27 @@ def predict(req: PredictRequest, request: Request, response: Response):
         if not legal_moves:
             status = "error"
             ILLEGAL_REQUESTS.inc()
-            PREDICT_REQUESTS.labels(username=username, model_id=current_model.modelId, status=status).inc()
+            PREDICT_REQUESTS.labels(
+                username=username, model_id=current_model.modelId, status=status
+            ).inc()
             log_event(
                 "predict.failed",
                 run_id=run_id,
                 username=username,
                 model_id=current_model.modelId,
-                error="invalid_fen",
+                model_version=current_model.modelVersion,
+                reason="INVALID_FEN",
+                fen=req.fen,
             )
             return JSONResponse(
                 status_code=400,
-                content={"error": "invalid_fen"},
+                content={
+                    "error": {
+                        "code": "INVALID_FEN",
+                        "message": "No legal moves available",
+                        "detail": {"fen": req.fen},
+                    }
+                },
                 headers={"X-Component": "serve"},
             )
 
