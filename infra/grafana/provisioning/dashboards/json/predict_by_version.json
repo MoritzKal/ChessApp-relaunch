@@ -1,0 +1,167 @@
+{
+  "id": null,
+  "uid": "predict-by-version",
+  "title": "Predict by Version",
+  "tags": ["serve"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-6h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "model_id",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "refresh": 1,
+        "query": "label_values(chs_predict_latency_ms_bucket, model_id)"
+      },
+      {
+        "name": "model_version",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "refresh": 1,
+        "query": "label_values(chs_predict_latency_ms_bucket{model_id=\"$model_id\"}, model_version)"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Latency p50",
+      "gridPos": { "x": 0, "y": 0, "w": 8, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "links": [
+            { "title": "MLflow", "url": "mlflow://models/{{model_id}}/versions/{{model_version}}" },
+            { "title": "Logs", "url": "/loki/explore?query={component=\"serve\", model_id=\"$model_id\", model_version=\"$model_version\"}%20|%20json" }
+          ]
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.50, sum by (le,model_id,model_version)(rate(chs_predict_latency_ms_bucket{model_id=\"$model_id\",model_version=\"$model_version\"}[$__rate_interval])))",
+          "legendFormat": "{{model_id}} v{{model_version}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency p95",
+      "gridPos": { "x": 8, "y": 0, "w": 8, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "links": [
+            { "title": "MLflow", "url": "mlflow://models/{{model_id}}/versions/{{model_version}}" },
+            { "title": "Logs", "url": "/loki/explore?query={component=\"serve\", model_id=\"$model_id\", model_version=\"$model_version\"}%20|%20json" }
+          ]
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.95, sum by (le,model_id,model_version)(rate(chs_predict_latency_ms_bucket{model_id=\"$model_id\",model_version=\"$model_version\"}[$__rate_interval])))",
+          "legendFormat": "{{model_id}} v{{model_version}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency p99",
+      "gridPos": { "x": 16, "y": 0, "w": 8, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "links": [
+            { "title": "MLflow", "url": "mlflow://models/{{model_id}}/versions/{{model_version}}" },
+            { "title": "Logs", "url": "/loki/explore?query={component=\"serve\", model_id=\"$model_id\", model_version=\"$model_version\"}%20|%20json" }
+          ]
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.99, sum by (le,model_id,model_version)(rate(chs_predict_latency_ms_bucket{model_id=\"$model_id\",model_version=\"$model_version\"}[$__rate_interval])))",
+          "legendFormat": "{{model_id}} v{{model_version}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Error Rate",
+      "gridPos": { "x": 0, "y": 8, "w": 24, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "links": [
+            { "title": "MLflow", "url": "mlflow://models/{{model_id}}/versions/{{model_version}}" },
+            { "title": "Logs", "url": "/loki/explore?query={component=\"serve\", model_id=\"$model_id\", model_version=\"$model_version\"}%20|%20json" }
+          ]
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by(model_id,model_version)(rate(chs_predict_errors_total{model_id=\"$model_id\",model_version=\"$model_version\"}[$__rate_interval]))",
+          "legendFormat": "{{model_id}} v{{model_version}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Models Loaded (24h)",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "links": [
+            { "title": "MLflow", "url": "mlflow://models/{{model_id}}/versions/{{model_version}}" },
+            { "title": "Logs", "url": "/loki/explore?query={component=\"serve\", model_id=\"$model_id\", model_version=\"$model_version\"}%20|%20json" }
+          ]
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by(model_id,model_version)(increase(chs_models_loaded_total{model_id=\"$model_id\",model_version=\"$model_version\"}[24h]))",
+          "legendFormat": "{{model_id}} v{{model_version}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Reload Failures (24h)",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "links": [
+            { "title": "MLflow", "url": "mlflow://models/{{model_id}}/versions/{{model_version}}" },
+            { "title": "Logs", "url": "/loki/explore?query={component=\"serve\", model_id=\"$model_id\", model_version=\"$model_version\"}%20|%20json" }
+          ]
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by(model_id,model_version,reason)(increase(chs_model_reload_failures_total{model_id=\"$model_id\",model_version=\"$model_version\"}[24h]))",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}

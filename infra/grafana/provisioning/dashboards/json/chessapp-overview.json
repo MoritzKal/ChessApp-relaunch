@@ -131,6 +131,12 @@
           "refId": "A"
         }
       ]
+    },
+    {
+      "type": "text",
+      "title": "Predict by Version \u2192",
+      "gridPos": { "x": 0, "y": 37, "w": 6, "h": 4 },
+      "options": { "content": "[Predict by Version \u2192](/d/predict-by-version)" }
     }
   ]
 }
