@@ -186,8 +186,8 @@ services:
 
   ml:
     build:
-      context: ../
-      dockerfile: ml/Dockerfile
+      context: ../ml
+      dockerfile: Dockerfile
     working_dir: /app
     environment:
       MLFLOW_TRACKING_URI: http://mlflow:5000
