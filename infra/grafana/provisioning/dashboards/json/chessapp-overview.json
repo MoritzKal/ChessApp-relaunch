@@ -92,14 +92,14 @@
     {
       "uid": "serveReq",
       "type": "timeseries",
-      "title": "Serve Requests/min (by status)",
+      "title": "Serve Requests/min",
       "gridPos": { "x": 0, "y": 29, "w": 8, "h": 8 },
       "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum by (status) (rate(chs_predict_requests_total[1m]))",
-          "legendFormat": "{{status}}",
+          "expr": "sum(rate(chs_predict_requests_total[1m]))",
+          "legendFormat": "total",
           "refId": "A"
         }
       ]

@@ -71,7 +71,7 @@ class ServingControllerIT extends AbstractIntegrationTest {
         assertThat(req.getHeader("X-Component")).isEqualTo("serve");
 
         Counter c = meterRegistry.find("chs_predict_requests_total")
-                .tags("username", "M3NG00S3", "model_id", "dummy", "status", "ok")
+                .tags("model_id", "dummy", "model_version", "0")
                 .counter();
         assertThat(c).isNotNull();
         assertThat(c.count()).isEqualTo(1.0);
