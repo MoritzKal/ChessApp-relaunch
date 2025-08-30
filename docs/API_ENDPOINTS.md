@@ -21,3 +21,5 @@
 ## Serving
 - `POST /v1/predict` – Proxy zu Serve `/predict`, Request `{ fen }`, Response `{ move, legal, modelId, modelVersion }`
 - `POST /v1/models/load` – Proxy zu Serve `/models/load` (Dummy/Artefakt-Laden)
+
+> Observability-Instrumentierung fügt Metriken & Logs hinzu, **ohne** den `/v1`-Request/Response-Contract zu verändern.
