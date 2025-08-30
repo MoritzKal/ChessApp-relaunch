@@ -39,9 +39,10 @@ def _log(event: str, **extra) -> None:
 class ModelLoader:
     """Load and manage predictors by model id and version."""
 
-    def __init__(self) -> None:
+    def __init__(self, invalidate_cache: Optional[Callable[[], None]] = None) -> None:
         self.root = os.getenv("SERVE_MODEL_ROOT", "/models")
         self._active: Optional[Tuple[str, str, Callable]] = None
+        self._invalidate_cache = invalidate_cache
 
     def load(self, model_id: str, model_version: str) -> None:
         """Load model artifacts; fall back to stub if missing."""
@@ -80,6 +81,8 @@ class ModelLoader:
             )
 
         self._active = (model_id, model_version, predictor)
+        if self._invalidate_cache:
+            self._invalidate_cache()
 
     def get_active(self) -> Tuple[str, str, Callable]:
         if not self._active:

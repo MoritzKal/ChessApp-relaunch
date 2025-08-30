@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import time
+from functools import lru_cache
 from typing import Dict, List
 
 import chess
@@ -55,16 +56,57 @@ PREDICT_LATENCY_MS = Summary(
 ILLEGAL_REQUESTS = Counter(
     "chs_predict_illegal_requests_total", "Illegal predict requests", ["model_id", "model_version"]
 )
+CACHE_HITS = Counter(
+    "chs_predict_cache_hits_total", "Predict cache hits", ["model_id", "model_version"]
+)
+CACHE_MISSES = Counter(
+    "chs_predict_cache_misses_total", "Predict cache misses", ["model_id", "model_version"]
+)
 
 # baseline metrics so Prometheus queries yield zero instead of empty
 chs_dataset_rows.labels(dataset_id="bootstrap").inc()
 chs_selfplay_games_total.labels(result="draw", run_id="bootstrap").inc(0)
 
+ENABLE_LRU = os.getenv("SERVE_ENABLE_LRU", "false").lower() == "true"
+
+
+def _predict_core_impl(fen: str, model_id: str, model_version: str):
+    board = chess.Board(fen=fen)
+    legal_moves = [m.uci() for m in board.legal_moves]
+    if not legal_moves:
+        raise ValueError("No legal moves available")
+    move = legal_moves[0]
+    return move, legal_moves
+
+
+if ENABLE_LRU:
+    @lru_cache(maxsize=128)
+    def _cached_predict_core(fen: str, model_id: str, model_version: str):
+        CACHE_MISSES.labels(model_id=model_id, model_version=model_version).inc()
+        return _predict_core_impl(fen, model_id, model_version)
+
+    def predict_core(fen: str, model_id: str, model_version: str):
+        hits_before = _cached_predict_core.cache_info().hits
+        result = _cached_predict_core(fen, model_id, model_version)
+        if _cached_predict_core.cache_info().hits > hits_before:
+            CACHE_HITS.labels(model_id=model_id, model_version=model_version).inc()
+        return result
+
+    def _clear_cache() -> None:
+        _cached_predict_core.cache_clear()
+else:
+    def predict_core(fen: str, model_id: str, model_version: str):
+        return _predict_core_impl(fen, model_id, model_version)
+
+    def _clear_cache() -> None:
+        pass
+
+
 # --- app setup ---------------------------------------------------
 app = FastAPI(title="ChessApp Serve", version="0.1")
 app.mount("/metrics", make_asgi_app())
 
-loader = ModelLoader()
+loader = ModelLoader(invalidate_cache=_clear_cache)
 # ensure a model is always active, even if artifact is missing
 loader.load("dummy", "0")
 
@@ -135,11 +177,7 @@ def predict(req: PredictRequest, request: Request, response: Response) -> Predic
     )
     PREDICT_REQUESTS.labels(**labels).inc()
     try:
-        board = chess.Board(fen=req.fen)
-        legal_moves = [m.uci() for m in board.legal_moves]
-        if not legal_moves:
-            raise ValueError("No legal moves available")
-        move = legal_moves[0]
+        move, legal_moves = predict_core(req.fen, mid, ver)
         response.headers["X-Component"] = "serve"
         elapsed = time.perf_counter() - start
         log_event(
