@@ -1,0 +1,16 @@
+{
+  "models": [
+    {
+      "modelId": "policy_tiny",
+      "displayName": "Policy Tiny",
+      "tags": ["staging", "policy"],
+      "versions": [
+        {
+          "modelVersion": "2025-08-29_001",
+          "createdAt": "2025-08-29T12:34:56Z",
+          "metrics": {"val_acc_top1": 0.34, "val_acc_top3": 0.61}
+        }
+      ]
+    }
+  ]
+}
