@@ -1,0 +1,6 @@
+spring:
+  datasource:
+    url: jdbc:tc:postgresql:16:///chsapp?TC_TMPFS=/var/lib/postgresql/data:rw
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
