@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 
 import com.chessapp.api.serving.dto.ModelsLoadRequest;
 import com.chessapp.api.serving.dto.PredictRequest;
@@ -55,27 +56,35 @@ public class ServingController {
         try {
             PredictResponse resp = client.predict(body, rid, user);
             String modelId = resp.modelId() != null ? resp.modelId() : "unknown";
+            String modelVersion = resp.modelVersion() != null ? resp.modelVersion() : "0";
             sample.stop(Timer.builder("chs_predict_latency_seconds")
                     .tags("username", user, "model_id", modelId, "status", "ok")
                     .register(registry));
             Counter.builder("chs_predict_requests_total")
-                    .tags("username", user, "model_id", modelId, "status", "ok")
+                    .tags("model_id", modelId, "model_version", modelVersion)
                     .register(registry)
                     .increment();
             log.info("event=predict.completed");
             return ResponseEntity.ok(resp);
         } catch (WebClientResponseException ex) {
             String modelId = "unknown";
+            String modelVersion = "0";
             sample.stop(Timer.builder("chs_predict_latency_seconds")
                     .tags("username", user, "model_id", modelId, "status", "error")
                     .register(registry));
             Counter.builder("chs_predict_requests_total")
-                    .tags("username", user, "model_id", modelId, "status", "error")
+                    .tags("model_id", modelId, "model_version", modelVersion)
                     .register(registry)
                     .increment();
             log.warn("event=predict.failed");
             HttpStatus status = ex.getStatusCode().is5xxServerError() ? HttpStatus.BAD_GATEWAY : HttpStatus.BAD_REQUEST;
             return ResponseEntity.status(status).body(ex.getResponseBodyAsString());
+        } catch (WebClientRequestException ex) {
+            // Connection errors, DNS failures, timeouts before response -> 502 Bad Gateway
+            String resbody = String.format("{\"status\":502,\"error\":\"Bad Gateway\",\"message\":%s}",
+                    jsonEscape(ex.getMessage()));
+            log.warn("event=predict.failed cause=connect_error msg={}", ex.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(body);
         } finally {
             MDC.clear();
         }
@@ -96,8 +105,17 @@ public class ServingController {
         } catch (WebClientResponseException ex) {
             HttpStatus status = ex.getStatusCode().is5xxServerError() ? HttpStatus.BAD_GATEWAY : HttpStatus.BAD_REQUEST;
             return ResponseEntity.status(status).body(ex.getResponseBodyAsString());
+        } catch (WebClientRequestException ex) {
+            String resbody = String.format("{\"status\":502,\"error\":\"Bad Gateway\",\"message\":%s}",
+                    jsonEscape(ex.getMessage()));
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(resbody);
         } finally {
             MDC.clear();
         }
+    }
+
+    private static String jsonEscape(String s) {
+        if (s == null) return "null";
+        return '"' + s.replace("\\", "\\\\").replace("\"", "\\\"") + '"';
     }
 }

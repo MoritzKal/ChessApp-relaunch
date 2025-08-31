@@ -21,3 +21,16 @@
 ## Serving
 - `POST /v1/predict` – Proxy zu Serve `/predict`, Request `{ fen }`, Response `{ move, legal, modelId, modelVersion }`
 - `POST /v1/models/load` – Proxy zu Serve `/models/load` (Dummy/Artefakt-Laden)
+
+> Observability-Instrumentierung fügt Metriken & Logs hinzu, **ohne** den `/v1`-Request/Response-Contract zu verändern.
+
+## Model Registry (read-only)
+- `GET /v1/models` – Liste der Modelle `{ modelId, displayName, tags[] }`
+- `GET /v1/models/{id}/versions` – Versionen `{ modelVersion, createdAt, metrics{} }`
+
+**Beispiele**
+```bash
+curl -s http://localhost:8080/v1/models | jq
+curl -s http://localhost:8080/v1/models/policy_tiny/versions | jq
+curl -s http://localhost:8080/actuator/prometheus | grep chs_model_registry_requests_total | head
+```

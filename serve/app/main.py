@@ -2,74 +2,207 @@ import json
 import logging
 import os
 import time
-from typing import List, Optional
-from fastapi import FastAPI, Response
+from functools import lru_cache
+from typing import Dict, List, Optional
 
 import chess
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from prometheus_client import Counter, Histogram, make_asgi_app
+from prometheus_client import (
+    Counter,
+    Histogram,
+    make_asgi_app,
+    generate_latest,
+    CONTENT_TYPE_LATEST,
+)
+try:
+    # When imported as package (normal runtime)
+    from serve.model_loader import MODEL_RELOAD_FAILURES, MODELS_LOADED, ModelLoader
+except Exception:  # pragma: no cover - fallback when running from serve/ dir
+    from model_loader import MODEL_RELOAD_FAILURES, MODELS_LOADED, ModelLoader
+from .logging_config import bind_context, reset_context, setup_logging
 from .metrics_stub import (
+    chs_dataset_export_duration_seconds,
+    chs_dataset_invalid_rows_total,
+    chs_dataset_rows,
+    chs_selfplay_failures_total,
     chs_selfplay_games_total,
     chs_selfplay_wins_total,
-    chs_selfplay_failures_total,
-    chs_dataset_rows,
-    chs_dataset_invalid_rows_total,
-    chs_dataset_export_duration_seconds,
 )
 
-# --- Config ---
-ML_S3_ENDPOINT = os.getenv("ML_S3_ENDPOINT", "http://minio:9000")
-AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
-AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-DEFAULT_USERNAME = os.getenv("DEFAULT_USERNAME", "M3NG00S3")
-app = FastAPI()
-# --- Logging ---
+# --- logging (B3 MDC-style) -------------------------------------
+setup_logging()
 logger = logging.getLogger("serve")
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler()
-try:
-    from python_json_logger import jsonlogger
-    handler.setFormatter(jsonlogger.JsonFormatter())
-except Exception:
-    handler.setFormatter(logging.Formatter("%(message)s"))
-logger.handlers = [handler]
 
 
-def log_event(event: str, **extra):
+def log_event(event: str, **extra) -> None:
     payload = {"event": event, "component": "serve"}
     payload.update({k: v for k, v in extra.items() if v is not None})
     logger.info(json.dumps(payload))
 
 
-# --- Metrics ---
+# --- metrics (B2 + B3) ------------------------------------------
 PREDICT_REQUESTS = Counter(
-    "chs_predict_requests_total",
-    "Total predict requests",
-    ["username", "model_id", "status"],
+    "chs_predict_requests_total", "Total predict requests", ["model_id", "model_version"]
 )
+
+# B3: include error code label
+PREDICT_ERRORS = Counter(
+    "chs_predict_errors_total",
+    "Total predict errors by code",
+    ["model_id", "model_version", "code"],
+)
+
+# keep seconds histogram from B2
 PREDICT_LATENCY = Histogram(
-    "chs_predict_latency_seconds", "Prediction latency seconds"
+    "chs_predict_latency_seconds",
+    "Prediction latency seconds",
+    ["model_id", "model_version"],
+    buckets=[0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0],
 )
+
+# switch to histogram in milliseconds for B3 (name preserved)
+PREDICT_LATENCY_MS = Histogram(
+    "chs_predict_latency_ms",
+    "Prediction latency milliseconds",
+    ["model_id", "model_version"],
+    buckets=[5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000],
+)
+
 ILLEGAL_REQUESTS = Counter(
-    "chs_predict_illegal_requests_total", "Illegal predict requests"
+    "chs_predict_illegal_requests_total", "Illegal predict requests", ["model_id", "model_version"]
+)
+CACHE_HITS = Counter(
+    "chs_predict_cache_hits_total", "Predict cache hits", ["model_id", "model_version"]
+)
+CACHE_MISSES = Counter(
+    "chs_predict_cache_misses_total", "Predict cache misses", ["model_id", "model_version"]
 )
 
+# baseline metrics so Prometheus queries yield data
+chs_dataset_rows.labels(dataset_id="bootstrap").inc()
+chs_selfplay_games_total.labels(result="draw", run_id="bootstrap").inc(0)
 
-# --- Models ---
-class ModelState(BaseModel):
-    modelId: str
-    modelVersion: str
-    artifactUri: Optional[str] = None
-
-
-class LoadModelRequest(BaseModel):
-    modelId: Optional[str] = None
-    artifactUri: Optional[str] = None
+ENABLE_LRU = os.getenv("SERVE_ENABLE_LRU", "false").lower() == "true"
+FAKE_FAST = os.getenv("SERVE_FAKE_FAST", "false").lower() == "true"
+DEFAULT_USERNAME = os.getenv("DEFAULT_USERNAME", "M3NG00S3")
 
 
+def _predict_core_impl(fen: str, model_id: str, model_version: str):
+    if FAKE_FAST:
+        board = chess.Board(fen=fen)  # still validate FEN
+        move = next(iter(board.legal_moves)).uci()
+        return move, [move]
+    board = chess.Board(fen=fen)
+    legal_moves = [m.uci() for m in board.legal_moves]
+    if not legal_moves:
+        raise ValueError("No legal moves available")
+    move = legal_moves[0]
+    return move, legal_moves
+
+
+if ENABLE_LRU:
+    @lru_cache(maxsize=128)
+    def _cached_predict_core(fen: str, model_id: str, model_version: str):
+        CACHE_MISSES.labels(model_id=model_id, model_version=model_version).inc()
+        return _predict_core_impl(fen, model_id, model_version)
+
+    def predict_core(fen: str, model_id: str, model_version: str):
+        hits_before = _cached_predict_core.cache_info().hits
+        result = _cached_predict_core(fen, model_id, model_version)
+        if _cached_predict_core.cache_info().hits > hits_before:
+            CACHE_HITS.labels(model_id=model_id, model_version=model_version).inc()
+        return result
+
+    def _clear_cache() -> None:
+        _cached_predict_core.cache_clear()
+else:
+    def predict_core(fen: str, model_id: str, model_version: str):
+        return _predict_core_impl(fen, model_id, model_version)
+
+    def _clear_cache() -> None:
+        pass
+
+
+# --- app setup ---------------------------------------------------
+app = FastAPI(title="ChessApp Serve", version="0.1")
+# Mount metrics app at trailing-slash path and serve non-slash variant directly
+app.mount("/metrics/", make_asgi_app())
+
+
+@app.get("/metrics", include_in_schema=False)
+def metrics_root() -> Response:
+    data = generate_latest()  # type: ignore[no-untyped-call]
+    return Response(content=data, media_type=CONTENT_TYPE_LATEST)
+
+loader = ModelLoader(invalidate_cache=_clear_cache)
+# ensure a model is always active, even if artifact is missing
+loader.load("default", "0")
+
+# Pre-create predict metric series for the active model so /metrics isn't empty
+try:
+    active_mid, active_ver, _ = loader.get_active()
+    PREDICT_LATENCY.labels(model_id=active_mid, model_version=active_ver).observe(0.0)
+    PREDICT_LATENCY_MS.labels(model_id=active_mid, model_version=active_ver).observe(0.0)
+    PREDICT_ERRORS.labels(model_id=active_mid, model_version=active_ver, code="400").inc(0)
+    PREDICT_ERRORS.labels(model_id=active_mid, model_version=active_ver, code="exception").inc(0)
+    # Model metrics baseline series
+    MODELS_LOADED.labels(model_id=active_mid, model_version=active_ver).inc(0)
+    for reason in ("missing_artifact", "internal"):
+        MODEL_RELOAD_FAILURES.labels(reason=reason).inc(0)
+except Exception:
+    # If no active model for some reason, skip pre-creation
+    pass
+
+
+# --- middleware (B3 request MDC binding) ------------------------
+@app.middleware("http")
+async def logging_middleware(request: Request, call_next):
+    try:
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        # Prefer requested model (if provided), else active loader model
+        try:
+            active_mid, active_ver, _ = loader.get_active()
+        except Exception:
+            active_mid, active_ver = "default", "0"
+
+        model_id = body.get("model_id") or body.get("modelId") or active_mid or "default"
+        model_version = (
+                body.get("model_version") or body.get("modelVersion") or active_ver or "0"
+        )
+        # make labels available to handlers
+        try:
+            request.state.model_id = model_id
+            request.state.model_version = model_version
+        except Exception:
+            pass
+
+        bind_context(
+            run_id=request.headers.get("X-Run-Id"),
+            dataset_id=request.headers.get("X-Dataset-Id"),
+            username=request.headers.get("X-Username", DEFAULT_USERNAME),
+            path=str(request.url.path),
+            method=request.method,
+            model_id=model_id,
+            model_version=model_version,
+        )
+        response = await call_next(request)
+        bind_context(status=getattr(response, "status_code", 200))
+        logger.info("request")
+        return response
+    except Exception:
+        bind_context(status=500)
+        logger.info("request")
+        raise
+    finally:
+        reset_context()
+
+
+# --- pydantic models --------------------------------------------
 class PredictRequest(BaseModel):
     fen: str
 
@@ -81,117 +214,122 @@ class PredictResponse(BaseModel):
     modelVersion: str
 
 
-current_model = ModelState(modelId="dummy", modelVersion="0")
-
-app = FastAPI(title="ChessApp Serve", version="0.1")
-app.mount("/metrics", make_asgi_app())
-
-# minimal baseline metric to prevent empty dashboards
-chs_dataset_rows.labels(dataset_id="bootstrap").inc()
-# Ensure a baseline series exists for self-play metrics so Prometheus queries
-# like increase(chs_selfplay_games_total[5m]) return 0 instead of empty result.
-chs_selfplay_games_total.labels(result="draw", run_id="bootstrap").inc(0)
+class ModelsLoadRequest(BaseModel):
+    modelId: str
+    modelVersion: str
 
 
+class ModelsLoadResponse(BaseModel):
+    ok: bool
+    active: Dict[str, str]
+
+
+# --- endpoints ---------------------------------------------------
 @app.get("/health")
-def health():
+def health() -> Dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/models/load")
-def models_load(req: LoadModelRequest):
-    global current_model
-    if req.artifactUri and req.artifactUri.startswith("s3://"):
-        try:
-            import boto3
-
-            bucket, key = req.artifactUri[5:].split("/", 1)
-            s3 = boto3.client(
-                "s3",
-                endpoint_url=ML_S3_ENDPOINT,
-                aws_access_key_id=AWS_ACCESS_KEY_ID,
-                aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-                region_name=AWS_REGION,
-            )
-            s3.download_file(bucket, key, "/tmp/model.weights")
-            current_model = ModelState(
-                modelId=req.modelId or "model", modelVersion="1", artifactUri=req.artifactUri
-            )
-        except Exception:
-            current_model = ModelState(modelId="dummy", modelVersion="0")
-    else:
-        current_model = ModelState(modelId="dummy", modelVersion="0")
-    return current_model.dict()
+@app.post("/models/load", response_model=ModelsLoadResponse)
+def models_load(body: ModelsLoadRequest) -> ModelsLoadResponse:
+    try:
+        loader.load(body.modelId, body.modelVersion)
+        artifact = os.path.join(loader.root, body.modelId, body.modelVersion, "best.pt")
+        if not os.path.exists(artifact):
+            # ModelLoader should increment failure metric for missing artifact
+            raise HTTPException(status_code=404, detail="missing_artifact")
+        mid, ver, _ = loader.get_active()
+        MODELS_LOADED.labels(model_id=mid, model_version=ver).inc()
+        return ModelsLoadResponse(ok=True, active={"modelId": mid, "modelVersion": ver})
+    except HTTPException:
+        raise
+    except Exception as exc:  # pragma: no cover - defensive
+        MODEL_RELOAD_FAILURES.labels(reason="internal").inc()
+        raise HTTPException(status_code=500, detail="internal_error") from exc
 
 
 @app.post("/predict", response_model=PredictResponse)
-def predict(req: PredictRequest, request: Request, response: Response):
+def predict(req: PredictRequest, request: Request, response: Response) -> PredictResponse:
     start = time.perf_counter()
     run_id = request.headers.get("X-Run-Id")
     username = request.headers.get("X-Username", DEFAULT_USERNAME)
-    status = "ok"
+    mid, ver, _ = loader.get_active()
+    labels = {"model_id": mid, "model_version": ver}
+
+    log_event(
+        "predict.request",
+        run_id=run_id,
+        username=username,
+        fen=req.fen,
+        model_id=mid,
+        model_version=ver,
+    )
+    PREDICT_REQUESTS.labels(**labels).inc()
+
     try:
-        log_event("predict.request", run_id=run_id, username=username, model_id=current_model.modelId)
-        try:
-            board = chess.Board(fen=req.fen)
-        except Exception:
-            status = "error"
-            ILLEGAL_REQUESTS.inc()
-            PREDICT_REQUESTS.labels(username=username, model_id=current_model.modelId, status=status).inc()
-            log_event(
-                "predict.failed",
-                run_id=run_id,
-                username=username,
-                model_id=current_model.modelId,
-                error="invalid_fen",
-            )
-            return JSONResponse(
-                status_code=400,
-                content={"error": "invalid_fen"},
-                headers={"X-Component": "serve"},
-            )
-
-        legal_moves = [m.uci() for m in board.legal_moves]
-        if not legal_moves:
-            status = "error"
-            ILLEGAL_REQUESTS.inc()
-            PREDICT_REQUESTS.labels(username=username, model_id=current_model.modelId, status=status).inc()
-            log_event(
-                "predict.failed",
-                run_id=run_id,
-                username=username,
-                model_id=current_model.modelId,
-                error="invalid_fen",
-            )
-            return JSONResponse(
-                status_code=400,
-                content={"error": "invalid_fen"},
-                headers={"X-Component": "serve"},
-            )
-
-        move = legal_moves[0]
+        move, legal_moves = predict_core(req.fen, mid, ver)
         response.headers["X-Component"] = "serve"
-        PREDICT_REQUESTS.labels(username=username, model_id=current_model.modelId, status=status).inc()
+        elapsed = time.perf_counter() - start
         log_event(
             "predict.completed",
             run_id=run_id,
             username=username,
-            model_id=current_model.modelId,
-            move=move,
+            model_id=mid,
+            model_version=ver,
+            top_move=move,
+            lat_ms=elapsed * 1000,
         )
-        return {
-            "move": move,
-            "legal": legal_moves,
-            "modelId": current_model.modelId,
-            "modelVersion": current_model.modelVersion,
-        }
+        return PredictResponse(move=move, legal=legal_moves, modelId=mid, modelVersion=ver)
+
+    except ValueError as e:
+        # Invalid FEN / no legal moves -> 400
+        PREDICT_ERRORS.labels(code="400", **labels).inc()
+        ILLEGAL_REQUESTS.labels(**labels).inc()
+        log_event(
+            "predict.failed",
+            run_id=run_id,
+            username=username,
+            model_id=mid,
+            model_version=ver,
+            reason="INVALID_FEN",
+            fen=req.fen,
+        )
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": {
+                    "code": "INVALID_FEN",
+                    "message": str(e),
+                    "detail": {"fen": req.fen},
+                }
+            },
+            headers={"X-Component": "serve"},
+        )
+
+    except Exception:
+        # Server-side exception -> 500
+        PREDICT_ERRORS.labels(code="exception", **labels).inc()
+        log_event(
+            "predict.failed",
+            run_id=run_id,
+            username=username,
+            model_id=mid,
+            model_version=ver,
+            reason="EXCEPTION",
+            fen=req.fen,
+        )
+        raise HTTPException(status_code=500, detail="internal_error")
+
     finally:
         elapsed = time.perf_counter() - start
-        PREDICT_LATENCY.observe(elapsed)
+        PREDICT_LATENCY.labels(**labels).observe(elapsed)
+        PREDICT_LATENCY_MS.labels(**labels).observe(elapsed * 1000)
 
-try:
+
+# Optional dataset API router
+try:  # pragma: no cover - optional
     from app.dataset_api import router as dataset_router
+
     app.include_router(dataset_router)
-except Exception:
-    # Fail-safe in DEV, damit der Serve trotzdem startet
+except Exception:  # pragma: no cover - non-critical for tests
     pass

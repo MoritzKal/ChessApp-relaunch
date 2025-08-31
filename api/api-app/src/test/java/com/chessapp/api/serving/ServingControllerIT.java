@@ -71,7 +71,7 @@ class ServingControllerIT extends AbstractIntegrationTest {
         assertThat(req.getHeader("X-Component")).isEqualTo("serve");
 
         Counter c = meterRegistry.find("chs_predict_requests_total")
-                .tags("username", "M3NG00S3", "model_id", "dummy", "status", "ok")
+                .tags("model_id", "dummy", "model_version", "0")
                 .counter();
         assertThat(c).isNotNull();
         assertThat(c.count()).isEqualTo(1.0);
@@ -99,5 +99,15 @@ class ServingControllerIT extends AbstractIntegrationTest {
 
         RecordedRequest req = serve.takeRequest();
         assertThat(req.getPath()).isEqualTo("/models/load");
+    }
+
+    @Test
+    void models_load_proxy_error() throws InterruptedException {
+        serve.enqueue(new MockResponse().setResponseCode(404));
+        ResponseEntity<String> resp = rest.postForEntity("/v1/models/load",
+                new ModelsLoadRequest("missing", "v1"), String.class);
+        assertThat(resp.getStatusCode().value()).isEqualTo(404);
+        // drain request
+        serve.takeRequest();
     }
 }
