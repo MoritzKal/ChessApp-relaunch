@@ -8,15 +8,29 @@ import jakarta.validation.Validator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class PGNValidatorTest {
+class ValidationTest {
 
     private Validator validator;
 
+    record FenHolder(@FEN String fen) {}
     record PgnHolder(@PGN String pgn) {}
 
     @BeforeEach
     void setup() {
         validator = Validation.buildDefaultValidatorFactory().getValidator();
+    }
+
+    @Test
+    void validFen_passesValidation() {
+        String fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        var violations = validator.validate(new FenHolder(fen));
+        assertThat(violations).isEmpty();
+    }
+
+    @Test
+    void invalidFen_failsValidation() {
+        var violations = validator.validate(new FenHolder("invalid"));
+        assertThat(violations).isNotEmpty();
     }
 
     @Test

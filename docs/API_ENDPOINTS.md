@@ -1,6 +1,8 @@
 # API Endpoints (/v1)
 
 > Stabilität gemäß Contract-Board. Nur additive Änderungen. **Standard:** `/v1/ingest` · **Alias (Bestand):** `/v1/data/import` (keine v1-Breakings).
+> All `/v1/**` endpoints require a valid JWT unless noted otherwise. `/v1/health` is public.
+
 
 ## Health/Meta
 
@@ -52,5 +54,6 @@ curl -sS -X POST http://localhost:8080/v1/ingest \
 
 ## Observability/Links
 
-- `GET /actuator/prometheus` (Scrape)
+- `GET /actuator/**` → requires authentication (ROLE_ADMIN).
+- `GET /actuator/prometheus` → additionally requires `Authorization: Bearer <scrape-token>`.
 - Logs/Traces via Grafana/Loki (siehe [OBSERVABILITY](./OBSERVABILITY.md))
