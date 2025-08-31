@@ -9,7 +9,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -20,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
                 "logging.config=classpath:logback-spring.xml"
         }
 )
-@ActiveProfiles("codex")
 class DatasetOpenApiIT extends com.chessapp.api.testutil.AbstractIntegrationTest {
 
     @LocalServerPort
@@ -42,6 +40,8 @@ class DatasetOpenApiIT extends com.chessapp.api.testutil.AbstractIntegrationTest
         assertThat(paths.path("/v1/datasets").has("get")).isTrue();
         assertThat(paths.has("/v1/datasets/{id}")).isTrue();
         assertThat(paths.path("/v1/datasets/{id}").has("get")).isTrue();
+        JsonNode schemes = root.path("components").path("securitySchemes");
+        assertThat(schemes.has("bearerAuth")).isTrue();
     }
 
     @Test

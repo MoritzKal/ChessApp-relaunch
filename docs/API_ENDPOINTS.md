@@ -2,6 +2,8 @@
 
 > Stabilität gemäß Contract-Board. Nur additive Änderungen. **Standard:** `/v1/ingest` · **Alias (Bestand):** `/v1/data/import` (keine v1-Breakings).
 
+> Alle `/v1/**` Endpunkte erfordern `Authorization: Bearer <JWT>` (Ausnahmen: `/v3/api-docs/**`, `/swagger-ui/**`).
+
 ## Health/Meta
 
 - `GET /v1/health` → 200 OK
@@ -19,6 +21,7 @@
 ```bash
 curl -sS -X POST http://localhost:8080/v1/ingest \
   -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
   -d '{"username":"demo","from":"2025-01","to":"2025-08"}'
 ```
 
@@ -33,6 +36,7 @@ curl -sS -X POST http://localhost:8080/v1/ingest \
 ```bash
 curl -sS -X POST http://localhost:8080/v1/datasets \
   -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
   -d '{"name":"train","version":"1.0.0","filter":{"foo":"bar"}}'
 ```
 

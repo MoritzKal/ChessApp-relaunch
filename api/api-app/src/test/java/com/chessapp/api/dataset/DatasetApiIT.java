@@ -12,12 +12,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import com.chessapp.api.support.JwtTestUtils;
+import com.chessapp.api.testutil.AbstractIntegrationTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -28,25 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
                 "logging.config=classpath:logback-spring.xml"
         }
 )
-@Testcontainers
-@ActiveProfiles("codex")
-class DatasetApiIT {
-
-    @Container
-    static final PostgreSQLContainer<?> postgres =
-            new PostgreSQLContainer<>("postgres:16-alpine");
-
-    @DynamicPropertySource
-    static void registerDataSourceProps(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
-        registry.add("spring.flyway.enabled", () -> true);
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
-        registry.add("spring.jpa.properties.hibernate.prefer_native_enum_types", () -> "true");
-        registry.add("spring.jpa.properties.hibernate.type.preferred_enum_jdbc_type", () -> "postgres_enum");
-    }
+class DatasetApiIT extends AbstractIntegrationTest {
 
     @LocalServerPort
     int port;
@@ -68,7 +46,7 @@ class DatasetApiIT {
                 "}";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("X-Debug-User", "it-user");
+        headers.setBearerAuth(JwtTestUtils.createToken("it-user", JwtTestUtils.SECRET, "ROLE_USER"));
         HttpEntity<String> entity = new HttpEntity<>(json, headers);
 
         ResponseEntity<DatasetResponse> createResp = rest.postForEntity(baseUrl, entity, DatasetResponse.class);
@@ -76,7 +54,13 @@ class DatasetApiIT {
         assertThat(createResp.getHeaders().getLocation()).isNotNull();
         String location = createResp.getHeaders().getLocation().toString();
 
-        ResponseEntity<DatasetResponse> getResp = rest.getForEntity("http://localhost:" + port + location, DatasetResponse.class);
+        HttpHeaders getHeaders = new HttpHeaders();
+        getHeaders.setBearerAuth(JwtTestUtils.createToken("it-user", JwtTestUtils.SECRET, "ROLE_USER"));
+        ResponseEntity<DatasetResponse> getResp = rest.exchange(
+                "http://localhost:" + port + location,
+                org.springframework.http.HttpMethod.GET,
+                new HttpEntity<Void>(getHeaders),
+                DatasetResponse.class);
         assertThat(getResp.getStatusCode()).isEqualTo(HttpStatus.OK);
         DatasetResponse body = getResp.getBody();
         assertThat(body).isNotNull();
@@ -85,8 +69,40 @@ class DatasetApiIT {
         assertThat(body.getVersion()).isEqualTo("1.0.0");
         assertThat(body.getLocationUri()).isEqualTo("s3://minio/datasets/user-games-1.0.0");
 
-        ResponseEntity<String> listResp = rest.getForEntity(baseUrl + "?page=0&size=10", String.class);
+        HttpHeaders listHeaders = new HttpHeaders();
+        listHeaders.setBearerAuth(JwtTestUtils.createToken("it-user", JwtTestUtils.SECRET, "ROLE_USER"));
+        ResponseEntity<String> listResp = rest.exchange(
+                baseUrl + "?page=0&size=10",
+                org.springframework.http.HttpMethod.GET,
+                new HttpEntity<Void>(listHeaders),
+                String.class);
         assertThat(listResp.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    void unauthorizedWithoutToken() {
+        String baseUrl = "http://localhost:" + port + "/v1/datasets";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<String> entity = new HttpEntity<>("{}", headers);
+        ResponseEntity<String> resp = rest.postForEntity(baseUrl, entity, String.class);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void corsPreflight() {
+        String baseUrl = "http://localhost:" + port + "/v1/datasets";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setOrigin("http://localhost:5173");
+        headers.setAccessControlRequestMethod(org.springframework.http.HttpMethod.POST);
+        headers.add("Access-Control-Request-Headers", "Authorization,Content-Type");
+        ResponseEntity<String> resp = rest.exchange(
+                baseUrl,
+                org.springframework.http.HttpMethod.OPTIONS,
+                new HttpEntity<Void>(headers),
+                String.class);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(resp.getHeaders().getAccessControlAllowOrigin()).isEqualTo("http://localhost:5173");
     }
 }
 

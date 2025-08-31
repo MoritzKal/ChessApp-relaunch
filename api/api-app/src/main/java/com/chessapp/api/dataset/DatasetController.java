@@ -24,12 +24,14 @@ import com.chessapp.api.dataset.dto.CreateDatasetRequest;
 import com.chessapp.api.dataset.dto.DatasetResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/v1/datasets")
 @Tag(name = "Datasets")
+@SecurityRequirement(name = "bearerAuth")
 public class DatasetController {
 
     private static final Logger log = LoggerFactory.getLogger(DatasetController.class);
