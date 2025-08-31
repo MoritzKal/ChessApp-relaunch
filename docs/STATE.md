@@ -14,3 +14,7 @@
 
 - Grafana Dashboard „ChessApp – Overview“ (p95 Latenz, Error-Rate)
 - MLflow letzter erfolgreicher Trainings-Run
+
+## Changelog
+
+- M1/API-01 done (2025-08-31): CRUD Surface /v1/datasets inkl. OpenAPI, IT, MDC
