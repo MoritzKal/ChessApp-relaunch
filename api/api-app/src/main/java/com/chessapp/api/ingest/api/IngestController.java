@@ -4,11 +4,11 @@ import com.chessapp.api.ingest.api.dto.IngestRequest;
 import com.chessapp.api.ingest.entity.IngestRun;
 import com.chessapp.api.ingest.repo.IngestRunRepository;
 import com.chessapp.api.ingest.service.IngestService;
-import com.chessapp.api.service.DatasetService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +25,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/v1/ingest")
 @Tag(name = "ingest")
+@SecurityRequirement(name = "bearerAuth")
 public class IngestController {
 
     private final IngestService ingestService;

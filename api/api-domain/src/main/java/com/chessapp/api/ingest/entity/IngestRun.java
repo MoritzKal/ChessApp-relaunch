@@ -6,6 +6,8 @@ import java.util.UUID;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 @Entity
@@ -47,6 +49,26 @@ public class IngestRun {
     @Column(name = "report_uri")
     private String reportUri;
 
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
+    @PrePersist
+    public void prePersist() {
+        if (id == null) {
+            id = UUID.randomUUID();
+        }
+        createdAt = Instant.now();
+        updatedAt = createdAt;
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = Instant.now();
+    }
+
     // getters and setters
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
@@ -72,4 +94,8 @@ public class IngestRun {
     public void setError(String error) { this.error = error; }
     public String getReportUri() { return reportUri; }
     public void setReportUri(String reportUri) { this.reportUri = reportUri; }
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+    public Instant getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }
