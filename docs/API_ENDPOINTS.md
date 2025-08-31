@@ -28,6 +28,14 @@ curl -sS -X POST http://localhost:8080/v1/ingest \
 - `GET /v1/datasets`
 - `GET /v1/datasets/{id}`
 
+### Beispiel
+
+```bash
+curl -sS -X POST http://localhost:8080/v1/datasets \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"train","version":"1.0.0","filter":{"foo":"bar"}}'
+```
+
 ## Training
 
 - `POST /v1/trainings`

@@ -92,8 +92,7 @@ public class DatasetService {
         }
 
         try (MDC.MDCCloseable c1 = MDC.putCloseable("dataset_id", id.toString());
-             MDC.MDCCloseable c2 = MDC.putCloseable("event", "dataset.created");
-             MDC.MDCCloseable c3 = MDC.putCloseable("component", "dataset")) {
+             MDC.MDCCloseable c2 = MDC.putCloseable("event", "dataset.created")) {
             log.info("dataset created");
         }
 
@@ -102,6 +101,7 @@ public class DatasetService {
 
     @Transactional(readOnly = true)
     public List<DatasetResponse> list(int limit, int offset) {
+        log.info("dataset list");
         return datasetRepository.findAll(PageRequest.of(offset / limit, limit))
                 .stream()
                 .map(DatasetMapper::toDto)
@@ -110,8 +110,12 @@ public class DatasetService {
 
     @Transactional(readOnly = true)
     public DatasetResponse get(UUID id) {
-        return datasetRepository.findById(id)
-                .map(DatasetMapper::toDto)
-                .orElseThrow();
+        try (MDC.MDCCloseable c1 = MDC.putCloseable("dataset_id", id.toString());
+             MDC.MDCCloseable c2 = MDC.putCloseable("event", "dataset.read")) {
+            log.info("dataset read");
+            return datasetRepository.findById(id)
+                    .map(DatasetMapper::toDto)
+                    .orElseThrow();
+        }
     }
 }

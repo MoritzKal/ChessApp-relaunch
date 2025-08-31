@@ -4,6 +4,7 @@
 
 - Compose-Stack lauffähig (API, MLflow, Prometheus, Grafana, Loki)
 - B1–B3 live (Registry read-only, Serve Reload by Version, Observability-Panels)
+- API-01 `/v1/datasets` (Create/Read/List) verfügbar
 
 ## In Arbeit (Next)
 

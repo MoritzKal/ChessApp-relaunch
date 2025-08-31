@@ -2,9 +2,15 @@ package com.chessapp.api.service.dto;
 
 import java.util.Map;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 public class DatasetCreateRequest {
+    @NotBlank
     private String name;
+    @NotBlank
     private String version;
+    @NotNull
     private Map<String, Object> filter;
     private Map<String, Object> split;
     private Long sizeRows;
