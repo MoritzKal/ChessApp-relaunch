@@ -41,7 +41,7 @@ logging:
 chs:
   default-username: ${CHESS_USERNAME:M3NG00S3}
   registry:
-    path: ${CHS_REGISTRY_PATH:}
+    path: ${CHS_REGISTRY_PATH:classpath:fixtures/models.json}
   ml:
     base-url: ${ML_BASE_URL:http://ml:8000}
   serve:
