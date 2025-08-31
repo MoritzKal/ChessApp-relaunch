@@ -8,7 +8,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
-@ActiveProfiles("codex")
+@ActiveProfiles("test")
 public abstract class AbstractIntegrationTest {
 
     @Container

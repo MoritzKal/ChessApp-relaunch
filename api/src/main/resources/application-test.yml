@@ -1,0 +1,5 @@
+app:
+  jwt:
+    secret: test-secret
+  rate-limit:
+    enabled: false
