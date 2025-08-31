@@ -1,6 +1,6 @@
 # API Endpoints (/v1)
 
-> Stabilität gemäß Contract-Board. Nur additive Änderungen. **Standard:** `/v1/ingest` · **Alias (Bestand):** `/v1/data/import` (keine v1-Breakings).
+> Stabilität gemäß Contract-Board. Nur additive Änderungen. **Standard:** `/v1/ingest` · **Alias (Bestand):** `/v1/data/import` (keine v1-Breakings). Alle `/v1/**` Endpunkte erwarten `Authorization: Bearer <JWT>` mit Rolle `ROLE_USER`. `/actuator/prometheus` erfordert ein Token mit `ROLE_MONITORING`.
 
 ## Health/Meta
 

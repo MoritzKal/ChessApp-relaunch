@@ -1,21 +1,23 @@
 package com.chessapp.api.ingest;
 
 import com.chessapp.api.codex.CodexApplication;
+import com.chessapp.api.support.JwtTestUtils;
 import com.chessapp.api.testutil.AbstractIntegrationTest;
 import com.jayway.jsonpath.JsonPath;
+import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 
 import java.time.Instant;
-import java.util.UUID;
 import java.util.function.LongSupplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -47,7 +49,9 @@ class IngestApiIT extends AbstractIntegrationTest {
     @Test
     void ingest_flow_and_metrics() throws Exception {
         // 1) start ingest
+        String token = JwtTestUtils.token("alice", List.of("USER"));
         MvcResult start = mockMvc.perform(post("/v1/ingest")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"username\":\"alice\"}"))
             .andExpect(status().isAccepted())
@@ -61,7 +65,8 @@ class IngestApiIT extends AbstractIntegrationTest {
         String status = null;
         String reportUri = null;
         while (Instant.now().isBefore(deadline)) {
-            MvcResult poll = mockMvc.perform(get("/v1/ingest/{id}", runId))
+            MvcResult poll = mockMvc.perform(get("/v1/ingest/{id}", runId)
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
                     .andExpect(status().isOk())
                     .andReturn();
             String body = poll.getResponse().getContentAsString();
@@ -76,19 +81,36 @@ class IngestApiIT extends AbstractIntegrationTest {
         assertThat(reportUri).isEqualTo("s3://reports/ingest/" + runId + "/report.json");
 
         // 3) alias redirect
-        mockMvc.perform(post("/v1/data/import"))
+        mockMvc.perform(post("/v1/data/import")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
                 .andExpect(status().isPermanentRedirect())
                 .andExpect(header().string(HttpHeaders.LOCATION, "/v1/ingest"));
 
-        // 4) prometheus metrics contain started counter > 0
-        MvcResult prom = mockMvc.perform(get("/actuator/prometheus"))
+        // 4) prometheus metrics require monitoring token
+        String mon = JwtTestUtils.token("svc", List.of("MONITORING"));
+        MvcResult prom = mockMvc.perform(get("/actuator/prometheus")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + mon))
                 .andExpect(status().isOk())
                 .andReturn();
+        mockMvc.perform(get("/actuator/prometheus"))
+                .andExpect(status().isUnauthorized());
         String promBody = prom.getResponse().getContentAsString();
         Pattern pattern = Pattern.compile("chs_ingest_runs_started_total\\{[^}]*} (\\d+(?:\\.\\d+)?)");
         Matcher matcher = pattern.matcher(promBody);
         assertThat(matcher.find()).isTrue();
         assertThat(Double.parseDouble(matcher.group(1))).isGreaterThan(0.0);
+    }
+
+    @Test
+    void ingest_requires_auth() throws Exception {
+        mockMvc.perform(post("/v1/ingest").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isUnauthorized());
+
+        String token = JwtTestUtils.token("bob", List.of("MONITORING"));
+        mockMvc.perform(post("/v1/ingest").header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isForbidden());
     }
 }
 

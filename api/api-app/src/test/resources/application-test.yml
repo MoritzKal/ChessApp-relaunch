@@ -1,0 +1,9 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          secret: testsecret
+chs:
+  rate-limit:
+    enabled: false
