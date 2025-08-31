@@ -15,16 +15,50 @@ spring:
     schemas: public
     baseline-on-migrate: true
     baseline-version: 0
+security:
+  jwt:
+    secret: ${JWT_SECRET:change_me}
+    ttlMinutes: ${JWT_TTL_MINUTES:60}
+  cors:
+    allowedOrigin: ${FRONTEND_ORIGIN:http://localhost:3000}
+  scrape:
+    token: ${SCRAPE_TOKEN:change_me}
+bucket4j:
+  filters:
+    - cache-name: buckets
+      filter-name: rate-limit-ip
+      url: .*
+      rate-limits:
+        - bandwidths:
+            - capacity: 100
+              time: 1
+              unit: minutes
+      expression: "getRemoteAddr()"
+    - cache-name: buckets
+      filter-name: rate-limit-token
+      url: .*
+      rate-limits:
+        - bandwidths:
+            - capacity: 1000
+              time: 1
+              unit: minutes
+      expression: "getHeader('Authorization')"
 management:
-  endpoints.web.exposure.include: health,info,prometheus, env, metrics,beans,mappings, threaddump
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
   endpoint:
     env:
       show-values: ALWAYS
-  endpoint.health.probes.enabled: true
-  metrics.tags:
-    application: api
-    component: api
-    username: ${CHESS_USERNAME:M3NG00S3}
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: api
+      component: api
+      username: ${CHESS_USERNAME:M3NG00S3}
   prometheus:
     metrics:
       export:
