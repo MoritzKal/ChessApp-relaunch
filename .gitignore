@@ -22,3 +22,6 @@ Thumbs.db
 **/lib/
 .venv/
 **/__pycache__/
+data/raw/
+reports/
+junit.xml
