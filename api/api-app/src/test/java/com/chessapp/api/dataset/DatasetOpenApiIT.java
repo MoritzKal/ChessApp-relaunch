@@ -43,4 +43,11 @@ class DatasetOpenApiIT extends com.chessapp.api.testutil.AbstractIntegrationTest
         assertThat(paths.has("/v1/datasets/{id}")).isTrue();
         assertThat(paths.path("/v1/datasets/{id}").has("get")).isTrue();
     }
+
+    @Test
+    void swagger_ui_available() {
+        String url = "http://localhost:" + port + "/swagger-ui.html";
+        ResponseEntity<String> resp = rest.getForEntity(url, String.class);
+        assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
+    }
 }
