@@ -53,4 +53,6 @@ curl -sS -X POST http://localhost:8080/v1/ingest \
 ## Observability/Links
 
 - `GET /actuator/prometheus` (Scrape)
+- `chs_ingest_runs_started_total`, `chs_ingest_runs_succeeded_total`, `chs_ingest_runs_failed_total`,
+  `chs_ingest_active_runs`, `chs_ingest_job_duration_seconds`
 - Logs/Traces via Grafana/Loki (siehe [OBSERVABILITY](./OBSERVABILITY.md))

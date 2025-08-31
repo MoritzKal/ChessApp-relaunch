@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     }
 )
 @AutoConfigureMockMvc
-class IngestControllerIT extends AbstractIntegrationTest {
+class IngestApiIT extends AbstractIntegrationTest {
 
     @Autowired
     MockMvc mockMvc;
@@ -51,6 +51,7 @@ class IngestControllerIT extends AbstractIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"username\":\"alice\"}"))
             .andExpect(status().isAccepted())
+            .andExpect(header().string(HttpHeaders.LOCATION, org.hamcrest.Matchers.matchesPattern("/v1/ingest/.+")))
             .andReturn();
         String startBody = start.getResponse().getContentAsString();
         UUID runId = UUID.fromString(JsonPath.read(startBody, "$.runId"));

@@ -6,17 +6,13 @@ import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
 
-@Entity(name = "ingest_runs")
+@Entity
+@Table(name = "ingest_runs")
 public class IngestRunEntity {
 
     @Id
-    private UUID id;
-
-    @Column(nullable = false)
-    private String username;
-
-    @Column(name = "range")
-    private String range;
+    @Column(name = "run_id")
+    private UUID runId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -25,35 +21,32 @@ public class IngestRunEntity {
     @Column(name = "report_uri")
     private String reportUri;
 
-    private String error;
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 
-    @Column(name = "started_at", nullable = false)
-    private Instant startedAt;
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
 
-    @Column(name = "finished_at")
-    private Instant finishedAt;
+    @PrePersist
+    void onCreate() {
+        Instant now = Instant.now();
+        this.createdAt = now;
+        this.updatedAt = now;
+    }
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
+    @PreUpdate
+    void onUpdate() {
+        this.updatedAt = Instant.now();
+    }
 
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
-
-    public String getRange() { return range; }
-    public void setRange(String range) { this.range = range; }
-
+    public UUID getRunId() { return runId; }
+    public void setRunId(UUID runId) { this.runId = runId; }
     public IngestRunStatus getStatus() { return status; }
     public void setStatus(IngestRunStatus status) { this.status = status; }
-
     public String getReportUri() { return reportUri; }
     public void setReportUri(String reportUri) { this.reportUri = reportUri; }
-
-    public String getError() { return error; }
-    public void setError(String error) { this.error = error; }
-
-    public Instant getStartedAt() { return startedAt; }
-    public void setStartedAt(Instant startedAt) { this.startedAt = startedAt; }
-
-    public Instant getFinishedAt() { return finishedAt; }
-    public void setFinishedAt(Instant finishedAt) { this.finishedAt = finishedAt; }
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+    public Instant getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }

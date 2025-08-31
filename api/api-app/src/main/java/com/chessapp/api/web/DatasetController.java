@@ -3,14 +3,15 @@ package com.chessapp.api.web;
 import java.util.List;
 import java.util.UUID;
 
-import org.springframework.http.HttpStatus;
+import java.net.URI;
+
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.chessapp.api.service.DatasetService;
@@ -30,9 +31,9 @@ public class DatasetController {
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public DatasetResponse create(@Valid @RequestBody DatasetCreateRequest request) {
-        return datasetService.create(request);
+    public ResponseEntity<DatasetResponse> create(@Valid @RequestBody DatasetCreateRequest request) {
+        DatasetResponse resp = datasetService.create(request);
+        return ResponseEntity.created(URI.create("/v1/datasets/" + resp.getId())).body(resp);
     }
 
     @GetMapping

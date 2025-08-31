@@ -56,11 +56,8 @@ public class IngestService {
         try (MDC.MDCCloseable m = MDC.putCloseable("run_id", runId.toString())) {
             log.info("ingest requested for {}", username);
             IngestRunEntity e = new IngestRunEntity();
-            e.setId(runId);
-            e.setUsername(username);
-            e.setRange(range);
-            e.setStatus(IngestRunStatus.RUNNING);
-            e.setStartedAt(Instant.now());
+            e.setRunId(runId);
+            e.setStatus(IngestRunStatus.PENDING);
             repository.save(e);
             startedCounter.increment();
             context.getBean(IngestService.class).simulateIngest(runId, username, range);
@@ -73,25 +70,22 @@ public class IngestService {
     public void simulateIngest(UUID runId, String username, @Nullable String range) {
         try (MDC.MDCCloseable m = MDC.putCloseable("run_id", runId.toString())) {
             activeRuns.incrementAndGet();
+            Instant started = Instant.now();
+            IngestRunEntity e = repository.findById(runId).orElseThrow();
+            e.setStatus(IngestRunStatus.RUNNING);
+            repository.save(e);
             try {
                 Thread.sleep(delaySupplier.getAsLong());
-                IngestRunEntity e = repository.findById(runId).orElseThrow();
                 e.setStatus(IngestRunStatus.SUCCEEDED);
                 e.setReportUri("s3://reports/ingest/%s/report.json".formatted(runId));
-                e.setFinishedAt(Instant.now());
                 repository.save(e);
-                jobDurationTimer.record(Duration.between(e.getStartedAt(), e.getFinishedAt()));
+                jobDurationTimer.record(Duration.between(started, Instant.now()));
                 succeededCounter.increment();
                 log.info("ingest succeeded");
             } catch (Exception ex) {
-                IngestRunEntity e = repository.findById(runId).orElse(null);
-                if (e != null) {
-                    e.setStatus(IngestRunStatus.FAILED);
-                    e.setError(ex.getMessage());
-                    e.setFinishedAt(Instant.now());
-                    repository.save(e);
-                    jobDurationTimer.record(Duration.between(e.getStartedAt(), e.getFinishedAt()));
-                }
+                e.setStatus(IngestRunStatus.FAILED);
+                repository.save(e);
+                jobDurationTimer.record(Duration.between(started, Instant.now()));
                 failedCounter.increment();
                 log.error("ingest failed", ex);
             } finally {

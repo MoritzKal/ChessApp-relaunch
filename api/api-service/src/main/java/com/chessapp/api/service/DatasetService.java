@@ -1,6 +1,5 @@
 package com.chessapp.api.service;
 
-import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.chessapp.api.domain.entity.Dataset;
+import com.chessapp.api.domain.entity.DatasetEntity;
 import com.chessapp.api.domain.repo.DatasetRepository;
 import com.chessapp.api.service.dto.DatasetCreateRequest;
 import com.chessapp.api.service.dto.DatasetResponse;
@@ -53,15 +52,22 @@ public class DatasetService {
         UUID id = UUID.randomUUID();
         final String key = id + "/manifest.json";
         final String locationUri = "s3://datasets/" + key;
-        Dataset d = new Dataset();
+        DatasetEntity d = new DatasetEntity();
         d.setId(id);
         d.setName(req.getName());
         d.setVersion(req.getVersion());
-        d.setFilter(req.getFilter());
-        d.setSplit(req.getSplit());
+        try {
+            if (req.getFilter() != null) {
+                d.setFilterJson(objectMapper.writeValueAsString(req.getFilter()));
+            }
+            if (req.getSplit() != null) {
+                d.setSplitJson(objectMapper.writeValueAsString(req.getSplit()));
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize dataset", e);
+        }
         long rows = req.getSizeRows() != null ? req.getSizeRows() : 0L;
         d.setSizeRows(rows);
-        d.setCreatedAt(Instant.now());
         d.setLocationUri(locationUri);
         datasetRepository.save(d);
 
@@ -69,8 +75,8 @@ public class DatasetService {
         manifest.put("id", id.toString());
         manifest.put("name", d.getName());
         manifest.put("version", d.getVersion());
-        manifest.put("filter", d.getFilter());
-        manifest.put("split", d.getSplit());
+        manifest.put("filter", req.getFilter());
+        manifest.put("split", req.getSplit());
         manifest.put("createdAt", d.getCreatedAt());
         manifest.put("username", MDC.get("username"));
 
