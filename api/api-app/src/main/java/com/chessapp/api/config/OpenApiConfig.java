@@ -13,11 +13,12 @@ public class OpenApiConfig {
     public GroupedOpenApi v1Api() {
         return GroupedOpenApi.builder()
                 .group("v1")
-                // Include serving endpoints so /v1/predict and /v1/models/load appear in OpenAPI
+                // Include serving and ingest endpoints so they appear in OpenAPI
                 .packagesToScan(
                         "com.chessapp.api.web",
                         "com.chessapp.api.models.api",
-                        "com.chessapp.api.serving")
+                        "com.chessapp.api.serving",
+                        "com.chessapp.api.ingest.api")
                 .pathsToMatch("/v1/**")
                 .build();
     }
