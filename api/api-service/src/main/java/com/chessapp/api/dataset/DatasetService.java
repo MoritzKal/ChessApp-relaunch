@@ -1,12 +1,11 @@
 package com.chessapp.api.dataset;
 
-import java.util.List;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
-import org.springframework.data.domain.PageRequest;
+import jakarta.persistence.EntityNotFoundException;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,9 +13,8 @@ import com.chessapp.api.dataset.dto.CreateDatasetRequest;
 import com.chessapp.api.dataset.dto.DatasetResponse;
 
 @Service
+@Transactional
 public class DatasetService {
-
-    private static final Logger log = LoggerFactory.getLogger(DatasetService.class);
 
     private final DatasetRepository datasetRepository;
 
@@ -24,41 +22,36 @@ public class DatasetService {
         this.datasetRepository = datasetRepository;
     }
 
-    @Transactional
-    public DatasetResponse create(CreateDatasetRequest req) {
-        DatasetEntity d = new DatasetEntity();
-        d.setName(req.getName());
-        d.setVersion(req.getVersion());
-        d.setFilter(req.getFilterJson());
-        d.setSplit(req.getSplitJson());
-        d.setSizeRows(req.getSizeRows());
-        d.setLocationUri(req.getLocationUri());
-        datasetRepository.save(d);
-
-        try (MDC.MDCCloseable c1 = MDC.putCloseable("dataset_id", d.getId().toString());
-             MDC.MDCCloseable c2 = MDC.putCloseable("event", "dataset.created")) {
-            log.info("dataset created");
-        }
-        return DatasetMapper.toDto(d);
+    /**
+     * Persist a new dataset and return its identifier.
+     */
+    public UUID create(CreateDatasetRequest req) {
+        DatasetEntity entity = new DatasetEntity();
+        entity.setName(req.getName());
+        entity.setVersion(req.getVersion());
+        entity.setFilter(req.getFilterJson());
+        entity.setSplit(req.getSplitJson());
+        entity.setSizeRows(req.getSizeRows());
+        entity.setLocationUri(req.getLocationUri());
+        datasetRepository.save(entity);
+        return entity.getId();
     }
 
-    @Transactional(readOnly = true)
-    public List<DatasetResponse> list(int limit, int offset) {
-        log.info("dataset list");
-        return datasetRepository.findAll(PageRequest.of(offset / limit, limit))
-                .stream()
-                .map(DatasetMapper::toDto)
-                .toList();
-    }
-
+    /**
+     * Retrieve a dataset by id.
+     */
     @Transactional(readOnly = true)
     public DatasetResponse get(UUID id) {
-        try (MDC.MDCCloseable c1 = MDC.putCloseable("dataset_id", id.toString());
-             MDC.MDCCloseable c2 = MDC.putCloseable("event", "dataset.read")) {
-            log.info("dataset read");
-            return datasetRepository.findById(id)
-                    .map(DatasetMapper::toDto)
-                    .orElseThrow();
-        }
+        DatasetEntity entity = datasetRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("dataset not found: " + id));
+        return DatasetMapper.toDto(entity);
+    }
+
+    /**
+     * List datasets with pagination.
+     */
+    @Transactional(readOnly = true)
+    public Page<DatasetResponse> list(Pageable pageable) {
+        return datasetRepository.findAll(pageable).map(DatasetMapper::toDto);
     }
 }

@@ -25,7 +25,7 @@ curl -sS -X POST http://localhost:8080/v1/ingest \
 ## Datasets
 
 - `POST /v1/datasets`
-- `GET /v1/datasets`
+- `GET /v1/datasets?page=&size=` *(Pagination, size max. 100)*
 - `GET /v1/datasets/{id}`
 
 ### Beispiel

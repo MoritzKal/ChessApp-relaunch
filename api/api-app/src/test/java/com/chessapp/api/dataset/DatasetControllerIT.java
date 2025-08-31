@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,9 +57,9 @@ class DatasetControllerIT extends AbstractIntegrationTest {
         assertThat(getResp.getBody()).isNotNull();
         assertThat(getResp.getBody().getId()).isEqualTo(id);
 
-        ResponseEntity<DatasetResponse[]> listResp = rest.getForEntity(baseUrl, DatasetResponse[].class);
+        ResponseEntity<JsonNode> listResp = rest.getForEntity(baseUrl, JsonNode.class);
         assertThat(listResp.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(listResp.getBody()).isNotEmpty();
+        assertThat(listResp.getBody().path("content")).isNotEmpty();
     }
 
     @Test
