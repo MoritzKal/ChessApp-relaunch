@@ -3,8 +3,6 @@ package com.chessapp.api.dataset;
 import java.time.Instant;
 import java.util.UUID;
 
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -23,13 +21,11 @@ public class DatasetEntity {
     @Column(nullable = false)
     private String version;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb")
-    private String filter;
+    @Column(name = "filter_json")
+    private String filterJson;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb")
-    private String split;
+    @Column(name = "split_json")
+    private String splitJson;
 
     @Column(name = "size_rows")
     private Long sizeRows;
@@ -56,10 +52,10 @@ public class DatasetEntity {
     public void setName(String name) { this.name = name; }
     public String getVersion() { return version; }
     public void setVersion(String version) { this.version = version; }
-    public String getFilter() { return filter; }
-    public void setFilter(String filter) { this.filter = filter; }
-    public String getSplit() { return split; }
-    public void setSplit(String split) { this.split = split; }
+    public String getFilterJson() { return filterJson; }
+    public void setFilterJson(String filterJson) { this.filterJson = filterJson; }
+    public String getSplitJson() { return splitJson; }
+    public void setSplitJson(String splitJson) { this.splitJson = splitJson; }
     public Long getSizeRows() { return sizeRows; }
     public void setSizeRows(Long sizeRows) { this.sizeRows = sizeRows; }
     public String getLocationUri() { return locationUri; }

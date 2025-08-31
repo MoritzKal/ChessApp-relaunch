@@ -2,8 +2,8 @@ CREATE TABLE datasets (
     id UUID PRIMARY KEY,
     name TEXT NOT NULL,
     version TEXT NOT NULL,
-    filter JSONB NULL,
-    split JSONB NULL,
+    filter_json TEXT NULL,
+    split_json TEXT NULL,
     size_rows BIGINT NULL,
     location_uri TEXT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()

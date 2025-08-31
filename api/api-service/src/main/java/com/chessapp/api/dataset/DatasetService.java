@@ -29,8 +29,8 @@ public class DatasetService {
         DatasetEntity entity = new DatasetEntity();
         entity.setName(req.getName());
         entity.setVersion(req.getVersion());
-        entity.setFilter(req.getFilterJson());
-        entity.setSplit(req.getSplitJson());
+        entity.setFilterJson(req.getFilterJson());
+        entity.setSplitJson(req.getSplitJson());
         entity.setSizeRows(req.getSizeRows());
         entity.setLocationUri(req.getLocationUri());
         datasetRepository.save(entity);

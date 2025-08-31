@@ -8,8 +8,8 @@ public class DatasetMapper {
                 dataset.getId(),
                 dataset.getName(),
                 dataset.getVersion(),
-                dataset.getFilter(),
-                dataset.getSplit(),
+                dataset.getFilterJson(),
+                dataset.getSplitJson(),
                 dataset.getSizeRows(),
                 dataset.getLocationUri(),
                 dataset.getCreatedAt()
