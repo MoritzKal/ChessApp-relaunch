@@ -19,7 +19,7 @@
         <module>api-app</module>
     </modules>
 
-    <properties>
+  <properties>
         <java.version>21</java.version>
         <springdoc.version>2.6.0</springdoc.version>
         <logstash.encoder.version>7.4</logstash.encoder.version>
@@ -28,6 +28,37 @@
         <chesslib.version>1.3.4</chesslib.version>
         <lombok.version>1.18.32</lombok.version>
     </properties>
+    <dependencies>
+        <!-- Security -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <!-- JWT (MVP, optional einsetzbar) -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>0.11.5</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>0.11.5</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>0.11.5</version>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- Caffeine für leichtes In-Mem Rate-Limiting -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+            <version>3.1.8</version>
+        </dependency>
+    </dependencies>
     <repositories>
         <repository>
             <id>jitpack.io</id>
