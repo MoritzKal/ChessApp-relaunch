@@ -41,3 +41,8 @@ scrape_configs:
           model_version:
           username:
           component:
+  - job_name: 'serve'
+    # This job looked like a Prometheus scrape; promtail doesn't support metrics_path here.
+    # If you want to collect logs from the 'serve' container, the 'docker' job above already does it.
+    # Remove invalid fields to avoid promtail startup failure.
+    static_configs: []
