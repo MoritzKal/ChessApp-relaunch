@@ -83,6 +83,7 @@ curl_json() {
       -X "$method" "$url" -w "%{http_code}" || true)
   fi
 
+  [[ "$code" =~ ^[0-9]{3}$ ]] || code="000"
   echo "$code|$hfile|$bfile|$tfile"
 }
 
