@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
 pushd "$ROOT_DIR" >/dev/null
 
 mkdir -p codex-context
+source scripts/lib/smoke.sh
 
 echo "[A] Bringing up infra services (db, minio, mlflow, prometheus, loki, promtail, grafana)"
 if command -v docker >/dev/null 2>&1; then
@@ -53,29 +54,7 @@ else
 fi
 
 echo "[E] Smoke (optional) if API running on :8080"
-SMOKE_REPORT="codex-context/SMOKE_REPORT.md"
-HEALTH_URL="http://localhost:8080/actuator/health"
-OPENAPI_URL="http://localhost:8080/v3/api-docs"
-
-if command -v curl >/dev/null 2>&1; then
-  if curl -fsS "$HEALTH_URL" >/dev/null 2>&1; then
-    {
-      echo "# Smoke Report"
-      echo "Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-      echo
-      echo "## /actuator/health"
-      curl -fsS "$HEALTH_URL" || true
-      echo
-      echo "## /v3/api-docs"
-      curl -fsS "$OPENAPI_URL" | tee codex-context/openapi.json >/dev/null || true
-    } >"$SMOKE_REPORT"
-    echo "Wrote $SMOKE_REPORT and updated codex-context/openapi.json"
-  else
-    echo "INFO: API not reachable on :8080; skipping smoke report"
-  fi
-else
-  echo "WARN: curl not found; skipping smoke"
-fi
+generate_smoke_report || echo "INFO: API not reachable on :8080; skipping smoke report"
 
 popd >/dev/null
 echo "All checks finished."

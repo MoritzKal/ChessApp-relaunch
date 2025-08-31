@@ -20,5 +20,6 @@ Thumbs.db
 # .env
 **/artifacts/
 **/lib/
+!scripts/lib/
 .venv/
-**/__pycache__/
+**/__pycache__
