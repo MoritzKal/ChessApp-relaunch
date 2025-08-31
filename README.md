@@ -19,7 +19,7 @@ Mehr Details: [API](./docs/API_ENDPOINTS.md) · [OBS](./docs/OBSERVABILITY.md)
 
 ## Lokales Codex-Profil
 
-Hinweise zum lokalen Entwicklungsprofil findest du in [docs/CODEX-SETUP.md](docs/CODEX-SETUP.md).
+Hinweise zum lokalen Entwicklungsprofil findest du in [docs/CODEX-SETUP.md](./docs/CODEX-SETUP.md).
 
 ## Offline Ingest lokal
 
