@@ -16,11 +16,12 @@ public class OpenApiConfig {
     public GroupedOpenApi v1Api() {
         return GroupedOpenApi.builder()
                 .group("v1")
-                // Include serving and ingest endpoints so they appear in OpenAPI
+                // Include serving endpoints so /v1/predict and /v1/models/load appear in OpenAPI
                 .packagesToScan(
                         "com.chessapp.api.web",
                         "com.chessapp.api.models.api",
                         "com.chessapp.api.serving",
+                        "com.chessapp.api.dataset",
                         "com.chessapp.api.ingest.api")
                 .pathsToMatch("/v1/**")
                 .build();
@@ -34,7 +35,8 @@ public class OpenApiConfig {
                         .version("v1")
                         .description("Endpoints for ingest/train/serve/play"))
                 .components(new Components().addSecuritySchemes("bearerAuth",
-                        new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT")))
+                        new SecurityScheme().type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer").bearerFormat("JWT")))
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"));
     }
 }

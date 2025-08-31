@@ -8,6 +8,7 @@
 - Prometheus Targets **grün**
 - Grafana Explore → `{service=~".+"}` zeigt Logs
 - API `/v1/health`, ML `/health`, Serve `/health`
+- Lokaler Smoke-Test: `./smoke_chessapp.sh` (siehe [RUNBOOK_LOCAL_SMOKE](./RUNBOOK_LOCAL_SMOKE.md))
 
 ## Häufige Störungen & Fixes
 - **Grafana Login/Explore fehlt:** Anonymous kurz deaktivieren, Passwort resetten (`grafana-cli admin reset-admin-password`). 

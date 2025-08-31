@@ -1,10 +1,8 @@
-package com.chessapp.api.domain.repo;
+package com.chessapp.api.dataset;
 
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-
-import com.chessapp.api.domain.entity.DatasetEntity;
 
 public interface DatasetRepository extends JpaRepository<DatasetEntity, UUID> {
 }

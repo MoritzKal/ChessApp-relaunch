@@ -1,4 +1,4 @@
-package com.chessapp.api.domain.entity;
+package com.chessapp.api.dataset;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -37,11 +37,15 @@ public class DatasetEntity {
     private Instant createdAt;
 
     @PrePersist
-    void onCreate() {
-        this.createdAt = Instant.now();
+    public void prePersist() {
+        if (id == null) {
+            id = UUID.randomUUID();
+        }
+        if (createdAt == null) {
+            createdAt = Instant.now();
+        }
     }
 
-    // getters and setters
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
     public String getName() { return name; }

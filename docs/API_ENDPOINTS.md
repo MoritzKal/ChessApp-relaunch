@@ -1,6 +1,10 @@
 # API Endpoints (/v1)
 
-> Stabilität gemäß Contract-Board. Nur additive Änderungen. **Standard:** `/v1/ingest` · **Alias (Bestand):** `/v1/data/import` (keine v1-Breakings). Alle `/v1/**` Endpunkte erwarten `Authorization: Bearer <JWT>` mit Rolle `ROLE_USER`. `/actuator/prometheus` erfordert ein Token mit `ROLE_MONITORING`.
+> Stabilität gemäß Contract-Board. Nur additive Änderungen. **Standard:** `/v1/ingest` · **Alias (Bestand):** `/v1/data/import` (keine v1-Breakings).
+> All `/v1/**` endpoints require a valid JWT unless noted otherwise. `/v1/health` is public.
+> `/actuator/**` endpoints are admin-only and require a JWT with `ROLE_ADMIN`; `/actuator/prometheus` additionally expects `Authorization: Bearer <scrape-token>`.
+
+> Alle `/v1/**` Endpunkte erfordern `Authorization: Bearer <JWT>` (Ausnahmen: `/v3/api-docs/**`, `/swagger-ui/**`).
 
 ## Health/Meta
 
@@ -10,8 +14,8 @@
 ## Ingest
 
 - `POST /v1/ingest`
-  - Body: `{"username":"<name>","range":"2025-01..2025-08"}` (`range` optional)
-- **Alias:** `POST /v1/data/import` → 308 → `/v1/ingest`
+  - Body: `{"username":"<name>","from":"2025-01","to":"2025-08"}`
+- **Alias:** `POST /v1/data/import` → intern Alias auf `/v1/ingest`
 - `GET /v1/ingest/{runId}` → Status
 
 ### Beispiel
@@ -19,14 +23,24 @@
 ```bash
 curl -sS -X POST http://localhost:8080/v1/ingest \
   -H 'Content-Type: application/json' \
-  -d '{"username":"demo","range":"2025-01..2025-08"}'
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"username":"demo","from":"2025-01","to":"2025-08"}'
 ```
 
 ## Datasets
 
-- `POST /v1/datasets`
-- `GET /v1/datasets`
-- `GET /v1/datasets/{id}`
+- `POST /v1/datasets` – 201 + `Location: /v1/datasets/{id}`
+- `GET /v1/datasets` – Liste (paged; `page`,`size`)
+- `GET /v1/datasets/{id}` – Detail (`locationUri`, `sizeRows`, `createdAt`)
+
+### Beispiel
+
+```bash
+curl -sS -X POST http://localhost:8080/v1/datasets \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"name":"train","version":"1.0.0","filter":{"foo":"bar"}}'
+```
 
 ## Training
 
@@ -52,7 +66,6 @@ curl -sS -X POST http://localhost:8080/v1/ingest \
 
 ## Observability/Links
 
-- `GET /actuator/prometheus` (Scrape)
-- `chs_ingest_runs_started_total`, `chs_ingest_runs_succeeded_total`, `chs_ingest_runs_failed_total`,
-  `chs_ingest_active_runs`, `chs_ingest_job_duration_seconds`
+- `GET /actuator/**` → requires authentication (ROLE_ADMIN).
+- `GET /actuator/prometheus` → additionally requires `Authorization: Bearer <scrape-token>`.
 - Logs/Traces via Grafana/Loki (siehe [OBSERVABILITY](./OBSERVABILITY.md))

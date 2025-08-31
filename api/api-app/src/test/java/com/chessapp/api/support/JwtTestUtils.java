@@ -1,53 +1,50 @@
 package com.chessapp.api.support;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Base64;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-/** Utility to build HS256 JWTs for tests. */
 public final class JwtTestUtils {
-    private static final String SECRET = "testsecret"; // sync with application-test.yml
 
-    private JwtTestUtils() {}
+    private JwtTestUtils() {
+    }
 
-    public static String token(String sub, List<String> roles) {
+    public static final String SECRET = "test-secret";
+
+    public static String createToken(String subject, String secret, String... roles) {
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            String headerJson = mapper.writeValueAsString(Map.of("alg", "HS256", "typ", "JWT"));
-            String payloadJson = mapper.writeValueAsString(payload(sub, roles));
+            String headerJson = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
             String header = Base64.getUrlEncoder().withoutPadding()
                     .encodeToString(headerJson.getBytes(StandardCharsets.UTF_8));
+
+            StringBuilder payloadBuilder = new StringBuilder();
+            payloadBuilder.append("{\"sub\":\"").append(subject).append("\"");
+            payloadBuilder.append(",\"exp\":").append(Instant.now().plusSeconds(3600).getEpochSecond());
+            if (roles != null && roles.length > 0) {
+                payloadBuilder.append(",\"roles\":[");
+                for (int i = 0; i < roles.length; i++) {
+                    if (i > 0) {
+                        payloadBuilder.append(',');
+                    }
+                    payloadBuilder.append('"').append(roles[i]).append('"');
+                }
+                payloadBuilder.append(']');
+            }
+            payloadBuilder.append('}');
             String payload = Base64.getUrlEncoder().withoutPadding()
-                    .encodeToString(payloadJson.getBytes(StandardCharsets.UTF_8));
-            String signature = sign(header + "." + payload);
-            return header + "." + payload + "." + signature;
+                    .encodeToString(payloadBuilder.toString().getBytes(StandardCharsets.UTF_8));
+
+            String unsigned = header + "." + payload;
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            String signature = Base64.getUrlEncoder().withoutPadding()
+                    .encodeToString(mac.doFinal(unsigned.getBytes(StandardCharsets.UTF_8)));
+
+            return unsigned + "." + signature;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public static String token(String sub, String... roles) {
-        return token(sub, roles == null ? List.of() : List.of(roles));
-    }
-
-    private static Map<String, Object> payload(String sub, List<String> roles) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("sub", sub);
-        if (roles != null && !roles.isEmpty()) {
-            claims.put("roles", roles);
-        }
-        return claims;
-    }
-
-    private static String sign(String data) throws Exception {
-        Mac mac = Mac.getInstance("HmacSHA256");
-        mac.init(new SecretKeySpec(SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-        return Base64.getUrlEncoder().withoutPadding()
-                .encodeToString(mac.doFinal(data.getBytes(StandardCharsets.UTF_8)));
     }
 }
