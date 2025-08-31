@@ -5,8 +5,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -23,6 +25,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.LongSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -61,6 +64,12 @@ class IngestIT {
         return "http://localhost:" + port;
     }
 
+    @TestConfiguration
+    static class TestCfg {
+        @Bean
+        LongSupplier ingestDelaySupplier() { return () -> 0L; }
+    }
+
     @Test
     @Timeout(30)
     void ingestFlow_andMetrics() throws Exception {
@@ -95,9 +104,9 @@ class IngestIT {
         assertThat(reportUri).isEqualTo("s3://reports/ingest/" + runId + "/report.json");
 
         // metrics
-        ResponseEntity<Map> metric = rest.getForEntity(baseUrl()+"/actuator/metrics/chs_ingest_jobs_total", Map.class);
+        ResponseEntity<Map> metric = rest.getForEntity(baseUrl()+"/actuator/metrics/chs_ingest_runs_succeeded_total", Map.class);
         assertThat(metric.getStatusCode().is2xxSuccessful()).isTrue();
         assertThat(metric.getBody()).isNotNull();
-        assertThat(metric.getBody().toString()).contains("chs_ingest_jobs_total");
+        assertThat(metric.getBody().toString()).contains("chs_ingest_runs_succeeded_total");
     }
 }

@@ -31,11 +31,6 @@ public class ObservabilityConfig {
     }
 
     @Bean
-    public Counter ingestJobsCounter(MeterRegistry registry) {
-        return Counter.builder("chs_ingest_jobs_total").register(registry);
-    }
-
-    @Bean
     public Counter ingestGamesCounter(MeterRegistry registry) {
         return Counter.builder("chs_ingest_games_total").register(registry);
     }

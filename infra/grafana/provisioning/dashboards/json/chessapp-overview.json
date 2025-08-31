@@ -16,12 +16,12 @@
   "panels": [
     {
       "type": "timeseries",
-      "title": "Ingest Jobs (chs_ingest_jobs_total)",
+      "title": "Ingest Runs (chs_ingest_runs_started_total)",
       "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "chs_ingest_jobs_total",
+          "expr": "chs_ingest_runs_started_total",
           "legendFormat": "{{application}}/{{component}} ({{username}})",
           "refId": "A"
         }

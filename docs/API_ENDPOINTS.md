@@ -10,7 +10,7 @@
 ## Ingest
 
 - `POST /v1/ingest`
-  - Body: `{"username":"<name>","from":"2025-01","to":"2025-08"}`
+  - Body: `{"username":"<name>","range":"2025-01..2025-08"}` (`range` optional)
 - **Alias:** `POST /v1/data/import` → intern Alias auf `/v1/ingest`
 - `GET /v1/ingest/{runId}` → Status
 
@@ -19,7 +19,7 @@
 ```bash
 curl -sS -X POST http://localhost:8080/v1/ingest \
   -H 'Content-Type: application/json' \
-  -d '{"username":"demo","from":"2025-01","to":"2025-08"}'
+  -d '{"username":"demo","range":"2025-01..2025-08"}'
 ```
 
 ## Datasets

@@ -1,4 +1,3 @@
-DROP TABLE IF EXISTS ingest_runs CASCADE;
 CREATE TABLE ingest_runs (
   id UUID PRIMARY KEY,
   username TEXT NOT NULL,

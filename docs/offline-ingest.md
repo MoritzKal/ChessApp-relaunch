@@ -39,7 +39,7 @@ API configuration (profile codex)
 Run offline ingest (bash)
 - Start job:
   - RESP=$(curl -sS -H 'Content-Type: application/json' \
-     -d '{"username":"M3NG00S3","from":"2025-07","to":"2025-08","offline":true}' \
+     -d '{"username":"M3NG00S3","range":"2025-07..2025-08","offline":true}' \
      http://localhost:8080/v1/ingest)
   - RID=$(echo "$RESP" | jq -r .runId)
 - Poll status (max 60×, 2s):
