@@ -47,29 +47,37 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,prometheus
-  endpoint:
-    env:
-      show-values: ALWAYS
-    health:
-      probes:
+        include: health,info,prometheus
+    endpoint:
+      env:
+        show-values: ALWAYS
+      health:
+        probes:
+          enabled: true
+      prometheus:
         enabled: true
-  metrics:
-    tags:
-      application: api
-      component: api
-      username: ${CHESS_USERNAME:M3NG00S3}
-  prometheus:
     metrics:
-      export:
-        enabled: true
+      tags:
+        application: api
+        component: api
+        username: ${CHESS_USERNAME:M3NG00S3}
+      distribution:
+        percentiles-histogram:
+          http:
+            server:
+              requests: true
+    prometheus:
+      metrics:
+        export:
+          enabled: true
 logging:
-  level:
-    root: INFO
-    com.chessapp.api: INFO
-    org.flywaydb: DEBUG
-    # WebClient logging (set env LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB_REACTIVE_FUNCTION_CLIENT=DEBUG to override)
-    org.springframework.web.reactive.function.client: INFO
+    level:
+      root: INFO
+      org.springframework: INFO
+      com.chessapp.api: INFO
+      org.flywaydb: DEBUG
+      # WebClient logging (set env LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB_REACTIVE_FUNCTION_CLIENT=DEBUG to override)
+      org.springframework.web.reactive.function.client: INFO
   pattern:
     console: "{\"ts\":\"%d{yyyy-MM-dd'T'HH:mm:ss.SSSX}\",\"level\":\"%p\",\"logger\":\"%c{1}\",\"msg\":%m,\"run_id\":\"%X{run_id}\",\"component\":\"training\"}%n"
 chs:
