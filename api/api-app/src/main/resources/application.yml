@@ -47,18 +47,25 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,prometheus
+        include: health,info,prometheus
   endpoint:
     env:
       show-values: ALWAYS
     health:
       probes:
         enabled: true
+    prometheus:
+      enabled: true
   metrics:
     tags:
       application: api
       component: api
       username: ${CHESS_USERNAME:M3NG00S3}
+    distribution:
+      percentiles-histogram:
+        http:
+          server:
+            requests: true
   prometheus:
     metrics:
       export:
@@ -66,6 +73,7 @@ management:
 logging:
   level:
     root: INFO
+    org.springframework: INFO
     com.chessapp.api: INFO
     org.flywaydb: DEBUG
     # WebClient logging (set env LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB_REACTIVE_FUNCTION_CLIENT=DEBUG to override)

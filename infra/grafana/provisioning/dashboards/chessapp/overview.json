@@ -1,0 +1,37 @@
+{
+  "uid": "chs-overview-v1",
+  "title": "ChessApp – Overview",
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "[p_reqmin] Requests/min",
+      "gridPos": {"h":8,"w":24,"x":0,"y":0},
+      "targets": [
+        {"refId":"A","expr":"sum by (job) (rate(http_server_requests_seconds_count{job=~\"api|serve|ml\"}[$__rate_interval])) * 60"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "req/min"}}
+    },
+    {
+      "type": "timeseries",
+      "title": "[p_p95] HTTP p95 latency (ms)",
+      "gridPos": {"h":8,"w":24,"x":0,"y":8},
+      "targets": [
+        {"refId":"A","expr":"histogram_quantile(0.95, sum by (le,job) (rate(http_server_requests_seconds_bucket{job=~\"api|serve|ml\"}[$__rate_interval]))) * 1000"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "ms"}}
+    },
+    {
+      "type": "timeseries",
+      "title": "[p_errratio] Error Ratio (5xx/total)",
+      "gridPos": {"h":8,"w":24,"x":0,"y":16},
+      "targets": [
+        {"refId":"A","expr":"sum(rate(http_server_requests_seconds_count{status=~\"5..\",job=~\"api|serve|ml\"}[$__rate_interval])) / sum(rate(http_server_requests_seconds_count{job=~\"api|serve|ml\"}[$__rate_interval]))"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "percent"}}
+    }
+  ]
+}
