@@ -1,6 +1,7 @@
 # ChessApp – Infra Bootstrap
 
 ## Quickstart
+
 1. `cp .env.example .env` und Secrets anpassen.
 2. `make up` (oder `docker compose -f infra/docker-compose.yml --env-file .env up -d`).
 3. Öffne:
@@ -12,9 +13,11 @@
 Mehr Details: [API](./docs/API_ENDPOINTS.md) · [OBS](./docs/OBSERVABILITY.md)
 
 ## Artefakte & Buckets
+
 - MinIO Buckets: `datasets/`, `models/`, `reports/`, `logs/`, `mlflow/` (automatisch erstellt).
 
 ## Ports
+
 - Grafana 3000 · Prometheus 9090 · Loki 3100 · MLflow 5000 · MinIO S3 9000 · MinIO Console 9001 · Postgres 5432
 
 ## Lokales Codex-Profil
@@ -24,12 +27,14 @@ Hinweise zum lokalen Entwicklungsprofil findest du in [docs/CODEX-SETUP.md](./do
 ## Offline Ingest lokal
 
 Siehe `docs/offline-ingest.md`:
+
 - MinIO starten und Buckets `reports`/`logs` sicherstellen
 - API im Profil `codex` starten (enthält lokale S3-Defaults)
 - Offline-Ingest via `curl` starten und Status pollen
 - `reportUri` prüfen (`s3://reports/ingest/<runId>/report.json`)
 
 ## Windows Notes (Git-Bash)
+
 - Git-Bash rewritet absolute UNIX-Pfade (MSYS Path Conversion). Vor Docker-Kommandos setzen:
   - `export MSYS_NO_PATHCONV=1`
   - `export MSYS2_ARG_CONV_EXCL="*"`

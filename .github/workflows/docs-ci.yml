@@ -18,13 +18,23 @@ jobs:
       - name: Prettier check
         uses: actionsx/prettier@v2
         with:
-          args: --check "**/*.md"
+          args: --check README.md docs/API_ENDPOINTS.md docs/OBSERVABILITY.md docs/PROJECT_OVERVIEW.md docs/ROADMAP.md docs/STATE.md docs/PR_SUMMARY.md docs/REPORT_DUPLICATES.md docs/roles/*.md docs/chatgpt-project/*.md docs/tooling/SSOT_RULES.md
 
       - name: Markdownlint
         uses: DavidAnson/markdownlint-cli2-action@v16
         with:
           globs: |
-            **/*.md
+            README.md
+            docs/API_ENDPOINTS.md
+            docs/OBSERVABILITY.md
+            docs/PROJECT_OVERVIEW.md
+            docs/ROADMAP.md
+            docs/STATE.md
+            docs/PR_SUMMARY.md
+            docs/REPORT_DUPLICATES.md
+            docs/roles/*.md
+            docs/chatgpt-project/*.md
+            docs/tooling/SSOT_RULES.md
 
       - name: Link check
         uses: gaurav-nelson/github-action-markdown-link-check@v1

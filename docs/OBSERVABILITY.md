@@ -2,7 +2,7 @@
 
 ## Prinzipien
 
-- **chs_*** Metriken
+- **chs\_\*** Metriken
 - strukturierte **JSON-Logs** (MDC: run_id, dataset_id, model_id, username, component)
 - **Prometheus + Grafana + Loki**, **MLflow** für Runs/Artefakte
 
@@ -35,4 +35,3 @@
 - Training: loss/val_acc, throughput
 - Ingest: jobs/min, failures
 - Logs: Loki Query `{service=~".+"}` + Filter (`component`, `model_id`)
-
