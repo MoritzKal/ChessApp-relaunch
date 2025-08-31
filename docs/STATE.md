@@ -1,8 +1,15 @@
-# Projektstatus (Stand: 2025-08-29)
+# STATE – Stand: 2025-08-31
 
-- Infra: **up**
-- Datasets: **live** (z. B. Demonstrationseinträge vorhanden)
-- Ingest: **offline-Slice live** (idempotent, SAN, Positions, Report)
-- Training: **Skeleton live** (Prometheus `chs_training_*`, MLflow-Integration, Artefakte nach erstem Lauf)
-- Serving: **Skeleton live** (legal move, `chs_predict_*` + Logs, API-Proxy)
-- Dashboards: **ChessApp – Overview** provisioniert
+## System
+
+- Compose-Stack lauffähig (API, MLflow, Prometheus, Grafana, Loki)
+- B1–B3 live (Registry read-only, Serve Reload by Version, Observability-Panels)
+
+## In Arbeit (Next)
+
+- Play UI (Real-Predict Hook), Contract-Check `/v1/predict`
+
+## Belege
+
+- Grafana Dashboard „ChessApp – Overview“ (p95 Latenz, Error-Rate)
+- MLflow letzter erfolgreicher Trainings-Run
