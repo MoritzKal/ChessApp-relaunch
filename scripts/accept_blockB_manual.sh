@@ -7,6 +7,9 @@ SERVE_BASE="${SERVE_BASE:-http://localhost:8000}"
 SERVE_ALT="${SERVE_ALT:-http://localhost:8001}"    # optional
 PROM_URL="${PROM_URL:-http://localhost:9090}"
 
+# Optional: seed a dummy best.pt before tests (useful for local/dev)
+SEED_MODEL="${SEED_MODEL:-false}"
+
 MODEL_ID="${MODEL_ID:-default}"
 MODEL_VERSION="${MODEL_VERSION:-0}"
 
@@ -83,6 +86,7 @@ curl_json() {
       -X "$method" "$url" -w "%{http_code}" || true)
   fi
 
+  [[ "$code" =~ ^[0-9]{3}$ ]] || code="000"
   echo "$code|$hfile|$bfile|$tfile"
 }
 
@@ -94,6 +98,7 @@ log "SERVE_ALT=$SERVE_ALT"
 log "PROM_URL=$PROM_URL"
 log "MODEL_ID=$MODEL_ID"
 log "MODEL_VERSION=$MODEL_VERSION"
+log "SEED_MODEL=$SEED_MODEL"
 log "Artifacts dir: $ART_DIR"
 
 # ===== Health checks ========================================================
@@ -116,6 +121,17 @@ if curl -sf "$API_BASE/v3/api-docs/v1" -o "$ART_DIR/openapi_v1.json"; then
   fi
 else
   log "WARN: Could not fetch $API_BASE/v3/api-docs/v1"
+fi
+
+# ===== Optional model seeding ==============================================
+if [[ "$SEED_MODEL" == "true" ]]; then
+  sect "Optional model seeding"
+  log "Seeding dummy best.pt for ${MODEL_ID}/${MODEL_VERSION} (if needed)"
+  if bash scripts/seed_default_model.sh >>"$ROOT_REPORT" 2>&1; then
+    log "Model seed completed (see above for details)."
+  else
+    log "WARN: Model seed script reported an error (continuing)."
+  fi
 fi
 
 # ===== Determine /models/load endpoint & call ==============================

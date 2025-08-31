@@ -44,7 +44,8 @@ logging:
 chs:
   default-username: ${CHESS_USERNAME:M3NG00S3}
   serve:
-    baseUrl: ${CHS_SERVE_BASEURL:http://serve:8001}
+    # For local (Codex) profile, default to localhost unless overridden
+    baseUrl: ${CHS_SERVE_BASEURL:http://localhost:8001}
 
 chess:
   ingest:

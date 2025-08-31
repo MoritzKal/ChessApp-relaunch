@@ -4,6 +4,11 @@ import os
 from typing import Callable, Optional, Tuple
 
 from prometheus_client import Counter
+from botocore.exceptions import BotoCoreError, ClientError
+try:
+    import boto3  # type: ignore
+except Exception:  # pragma: no cover
+    boto3 = None
 
 # Metrics
 MODELS_LOADED = Counter(
@@ -57,6 +62,10 @@ class ModelLoader:
         path = os.path.join(self.root, model_id, model_version, "best.pt")
         predictor: Callable
         try:
+            if not os.path.exists(path):
+                # Optional: try to fetch from S3/MinIO if enabled
+                if os.getenv("SERVE_ENABLE_S3_FETCH", "true").lower() == "true":
+                    self._try_fetch_from_s3(model_id, model_version, path)
             if os.path.exists(path):
                 predictor = self._load_predictor(path)
                 MODELS_LOADED.labels(
@@ -70,14 +79,16 @@ class ModelLoader:
                 )
             else:
                 raise FileNotFoundError(path)
-        except Exception:
-            MODEL_RELOAD_FAILURES.labels(reason="missing_artifact").inc()
+        except Exception as e:
+            # If file is missing, mark as missing_artifact; else internal
+            reason = "missing_artifact" if isinstance(e, FileNotFoundError) else "internal"
+            MODEL_RELOAD_FAILURES.labels(reason=reason).inc()
             predictor = self._stub_predictor()
             _log(
                 "model.load_failed",
                 model_id=model_id,
                 model_version=model_version,
-                reason="missing_artifact",
+                reason=reason,
             )
 
         self._active = (model_id, model_version, predictor)
@@ -90,6 +101,46 @@ class ModelLoader:
         return self._active
 
     # --- helpers -------------------------------------------------
+    def _try_fetch_from_s3(self, model_id: str, model_version: str, dest_path: str) -> None:
+        """Attempt to download best.pt from S3/MinIO to dest_path.
+
+        Controlled via env:
+        - SERVE_S3_ENDPOINT (defaults to ML_S3_ENDPOINT)
+        - SERVE_S3_BUCKET  (defaults to ML_ARTIFACT_BUCKET or 'mlflow')
+        - SERVE_S3_KEY_TEMPLATE (defaults to 'models/{model_id}/{model_version}/best.pt')
+        - AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_REGION
+        """
+        if boto3 is None:
+            return
+        endpoint = os.getenv("SERVE_S3_ENDPOINT", os.getenv("ML_S3_ENDPOINT"))
+        bucket = os.getenv("SERVE_S3_BUCKET", os.getenv("ML_ARTIFACT_BUCKET", "mlflow"))
+        key_tmpl = os.getenv(
+            "SERVE_S3_KEY_TEMPLATE", "models/{model_id}/{model_version}/best.pt"
+        )
+        if not endpoint or not bucket:
+            return
+        key = key_tmpl.format(model_id=model_id, model_version=model_version)
+        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+        try:
+            s3 = boto3.client(
+                "s3",
+                endpoint_url=endpoint,
+                aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+                region_name=os.getenv("AWS_REGION", "us-east-1"),
+            )
+            s3.download_file(bucket, key, dest_path)  # type: ignore[no-untyped-call]
+            _log("model.fetched", model_id=model_id, model_version=model_version, bucket=bucket, key=key)
+        except (BotoCoreError, ClientError, Exception) as e:  # pragma: no cover
+            _log(
+                "model.fetch_failed",
+                model_id=model_id,
+                model_version=model_version,
+                error=str(e),
+                bucket=bucket,
+                key=key,
+            )
+
     def _load_predictor(self, path: str) -> Callable:
         # Placeholder for real model loading
         def predictor(*args, **kwargs):

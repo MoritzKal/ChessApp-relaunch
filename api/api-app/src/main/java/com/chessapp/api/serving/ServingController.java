@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 
 import com.chessapp.api.serving.dto.ModelsLoadRequest;
 import com.chessapp.api.serving.dto.PredictRequest;
@@ -78,6 +79,12 @@ public class ServingController {
             log.warn("event=predict.failed");
             HttpStatus status = ex.getStatusCode().is5xxServerError() ? HttpStatus.BAD_GATEWAY : HttpStatus.BAD_REQUEST;
             return ResponseEntity.status(status).body(ex.getResponseBodyAsString());
+        } catch (WebClientRequestException ex) {
+            // Connection errors, DNS failures, timeouts before response -> 502 Bad Gateway
+            String resbody = String.format("{\"status\":502,\"error\":\"Bad Gateway\",\"message\":%s}",
+                    jsonEscape(ex.getMessage()));
+            log.warn("event=predict.failed cause=connect_error msg={}", ex.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(body);
         } finally {
             MDC.clear();
         }
@@ -98,8 +105,17 @@ public class ServingController {
         } catch (WebClientResponseException ex) {
             HttpStatus status = ex.getStatusCode().is5xxServerError() ? HttpStatus.BAD_GATEWAY : HttpStatus.BAD_REQUEST;
             return ResponseEntity.status(status).body(ex.getResponseBodyAsString());
+        } catch (WebClientRequestException ex) {
+            String resbody = String.format("{\"status\":502,\"error\":\"Bad Gateway\",\"message\":%s}",
+                    jsonEscape(ex.getMessage()));
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(resbody);
         } finally {
             MDC.clear();
         }
+    }
+
+    private static String jsonEscape(String s) {
+        if (s == null) return "null";
+        return '"' + s.replace("\\", "\\\\").replace("\"", "\\\"") + '"';
     }
 }
