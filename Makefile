@@ -35,7 +35,7 @@ test: ## Run monitoring checks
 	python3 -m pip install -r infra/tests/requirements.txt
 	pytest infra/tests -q
 
-.PHONY: obs-e2e-test smoke-serve smoke-prom e2e
+.PHONY: obs-e2e-test smoke-serve smoke-prom e2e docs
 obs-e2e-test:
 	bash scripts/obs_e2e_test.sh
 
@@ -48,3 +48,5 @@ smoke-prom: ## Smoke test Prometheus scraping
 e2e: ## Run end-to-end flow
 	bash scripts/smoke_e2e.sh
 	E2E_OFFLINE=1 pytest e2e/tests/test_flow.py --junitxml=junit.xml -q
+docs: ## Run docs formatting and checks
+	make -f Makefile.docs docs

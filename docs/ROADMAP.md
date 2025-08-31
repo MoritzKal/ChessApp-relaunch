@@ -1,12 +1,16 @@
-# Roadmap (Makro, Wasserfall)
+# ROADMAP (Status: 2025-08-31)
 
-- M1 Infra & Observability-Base ✅
-- M2 API-Basis (Maven, Boot 3.x, MDC, OpenAPI) ✅
-- M3 Schema Governance (Flyway Baseline) ✅
-- M4 Dashboards (Overview stabil) ✅
-- M5 Dataset Vertical Slice ✅
-- M6 Ingest Vertical Slice ✅ (offline)
-- M7 Training Skeleton ✅
-- M8 Serving Skeleton ✅
-- M9 Play UI (Vue/Vuetify) – **next**
-- M10 Evaluation & Model Registry – **planned**
+## Block A/B – erledigt
+
+- **A Foundations** ✅
+- **B Serve/Registry/Obs Merge** ✅
+  - B1 Model-Registry (read-only) gemerged
+  - B2 Serve Reload by Version gemerged
+  - B3 Observability-Panels aktualisiert/gemerged
+
+## Next: Block C – Play UI
+
+- Frontend "Play" bindet `/v1/predict` (Mock → Real), Brett/Uhr/KI-Stärke.
+- Abhängigkeit: API Freeze `/v1/predict` & `/v1/models/load`.
+
+Siehe Kontext im [PROJECT_OVERVIEW](./PROJECT_OVERVIEW.md). Ist-Stand: [STATE](./STATE.md).

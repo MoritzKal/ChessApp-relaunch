@@ -1,0 +1,20 @@
+.PHONY: docs fmt lint links ssot api-metrics
+
+docs: fmt lint links ssot
+
+fmt:
+	npx prettier --plugin-search-dir . "**/*.md" --write
+
+lint:
+	npx markdownlint-cli2 "**/*.md"
+
+links:
+	# Prüfe nur Docs-Links; localhost/Swagger dürfen fehlschlagen (→ config ignoriert sie)
+	find docs -name "*.md" -print0 | xargs -0 -n1 -I{} markdown-link-check -q -c .markdownlinkcheck.json "{}" || true
+
+ssot:
+	python3 scripts/docs_ssot_check.py
+
+api-metrics:
+	python3 scripts/extract_endpoints.py > docs/API_ENDPOINTS.auto.md || true
+	python3 scripts/extract_metrics.py > docs/METRICS.auto.md || true
