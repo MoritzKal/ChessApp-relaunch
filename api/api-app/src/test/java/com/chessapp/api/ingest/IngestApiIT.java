@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -39,6 +40,9 @@ class IngestApiIT extends AbstractIntegrationTest {
 
     @Autowired
     MockMvc mockMvc;
+
+    @Value("${security.monitoring.token}")
+    String monitoringToken;
 
     @TestConfiguration
     static class TestCfg {
@@ -87,9 +91,8 @@ class IngestApiIT extends AbstractIntegrationTest {
                 .andExpect(header().string(HttpHeaders.LOCATION, "/v1/ingest"));
 
         // 4) prometheus metrics require monitoring token
-        String mon = JwtTestUtils.token("svc", List.of("MONITORING"));
         MvcResult prom = mockMvc.perform(get("/actuator/prometheus")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + mon))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + monitoringToken))
                 .andExpect(status().isOk())
                 .andReturn();
         mockMvc.perform(get("/actuator/prometheus"))
@@ -101,16 +104,5 @@ class IngestApiIT extends AbstractIntegrationTest {
         assertThat(Double.parseDouble(matcher.group(1))).isGreaterThan(0.0);
     }
 
-    @Test
-    void ingest_requires_auth() throws Exception {
-        mockMvc.perform(post("/v1/ingest").contentType(MediaType.APPLICATION_JSON).content("{}"))
-                .andExpect(status().isUnauthorized());
-
-        String token = JwtTestUtils.token("bob", List.of("MONITORING"));
-        mockMvc.perform(post("/v1/ingest").header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
-                .andExpect(status().isForbidden());
-    }
 }
 

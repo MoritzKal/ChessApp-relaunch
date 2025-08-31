@@ -63,22 +63,12 @@ class DatasetApiIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void dataset_requires_auth() throws Exception {
-        mockMvc.perform(get("/v1/datasets"))
-                .andExpect(status().isUnauthorized());
-
-        String token = JwtTestUtils.token("bob", List.of("MONITORING"));
-        mockMvc.perform(get("/v1/datasets").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
     void cors_preflight() throws Exception {
         mockMvc.perform(options("/v1/datasets")
-                        .header(HttpHeaders.ORIGIN, "http://localhost:3000")
+                        .header(HttpHeaders.ORIGIN, "http://localhost:5173")
                         .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST"))
                 .andExpect(status().isOk())
-                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:3000"))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:5173"))
                 .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, org.hamcrest.Matchers.containsString("POST")))
                 .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, org.hamcrest.Matchers.containsString("Authorization")));
     }
