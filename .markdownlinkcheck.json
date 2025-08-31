@@ -1,6 +1,7 @@
 {
   "ignorePatterns": [
-    { "pattern": "^http://localhost" },
+    { "pattern": "^https?://(localhost|127\\.0\\.0\\.1|0\\.0\\.0\\.0|host\\.docker\\.internal)(:[0-9]+)?(/|$)" },
+    { "pattern": "^https?://[^@]+@(localhost|127\\.0\\.0\\.1|0\\.0\\.0\\.0|host\\.docker\\.internal)(:[0-9]+)?(/|$)" },
     { "pattern": "^/swagger-ui\\.html$" }
   ]
 }

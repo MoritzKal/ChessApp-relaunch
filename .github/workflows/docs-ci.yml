@@ -13,12 +13,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Link-Check nur im docs/-Baum (nutzt .markdownlinkcheck.json)
+      # Link-Check (nutzt .markdownlinkcheck.json), scannt docs/,
+      # prüft NUR geänderte Dateien vs. base branch 'development'
       - uses: gaurav-nelson/github-action-markdown-link-check@v1
         with:
           use-quiet-mode: 'yes'
           config-file: .markdownlinkcheck.json
           folder-path: docs
+          check-modified-files-only: 'yes'
+          base-branch: development
 
       # SSOT-Regelprüfung (Python)
       - uses: actions/setup-python@v5
