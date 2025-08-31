@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from prometheus_client import Counter, Histogram, Summary, make_asgi_app
 
-from serve.model_loader import MODEL_RELOAD_FAILURES, ModelLoader
+from model_loader import MODEL_RELOAD_FAILURES, ModelLoader
 from .metrics_stub import (
     chs_dataset_export_duration_seconds,
     chs_dataset_invalid_rows_total,

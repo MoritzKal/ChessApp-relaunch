@@ -41,7 +41,3 @@ scrape_configs:
           model_version:
           username:
           component:
-  - job_name: 'serve'
-    static_configs:
-      - targets: ['serve:8001']
-    metrics_path: /metrics/
