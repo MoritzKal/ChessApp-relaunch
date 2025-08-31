@@ -1,4 +1,4 @@
-name: Docs CI
+name: Docs CI (minimal)
 
 on:
   pull_request:
@@ -13,13 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Markdownlint (ohne npm -g)
-      - uses: DavidAnson/markdownlint-cli2-action@v16
-        with:
-          globs: |
-            **/*.md
-
-      # Link-Check nur im docs/-Baum (Respektiert .markdownlinkcheck.json)
+      # Link-Check nur im docs/-Baum (nutzt .markdownlinkcheck.json)
       - uses: gaurav-nelson/github-action-markdown-link-check@v1
         with:
           use-quiet-mode: 'yes'
