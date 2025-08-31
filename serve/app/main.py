@@ -16,7 +16,6 @@ from prometheus_client import (
     generate_latest,
     CONTENT_TYPE_LATEST,
 )
-MODELS_LOADED = Counter("chs_models_loaded_total","Models successfully loaded",["model_id","model_version"])
 try:
     # When imported as package (normal runtime)
     from serve.model_loader import MODEL_RELOAD_FAILURES, MODELS_LOADED, ModelLoader
