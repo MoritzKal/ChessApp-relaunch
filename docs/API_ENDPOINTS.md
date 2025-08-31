@@ -2,7 +2,7 @@
 
 > Stabilität gemäß Contract-Board. Nur additive Änderungen. **Standard:** `/v1/ingest` · **Alias (Bestand):** `/v1/data/import` (keine v1-Breakings).
 > All `/v1/**` endpoints require a valid JWT unless noted otherwise. `/v1/health` is public.
-
+> `/actuator/**` endpoints are admin-only and require a JWT with `ROLE_ADMIN`; `/actuator/prometheus` additionally expects `Authorization: Bearer <scrape-token>`.
 
 ## Health/Meta
 
