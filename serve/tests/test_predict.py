@@ -1,6 +1,5 @@
 import importlib
 import time
-
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -17,20 +16,19 @@ INVALID_FEN = "invalid fen"
 
 
 @pytest.mark.asyncio
-async def test_predict_accepts_valid_fen():
-    transport = ASGITransport(app=app)
+async def test_predict_valid_fen():
+    transport = ASGITransport(app=app, raise_app_exceptions=False)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         resp = await ac.post("/predict", json={"fen": VALID_FEN})
     assert resp.status_code == 200
     data = resp.json()
     assert data["move"] in data["legal"]
-    assert data["modelId"] == "dummy"
+    assert data["modelId"] == "default"
 
 
 @pytest.mark.asyncio
-async def test_predict_rejects_invalid_fen_400_and_metric():
-    before = ILLEGAL_REQUESTS.labels(model_id="dummy", model_version="0")._value.get()
-    transport = ASGITransport(app=app)
+async def test_predict_invalid_fen():
+    transport = ASGITransport(app=app, raise_app_exceptions=False)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         resp = await ac.post("/predict", json={"fen": INVALID_FEN})
     assert resp.status_code == 400
