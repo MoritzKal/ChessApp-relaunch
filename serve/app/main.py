@@ -4,13 +4,19 @@ import time
 from typing import List, Optional
 
 import chess
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 from .logging_config import bind_context, reset_context, setup_logging
-from .metrics import observe_predict, inc_model_loaded, inc_reload_failure
+from .metrics import (
+    observe_predict,
+    inc_model_loaded,
+    inc_reload_failure,
+    chs_predict_latency_ms,
+    chs_predict_errors_total,
+)
 from .metrics_stub import (
     chs_selfplay_games_total,
     chs_selfplay_wins_total,
@@ -56,6 +62,10 @@ class PredictResponse(BaseModel):
 
 current_model = ModelState(modelId="default", modelVersion="0")
 inc_model_loaded("default", "0")
+# Pre-create predict metric series so PromQL returns 0 instead of empty
+chs_predict_latency_ms.labels(model_id=current_model.modelId, model_version=current_model.modelVersion)
+chs_predict_errors_total.labels(model_id=current_model.modelId, model_version=current_model.modelVersion, code="400")
+chs_predict_errors_total.labels(model_id=current_model.modelId, model_version=current_model.modelVersion, code="exception")
 
 app = FastAPI(title="ChessApp Serve", version="0.1")
 
@@ -83,6 +93,13 @@ async def logging_middleware(request: Request, call_next):
             or current_model.modelVersion
             or "0"
         )
+        # Make model labels available to subsequent middlewares/handlers
+        try:
+            request.state.model_id = model_id
+            request.state.model_version = model_version
+        except Exception:
+            # request.state is best-effort; ignore if unavailable
+            pass
         bind_context(
             run_id=request.headers.get("X-Run-Id"),
             dataset_id=request.headers.get("X-Dataset-Id"),
@@ -103,6 +120,37 @@ async def logging_middleware(request: Request, call_next):
             raise
     finally:
         reset_context()
+
+
+# Predict metrics middleware: measure latency and count 4xx/5xx by status
+@app.middleware("http")
+async def predict_metrics_middleware(request: Request, call_next):
+    # Only instrument /predict endpoint
+    if not request.url.path.endswith("/predict"):
+        return await call_next(request)
+    t0 = time.perf_counter()
+    status = 200
+    try:
+        response = await call_next(request)
+        status = getattr(response, "status_code", 200)
+        return response
+    except HTTPException as exc:
+        status = exc.status_code
+        raise
+    except Exception:
+        status = 500
+        raise
+    finally:
+        ms = (time.perf_counter() - t0) * 1000.0
+        model_id = getattr(request.state, "model_id", "default")
+        model_version = getattr(request.state, "model_version", "0")
+        # Always record latency
+        observe_predict(ms, model_id, model_version, status_code=status)
+        # Count 4xx/5xx by status code label
+        if status >= 400:
+            chs_predict_errors_total.labels(
+                model_id=model_id, model_version=model_version, code=str(status)
+            ).inc()
 
 
 @app.get("/health")
