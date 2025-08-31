@@ -1,21 +1,16 @@
-import asyncio
-import json
 import logging
-import re
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from serve.app.main import app
 
-VALID_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-
 
 @pytest.mark.asyncio
-async def test_predict_metrics_happy_path():
+async def test_predict_metrics_happy_path(valid_fen):
     transport = ASGITransport(app=app, raise_app_exceptions=False)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        await ac.post("/predict", json={"fen": VALID_FEN})
+        await ac.post("/predict", json={"fen": valid_fen})
         metrics = (await ac.get("/metrics")).text
     assert (
         'chs_predict_latency_ms_bucket{le="5.0",model_id="default",model_version="0"}'
@@ -25,7 +20,7 @@ async def test_predict_metrics_happy_path():
 
 
 @pytest.mark.asyncio
-async def test_predict_metrics_error_path(monkeypatch):
+async def test_predict_metrics_error_path(monkeypatch, valid_fen):
     class Boom:
         def __init__(self, *args, **kwargs):
             pass
@@ -37,7 +32,7 @@ async def test_predict_metrics_error_path(monkeypatch):
     monkeypatch.setattr("serve.app.main.chess.Board", Boom)
     transport = ASGITransport(app=app, raise_app_exceptions=False)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        resp = await ac.post("/predict", json={"fen": VALID_FEN})
+        resp = await ac.post("/predict", json={"fen": valid_fen})
         assert resp.status_code == 500
         metrics = (await ac.get("/metrics")).text
     assert (
@@ -51,13 +46,13 @@ async def test_predict_metrics_error_path(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_predict_logging(caplog):
+async def test_predict_logging(caplog, valid_fen):
     with caplog.at_level(logging.INFO):
         transport = ASGITransport(app=app, raise_app_exceptions=False)
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
             await ac.post(
                 "/predict",
-                json={"fen": VALID_FEN},
+                json={"fen": valid_fen},
                 headers={"X-Username": "alice"},
             )
     record = next(r for r in caplog.records if r.msg == "request")
