@@ -53,7 +53,8 @@ Verify artifacts
   - Expect: `s3://reports/ingest/<runId>/report.json`
 - Prometheus (optional):
   - curl -sI http://localhost:8080/actuator/prometheus | tr -d '\r' | grep -i '^Content-Type:'
-  - curl -s http://localhost:8080/actuator/prometheus | tr -d '\r' | grep -F 'chs_ingest_skipped_total{'
+  - curl -s http://localhost:8080/actuator/prometheus | tr -d '\r' | \
+    grep -E 'chs_ingest_(runs_|job_duration_seconds)'
 
 Troubleshooting
 - `reportUri=null` and `error` contains 403/UnknownHost:

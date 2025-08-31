@@ -108,5 +108,13 @@ class IngestIT {
         assertThat(metric.getStatusCode().is2xxSuccessful()).isTrue();
         assertThat(metric.getBody()).isNotNull();
         assertThat(metric.getBody().toString()).contains("chs_ingest_runs_succeeded_total");
+
+        ResponseEntity<Map> gauge = rest.getForEntity(baseUrl()+"/actuator/metrics/chs_ingest_active_runs", Map.class);
+        assertThat(gauge.getStatusCode().is2xxSuccessful()).isTrue();
+        assertThat(gauge.getBody().toString()).contains("chs_ingest_active_runs");
+
+        ResponseEntity<Map> timer = rest.getForEntity(baseUrl()+"/actuator/metrics/chs_ingest_job_duration_seconds", Map.class);
+        assertThat(timer.getStatusCode().is2xxSuccessful()).isTrue();
+        assertThat(timer.getBody().toString()).contains("chs_ingest_job_duration_seconds");
     }
 }

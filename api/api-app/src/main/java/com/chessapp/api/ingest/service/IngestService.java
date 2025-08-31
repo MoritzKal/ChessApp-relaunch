@@ -6,6 +6,7 @@ import com.chessapp.api.ingest.entity.IngestRunEntity;
 import com.chessapp.api.ingest.repo.IngestRunRepository;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -15,6 +16,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,6 +32,7 @@ public class IngestService {
     private final Counter succeededCounter;
     private final Counter failedCounter;
     private final AtomicInteger activeRuns;
+    private final Timer jobDurationTimer;
     private final LongSupplier delaySupplier;
     private final ApplicationContext context;
 
@@ -42,6 +45,7 @@ public class IngestService {
         this.succeededCounter = Counter.builder("chs_ingest_runs_succeeded_total").register(registry);
         this.failedCounter = Counter.builder("chs_ingest_runs_failed_total").register(registry);
         this.activeRuns = registry.gauge("chs_ingest_active_runs", new AtomicInteger());
+        this.jobDurationTimer = Timer.builder("chs_ingest_job_duration_seconds").register(registry);
         this.delaySupplier = ingestDelaySupplier;
         this.context = context;
     }
@@ -76,6 +80,7 @@ public class IngestService {
                 e.setReportUri("s3://reports/ingest/%s/report.json".formatted(runId));
                 e.setFinishedAt(Instant.now());
                 repository.save(e);
+                jobDurationTimer.record(Duration.between(e.getStartedAt(), e.getFinishedAt()));
                 succeededCounter.increment();
                 log.info("ingest succeeded");
             } catch (Exception ex) {
@@ -85,6 +90,7 @@ public class IngestService {
                     e.setError(ex.getMessage());
                     e.setFinishedAt(Instant.now());
                     repository.save(e);
+                    jobDurationTimer.record(Duration.between(e.getStartedAt(), e.getFinishedAt()));
                 }
                 failedCounter.increment();
                 log.error("ingest failed", ex);

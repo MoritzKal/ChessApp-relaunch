@@ -19,4 +19,5 @@ for i in $(seq 1 30); do
 done
 
 echo "Prometheus sample:"
-curl -s localhost:8080/actuator/prometheus | grep -E '^chs_ingest_(games|positions|jobs|duration)'
+curl -s localhost:8080/actuator/prometheus | \
+  grep -E '^chs_ingest_(runs_(started_total|succeeded_total|failed_total)|active_runs|job_duration_seconds)'
