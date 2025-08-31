@@ -1,10 +1,4 @@
-import os
-
-from serve.model_loader import (
-    MODEL_RELOAD_FAILURES,
-    MODELS_LOADED,
-    ModelLoader,
-)
+from serve.model_loader import MODEL_RELOAD_FAILURES, MODELS_LOADED, ModelLoader
 
 
 def test_loader_success_and_idempotency(tmp_path, monkeypatch):

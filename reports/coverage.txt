@@ -1,0 +1,16 @@
+..s.......s.........sss                                                                                                  [100%]
+======================================================= warnings summary =======================================================
+serve/app/logging_config.py:24: 4 warnings
+ml/tests/test_selfplay_minirun.py: 2 warnings
+serve/tests/test_cache.py: 20 warnings
+serve/tests/test_health.py: 2 warnings
+serve/tests/test_model_loader.py: 2 warnings
+serve/tests/test_models_load_endpoint.py: 3 warnings
+serve/tests/test_predict.py: 428 warnings
+serve/tests/test_predict_metrics.py: 16 warnings
+  /workspace/ChessApp-relaunch/serve/app/logging_config.py:24: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "ts": datetime.datetime.utcnow().isoformat() + "Z",
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+------------------------------ generated xml file: /workspace/ChessApp-relaunch/reports/junit.xml ------------------------------
+18 passed, 7 skipped, 477 warnings in 5.20s
