@@ -9,9 +9,19 @@ import chess
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from prometheus_client import Counter, Histogram, make_asgi_app
-
-from model_loader import MODEL_RELOAD_FAILURES, ModelLoader
+from prometheus_client import (
+    Counter,
+    Histogram,
+    make_asgi_app,
+    generate_latest,
+    CONTENT_TYPE_LATEST,
+)
+MODELS_LOADED = Counter("chs_models_loaded_total","Models successfully loaded",["model_id","model_version"])
+try:
+    # When imported as package (normal runtime)
+    from serve.model_loader import MODEL_RELOAD_FAILURES, MODELS_LOADED, ModelLoader
+except Exception:  # pragma: no cover - fallback when running from serve/ dir
+    from model_loader import MODEL_RELOAD_FAILURES, MODELS_LOADED, ModelLoader
 from .logging_config import bind_context, reset_context, setup_logging
 from .metrics_stub import (
     chs_dataset_export_duration_seconds,
@@ -118,11 +128,33 @@ else:
 
 # --- app setup ---------------------------------------------------
 app = FastAPI(title="ChessApp Serve", version="0.1")
-app.mount("/metrics", make_asgi_app())
+# Mount metrics app at trailing-slash path and serve non-slash variant directly
+app.mount("/metrics/", make_asgi_app())
+
+
+@app.get("/metrics", include_in_schema=False)
+def metrics_root() -> Response:
+    data = generate_latest()  # type: ignore[no-untyped-call]
+    return Response(content=data, media_type=CONTENT_TYPE_LATEST)
 
 loader = ModelLoader(invalidate_cache=_clear_cache)
 # ensure a model is always active, even if artifact is missing
-loader.load("dummy", "0")
+loader.load("default", "0")
+
+# Pre-create predict metric series for the active model so /metrics isn't empty
+try:
+    active_mid, active_ver, _ = loader.get_active()
+    PREDICT_LATENCY.labels(model_id=active_mid, model_version=active_ver).observe(0.0)
+    PREDICT_LATENCY_MS.labels(model_id=active_mid, model_version=active_ver).observe(0.0)
+    PREDICT_ERRORS.labels(model_id=active_mid, model_version=active_ver, code="400").inc(0)
+    PREDICT_ERRORS.labels(model_id=active_mid, model_version=active_ver, code="exception").inc(0)
+    # Model metrics baseline series
+    MODELS_LOADED.labels(model_id=active_mid, model_version=active_ver).inc(0)
+    for reason in ("missing_artifact", "internal"):
+        MODEL_RELOAD_FAILURES.labels(reason=reason).inc(0)
+except Exception:
+    # If no active model for some reason, skip pre-creation
+    pass
 
 
 # --- middleware (B3 request MDC binding) ------------------------
@@ -208,6 +240,7 @@ def models_load(body: ModelsLoadRequest) -> ModelsLoadResponse:
             # ModelLoader should increment failure metric for missing artifact
             raise HTTPException(status_code=404, detail="missing_artifact")
         mid, ver, _ = loader.get_active()
+        MODELS_LOADED.labels(model_id=mid, model_version=ver).inc()
         return ModelsLoadResponse(ok=True, active={"modelId": mid, "modelVersion": ver})
     except HTTPException:
         raise

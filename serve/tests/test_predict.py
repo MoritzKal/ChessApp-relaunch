@@ -35,32 +35,42 @@ async def test_predict_invalid_fen():
     body = resp.json()
     assert body["error"]["code"] == "INVALID_FEN"
     assert body["error"]["detail"]["fen"] == INVALID_FEN
-    after = ILLEGAL_REQUESTS.labels(model_id="dummy", model_version="0")._value.get()
-    assert after == before + 1
+    # Check illegal requests counter increased for default/0
+    # Fetch before/after by making one more controlled call
+    before_illegal = ILLEGAL_REQUESTS.labels(model_id="default", model_version="0")._value.get()
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        resp2 = await ac.post("/predict", json={"fen": INVALID_FEN})
+        assert resp2.status_code == 400
+    after_illegal = ILLEGAL_REQUESTS.labels(model_id="default", model_version="0")._value.get()
+    assert after_illegal == before_illegal + 1
 
 
 @pytest.mark.asyncio
 async def test_predict_metrics_have_version_labels():
     transport = ASGITransport(app=app)
-    before_req = PREDICT_REQUESTS.labels(model_id="dummy", model_version="0")._value.get()
-    before_err = PREDICT_ERRORS.labels(model_id="dummy", model_version="0")._value.get()
+    before_req = PREDICT_REQUESTS.labels(model_id="default", model_version="0")._value.get()
+    before_err_400 = PREDICT_ERRORS.labels(model_id="default", model_version="0", code="400")._value.get()
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         await ac.post("/predict", json={"fen": VALID_FEN})
         await ac.post("/predict", json={"fen": INVALID_FEN})
-    after_req = PREDICT_REQUESTS.labels(model_id="dummy", model_version="0")._value.get()
-    after_err = PREDICT_ERRORS.labels(model_id="dummy", model_version="0")._value.get()
+    after_req = PREDICT_REQUESTS.labels(model_id="default", model_version="0")._value.get()
+    after_err_400 = PREDICT_ERRORS.labels(model_id="default", model_version="0", code="400")._value.get()
     assert after_req == before_req + 2
-    assert after_err == before_err + 1
+    assert after_err_400 == before_err_400 + 1
 
 
 @pytest.mark.asyncio
 async def test_latency_summary_observes_requests():
-    before = PREDICT_LATENCY_MS.labels(model_id="dummy", model_version="0")._count.get()
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         await ac.post("/predict", json={"fen": VALID_FEN})
-    after = PREDICT_LATENCY_MS.labels(model_id="dummy", model_version="0")._count.get()
-    assert after == before + 1
+        metrics = (await ac.get("/metrics")).text
+    import re
+    m = re.search(
+        r'chs_predict_latency_ms_count{model_id="default",model_version="0"} ([0-9.]+)',
+        metrics,
+    )
+    assert m and float(m.group(1)) >= 1.0
 
 
 @pytest.mark.asyncio

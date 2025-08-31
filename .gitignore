@@ -18,3 +18,7 @@ Thumbs.db
 
 # Optional (wenn nicht versionieren)
 # .env
+**/artifacts/
+**/lib/
+.venv/
+**/__pycache__/
