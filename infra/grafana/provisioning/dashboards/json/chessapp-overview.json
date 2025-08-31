@@ -7,6 +7,12 @@
   "version": 1,
   "refresh": "10s",
   "time": { "from": "now-6h", "to": "now" },
+  "links": [
+    {
+      "title": "Predict Logs",
+      "url": "/explore?left=[\"now-1h\",\"now\",\"loki\",{\"expr\":\"{component=\\\"serve\\\"} | json | event=~\\\"predict.*\\\"\"}]"
+    }
+  ],
   "panels": [
     {
       "type": "timeseries",
@@ -50,7 +56,7 @@
     {
       "type": "logs",
       "title": "API Logs (Loki)",
-      "gridPos": { "x": 0, "y": 37, "w": 24, "h": 12 },
+      "gridPos": { "x": 0, "y": 45, "w": 24, "h": 12 },
       "options": {
         "showLabels": true,
         "showTime": true,
@@ -129,6 +135,73 @@
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "sum(chs_predict_illegal_requests_total)",
           "refId": "A"
+        }
+      ]
+    },
+    {
+      "uid": "serveReqVer",
+      "type": "timeseries",
+      "title": "Predict Requests/min (by version)",
+      "gridPos": { "x": 0, "y": 37, "w": 6, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (model_id,model_version) (rate(chs_predict_requests_total{job=\\\"serve\\\"}[1m]))",
+          "legendFormat": "{{model_id}}/{{model_version}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "uid": "serveHist95",
+      "type": "timeseries",
+      "title": "Predict p95 Latency (hist)",
+      "gridPos": { "x": 6, "y": 37, "w": 6, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.95, sum by (le,model_id,model_version) (rate(chs_predict_latency_seconds_bucket{job=\\\"serve\\\"}[5m])))",
+          "legendFormat": "{{model_id}}/{{model_version}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "uid": "serveSummary95",
+      "type": "timeseries",
+      "title": "Predict p95 Latency (ms summary)",
+      "gridPos": { "x": 12, "y": 37, "w": 6, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "ms" }, "overrides": [] },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "max by (model_id,model_version) (chs_predict_latency_ms{quantile=\\\"0.95\\\",job=\\\"serve\\\"})",
+          "legendFormat": "{{model_id}}/{{model_version}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "uid": "serveErrIll",
+      "type": "timeseries",
+      "title": "Errors & Illegal/min",
+      "gridPos": { "x": 18, "y": 37, "w": 6, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "options": { "stacking": { "mode": "normal" } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (model_id,model_version) (rate(chs_predict_errors_total{job=\\\"serve\\\"}[1m]))",
+          "legendFormat": "errors {{model_id}}/{{model_version}}",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (model_id,model_version) (rate(chs_predict_illegal_requests_total{job=\\\"serve\\\"}[1m]))",
+          "legendFormat": "illegal {{model_id}}/{{model_version}}",
+          "refId": "B"
         }
       ]
     },

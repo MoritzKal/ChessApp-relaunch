@@ -13,7 +13,7 @@ public class OpenApiConfig {
     public GroupedOpenApi v1Api() {
         return GroupedOpenApi.builder()
                 .group("v1")
-                .packagesToScan("com.chessapp.api.web")
+                .packagesToScan("com.chessapp.api.web","com.chessapp.api.models.api")
                 .pathsToMatch("/v1/**")
                 .build();
     }

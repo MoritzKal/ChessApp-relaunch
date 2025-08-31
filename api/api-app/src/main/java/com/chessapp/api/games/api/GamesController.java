@@ -37,7 +37,7 @@ public class GamesController {
 
     @GetMapping
     @Operation(summary = "List games for a user")
-    public List<GameSummaryDto> list(
+    public java.util.List<GameSummaryDto> list(
             @Parameter(description = "Username to fetch games for", required = true) @RequestParam(required = false) String username,
             @RequestParam(defaultValue = "50") int limit,
             @RequestParam(defaultValue = "0") int offset,

@@ -100,4 +100,14 @@ class ServingControllerIT extends AbstractIntegrationTest {
         RecordedRequest req = serve.takeRequest();
         assertThat(req.getPath()).isEqualTo("/models/load");
     }
+
+    @Test
+    void models_load_proxy_error() throws InterruptedException {
+        serve.enqueue(new MockResponse().setResponseCode(404));
+        ResponseEntity<String> resp = rest.postForEntity("/v1/models/load",
+                new ModelsLoadRequest("missing", "v1"), String.class);
+        assertThat(resp.getStatusCode().value()).isEqualTo(404);
+        // drain request
+        serve.takeRequest();
+    }
 }
