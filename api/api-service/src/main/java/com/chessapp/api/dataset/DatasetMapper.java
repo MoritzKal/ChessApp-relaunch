@@ -1,7 +1,6 @@
-package com.chessapp.api.service;
+package com.chessapp.api.dataset;
 
-import com.chessapp.api.domain.entity.DatasetEntity;
-import com.chessapp.api.service.dto.DatasetResponse;
+import com.chessapp.api.dataset.dto.DatasetResponse;
 
 public class DatasetMapper {
     public static DatasetResponse toDto(DatasetEntity dataset) {
@@ -9,6 +8,8 @@ public class DatasetMapper {
                 dataset.getId(),
                 dataset.getName(),
                 dataset.getVersion(),
+                dataset.getFilterJson(),
+                dataset.getSplitJson(),
                 dataset.getSizeRows(),
                 dataset.getLocationUri(),
                 dataset.getCreatedAt()
