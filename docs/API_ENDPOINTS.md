@@ -11,7 +11,7 @@
 
 - `POST /v1/ingest`
   - Body: `{"username":"<name>","range":"2025-01..2025-08"}` (`range` optional)
-- **Alias:** `POST /v1/data/import` → intern Alias auf `/v1/ingest`
+- **Alias:** `POST /v1/data/import` → 308 → `/v1/ingest`
 - `GET /v1/ingest/{runId}` → Status
 
 ### Beispiel
