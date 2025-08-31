@@ -1,4 +1,4 @@
-package com.chessapp.api.web;
+package com.chessapp.api.dataset;
 
 import java.net.URI;
 import java.util.List;
@@ -16,9 +16,9 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import com.chessapp.api.service.DatasetService;
-import com.chessapp.api.service.dto.DatasetCreateRequest;
-import com.chessapp.api.service.dto.DatasetResponse;
+import com.chessapp.api.dataset.dto.CreateDatasetRequest;
+import com.chessapp.api.dataset.dto.DatasetResponse;
+import com.chessapp.api.dataset.DatasetService;
 
 import jakarta.validation.Valid;
 
@@ -34,7 +34,7 @@ public class DatasetController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<DatasetResponse> create(@Valid @RequestBody DatasetCreateRequest request) {
+    public ResponseEntity<DatasetResponse> create(@Valid @RequestBody CreateDatasetRequest request) {
         DatasetResponse response = datasetService.create(request);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
