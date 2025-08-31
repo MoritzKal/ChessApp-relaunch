@@ -22,29 +22,36 @@ curl -sS -X POST http://localhost:8080/v1/ingest \
   -d '{"username":"demo","from":"2025-01","to":"2025-08"}'
 ```
 
-Datasets
-POST /v1/datasets { "filters": {...}, "split":{"train":0.8,"val":0.1,"test":0.1} }
+## Datasets
 
-GET /v1/datasets · GET /v1/datasets/{id}
+- `POST /v1/datasets`
+- `GET /v1/datasets`
+- `GET /v1/datasets/{id}`
 
-Training
-POST /v1/trainings { "datasetId":"<uuid>", "preset":"policy_tiny", "params":{"epochs":10,"batchSize":512,"lr":3e-4} }
+## Training
 
-GET /v1/trainings/{runId}
+- `POST /v1/trainings`
+- `GET /v1/trainings/{runId}`
 
-Serving/Play
-POST /v1/predict { "fen":"<FEN>", "history":[...], "temperature":0.9, "topk":3 }
+## Games
 
-Antwort: { "move":"e2e4","policy":[...] }
+- `GET /v1/games`
+- `GET /v1/games/{id}`
+- `GET /v1/games/{id}/positions`
 
-Models (Registry/Versioning)
-GET /v1/models → name, version, stage (staging/prod)
+## Serving/Play
 
-POST /v1/models/load { "name":"policy_tiny", "version":"1.2.0", "stage":"prod" }
+- `POST /v1/predict`
 
-POST /v1/models/promote { "name":"policy_tiny", "from":"staging","to":"prod" }
+## Models (Registry/Versioning)
 
-Observability/Links
-GET /actuator/prometheus (Scrape)
+- `GET /v1/models` → name, version, stage (staging/prod)
+- `GET /v1/models/{id}/versions`
+- `POST /v1/models/load`
+- `POST /v1/models/promote`
 
-Logs/Traces via Grafana/Loki (siehe OBSERVABILITY)
+## Observability/Links
+
+- `GET /actuator/prometheus` (Scrape)
+- Logs/Traces via Grafana/Loki (siehe [OBSERVABILITY](./OBSERVABILITY.md))
+
