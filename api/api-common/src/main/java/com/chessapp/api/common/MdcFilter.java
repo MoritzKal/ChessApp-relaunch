@@ -2,7 +2,6 @@ package com.chessapp.api.common;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Optional;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -37,22 +36,23 @@ public class MdcFilter implements Filter {
             throws IOException, ServletException {
         try {
             MDC.put("component", "api");
-            String username = "anonymous";
             if (request instanceof HttpServletRequest http) {
                 HEADER_MAPPINGS.forEach((header, mdcKey) -> {
-                    String value = Optional.ofNullable(http.getHeader(header)).orElse(null);
+                    String value = http.getHeader(header);
                     if (value != null && !value.isEmpty()) {
                         MDC.put(mdcKey, value);
                     }
                 });
+            }
+            String username = "anonymous";
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth instanceof JwtAuthenticationToken jwtAuth) {
+                username = jwtAuth.getName();
+            } else if (request instanceof HttpServletRequest http) {
                 String debugUser = http.getHeader("X-Debug-User");
                 if (debugUser != null && !debugUser.isBlank()) {
                     username = debugUser;
                 }
-            }
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth instanceof JwtAuthenticationToken jwtAuth) {
-                username = jwtAuth.getName();
             }
             MDC.put("username", username);
             chain.doFilter(request, response);
