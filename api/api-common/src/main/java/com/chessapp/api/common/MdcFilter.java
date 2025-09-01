@@ -12,15 +12,13 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.slf4j.MDC;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
+// Note: This filter is not annotated as a Spring component to avoid
+// duplicate bean clashes with api-app's own MdcFilter. If needed in
+// another app, register it explicitly as a @Bean.
 
 /**
  * Simple servlet filter to populate MDC labels from HTTP headers.
  */
-@Component
-@Order(Ordered.HIGHEST_PRECEDENCE)
 public class MdcFilter implements Filter {
 
     private static final Map<String, String> HEADER_MAPPINGS = Map.of(

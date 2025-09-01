@@ -22,7 +22,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
-public class SecurityConfig {
+public class ResourceServerConfig {
 
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -41,7 +41,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    JwtDecoder jwtDecoder(@Value("${app.jwt.secret}") String secret) {
+    JwtDecoder jwtDecoder(@Value("${security.jwt.secret:change_me}") String secret) {
         SecretKeySpec key = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
         return NimbusJwtDecoder.withSecretKey(key).build();
     }
