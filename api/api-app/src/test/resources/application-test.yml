@@ -7,7 +7,7 @@ spring:
 app:
   security:
     jwt:
-      secret: 0123456789abcdef0123456789abcdef
+      secret: "test-secret-test-secret-test-secret-32b"
   cors:
     allowed-origins: http://localhost:5173
 # disable rate limiting during tests
