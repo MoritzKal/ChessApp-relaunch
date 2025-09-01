@@ -27,6 +27,12 @@ from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 import json
 import time
+import mlflow
+try:  # optional Prometheus client
+    from prometheus_client import CollectorRegistry, Gauge, push_to_gateway
+except Exception:  # pragma: no cover - optional dependency
+    CollectorRegistry = Gauge = push_to_gateway = None
+    LOGGER.warning("prometheus_client not available; Pushgateway metrics disabled")
 
 
 LOGGER = logging.getLogger(__name__)
@@ -283,6 +289,7 @@ def run_training(
     device: torch.device,
     args: argparse.Namespace,
     move_vocab: Dict[str, int],
+    push_url: str | None = None,
 ) -> Dict[str, float]:
     """Execute training loop with early stopping and checkpointing."""
     artifact_dir = os.path.join(os.path.dirname(__file__), "artifacts")
@@ -292,6 +299,9 @@ def run_training(
     best_val_acc3 = -1.0
     no_improve = 0
     epochs_run = 0
+    use_push = bool(push_url and CollectorRegistry and Gauge and push_to_gateway)
+    if push_url and not use_push:
+        LOGGER.warning("PUSHGATEWAY_URL set but prometheus_client missing")
     for epoch in range(1, args.epochs + 1):
         epochs_run = epoch
         train_loss, throughput = train_epoch(model, train_loader, optimizer, criterion, device)
@@ -309,6 +319,32 @@ def run_training(
             val_acc1,
             val_acc3,
         )
+        mlflow.log_metrics(
+            {
+                "epoch_loss": train_loss,
+                "val_acc_top1": val_acc1,
+                "val_acc_top3": val_acc3,
+                "throughput_samples_per_s": throughput,
+            },
+            step=epoch,
+        )
+        if use_push:
+            try:
+                registry = CollectorRegistry()
+                Gauge("chs_training_loss", "Training loss", registry=registry).set(train_loss)
+                Gauge(
+                    "chs_training_accuracy_top1",
+                    "Validation accuracy@1",
+                    registry=registry,
+                ).set(val_acc1)
+                Gauge(
+                    "chs_training_throughput_samples_per_s",
+                    "Training throughput",
+                    registry=registry,
+                ).set(throughput)
+                push_to_gateway(push_url, job=args.run_name or "training", registry=registry)
+            except Exception as exc:  # pragma: no cover - network issues
+                LOGGER.warning("Pushgateway push failed: %s", exc)
         if val_acc1 > best_val_acc1:
             best_val_acc1 = val_acc1
             best_val_acc3 = val_acc3
@@ -380,9 +416,26 @@ def main() -> None:  # pragma: no cover - CLI entry
     LOGGER.info("Datasets prepared: train=%d, val=%d", len(train_ds), len(val_ds))
     LOGGER.info("Move vocab size: %d", len(move_vocab))
 
-    device = torch.device(
-        "cuda" if torch.cuda.is_available() and not args.cpu else "cpu"
-    )
+    label_vocab_path = os.path.join(args.out_dir, "label_vocab.json")
+    with open(label_vocab_path, "w") as f:
+        json.dump(move_vocab, f)
+
+    params_dict = {
+        "epochs": args.epochs,
+        "batch_size": args.batch_size,
+        "lr": args.lr,
+        "emb_dim": args.emb_dim,
+        "dropout": args.dropout,
+        "max_len": args.max_len,
+        "seed": args.seed,
+        "cpu": args.cpu,
+        "data": args.data,
+    }
+    params_path = os.path.join(args.out_dir, "params.json")
+    with open(params_path, "w") as f:
+        json.dump(params_dict, f)
+
+    device = torch.device("cuda" if torch.cuda.is_available() and not args.cpu else "cpu")
     model = TinyPolicy(
         vocab_size=len(FEN_VOCAB),
         emb_dim=args.emb_dim,
@@ -396,30 +449,41 @@ def main() -> None:  # pragma: no cover - CLI entry
     LOGGER.info("Model %s initialised on %s", model.__class__.__name__, device)
     LOGGER.info("Optimizer and loss ready (training loop pending)")
 
-    LOGGER.info(
-        "Placeholder training loop not yet implemented. See docs for next steps."
-    )
-
-    # Future work: implement training loop and metric logging.
-
     train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True)
     val_loader = DataLoader(val_ds, batch_size=args.batch_size)
-    metrics = run_training(
-        model=model,
-        optimizer=optimizer,
-        criterion=criterion,
-        train_loader=train_loader,
-        val_loader=val_loader,
-        device=device,
-        args=args,
-        move_vocab=move_vocab,
-    )
-    if args.metrics_out:
-        metrics_dir = os.path.dirname(args.metrics_out)
-        if metrics_dir:
-            os.makedirs(metrics_dir, exist_ok=True)
-        with open(args.metrics_out, "w") as f:
-            json.dump(metrics, f)
+
+    tracking_uri = os.environ.get("MLFLOW_TRACKING_URI")
+    if tracking_uri:
+        mlflow.set_tracking_uri(tracking_uri)
+    mlflow.set_experiment(args.experiment)
+    with mlflow.start_run(run_name=args.run_name):
+        mlflow.set_tags({
+            "component": "ml.training",
+            "milestone": "M3-prime",
+            "cli": "ml/training/train.py",
+        })
+        mlflow.log_params(params_dict)
+        metrics = run_training(
+            model=model,
+            optimizer=optimizer,
+            criterion=criterion,
+            train_loader=train_loader,
+            val_loader=val_loader,
+            device=device,
+            args=args,
+            move_vocab=move_vocab,
+            push_url=os.getenv("PUSHGATEWAY_URL"),
+        )
+        if args.metrics_out:
+            metrics_dir = os.path.dirname(args.metrics_out)
+            if metrics_dir:
+                os.makedirs(metrics_dir, exist_ok=True)
+            with open(args.metrics_out, "w") as f:
+                json.dump(metrics, f)
+            mlflow.log_artifact(args.metrics_out)
+        mlflow.log_artifact(metrics["best_pt"], artifact_path="model")
+        mlflow.log_artifact(label_vocab_path)
+        mlflow.log_artifact(params_path)
     print(
         json.dumps(
             {
