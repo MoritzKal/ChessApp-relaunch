@@ -59,7 +59,7 @@ class ServingControllerIT extends AbstractIntegrationTest {
                 .addHeader("Content-Type", "application/json"));
 
         ResponseEntity<PredictResponse> resp = rest.postForEntity("/v1/predict",
-                new PredictRequest("some"), PredictResponse.class);
+                new PredictRequest("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"), PredictResponse.class);
 
         assertThat(resp.getStatusCode().value()).isEqualTo(200);
         assertThat(resp.getBody()).isNotNull();
@@ -81,10 +81,18 @@ class ServingControllerIT extends AbstractIntegrationTest {
     void predict_error_path() throws InterruptedException {
         serve.enqueue(new MockResponse().setResponseCode(400));
         ResponseEntity<String> resp = rest.postForEntity("/v1/predict",
-                new PredictRequest("bad"), String.class);
+                new PredictRequest("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"), String.class);
         assertThat(resp.getStatusCode().value()).isEqualTo(400);
         // Drain the request so following tests don't read this one
         serve.takeRequest();
+    }
+
+    @Test
+    void predict_invalid_fen_returns400() {
+        ResponseEntity<String> resp = rest.postForEntity("/v1/predict",
+                new PredictRequest("invalid"), String.class);
+        assertThat(resp.getStatusCode().value()).isEqualTo(400);
+        assertThat(resp.getBody()).contains("errors");
     }
 
     @Test

@@ -121,7 +121,7 @@ public class IngestService {
         ingestRunRepository.saveAndFlush(run);
         log.info("event=ingest.status_updated status=running run_id={} username={}", runId, username);
 
-        int gamesCount = 0;
+        long gamesCount = 0;
         long movesCount = 0;
         long positionsCount = 0;
         int skipped = 0;

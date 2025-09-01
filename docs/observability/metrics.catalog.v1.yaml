@@ -1,0 +1,212 @@
+# docs/observability/metrics.catalog.v1.yaml
+version: 1
+generated_at: "2025-08-31T00:00:00Z"
+schema: "chessapp.metrics/1"
+
+conventions:
+  metric_prefix: "chs_"
+  intervals:
+    fast: "10s"   # near realtime
+    normal: "1m"  # rates
+    stable: "5m"  # quantiles
+  notes:
+    - "Use histogram_quantile for p50/p95 on *_bucket metrics"
+    - "Only additive /v1 reads; breakings via /v2 with RFC"
+
+dashboards:
+  - id: system_health
+    title: "System-Health"
+    panels:
+      - key: up
+        label: "Service Up"
+        unit: bool
+        agg: last
+        interval: fast
+        source:
+          type: promql
+          range: false
+          expr: "max by(job)(up)"
+      - key: process_cpu
+        label: "CPU (proc cores)"
+        unit: cores
+        agg: rate
+        interval: normal
+        source:
+          type: promql
+          range: true
+          expr: "sum by(job)(rate(process_cpu_seconds_total[1m]))"
+      - key: rss
+        label: "RSS Memory"
+        unit: bytes
+        agg: max
+        interval: normal
+        source:
+          type: promql
+          range: false
+          expr: "max by(job)(process_resident_memory_bytes)"
+      - key: api_latency_p95
+        label: "API Latenz p95"
+        unit: s
+        agg: p95
+        interval: stable
+        source:
+          type: promql
+          range: true
+          expr: "histogram_quantile(0.95, sum by(le)(rate(http_server_requests_seconds_bucket{job=\"api\"}[5m])))"
+      - key: serve_latency
+        label: "Serve Latenz p50/p95"
+        unit: s
+        agg: [p50, p95]
+        interval: stable
+        source:
+          type: promql
+          range: true
+          expr: "histogram_quantile(0.95, sum by(le)(rate(chs_predict_latency_seconds_bucket[5m])))"
+      - key: logs_error_rate
+        label: "Error Log Rate"
+        unit: "1/s"
+        agg: rate
+        interval: normal
+        source:
+          type: loki
+          query: "{service=~\"api|ml|serve\"} |= \"ERROR\""
+  - id: selfplay_health
+    title: "Self-Play-Health"
+    panels:
+      - key: games_rate
+        label: "Spiele/s (5m)"
+        unit: "1/s"
+        agg: rate
+        interval: stable
+        source:
+          type: promql
+          range: true
+          expr: "sum by(run_id)(rate(chs_selfplay_games_total[5m]))"
+      - key: result_rate
+        label: "Win/Draw/Loss Rate"
+        unit: "1/s"
+        agg: rate
+        interval: stable
+        source:
+          type: promql
+          range: true
+          expr: "sum by(result)(rate(chs_selfplay_result_total[5m]))"
+      - key: move_latency
+        label: "Zugzeit p50/p95"
+        unit: s
+        agg: [p50, p95]
+        interval: stable
+        source:
+          type: promql
+          range: true
+          expr: "histogram_quantile(0.95, sum by(le)(rate(chs_selfplay_move_latency_seconds_bucket[5m])))"
+      - key: status
+        label: "Run Status"
+        unit: enum
+        agg: last
+        interval: fast
+        source:
+          type: api
+          endpoint: "GET /v1/metrics/selfplay/{runId}"
+  - id: trained_version_eval
+    title: "Trainierte Version – Auswertung"
+    panels:
+      - key: top1_agree
+        label: "Top-1-Agreement"
+        unit: "%"
+        agg: avg
+        interval: stable
+        source:
+          type: api
+          endpoint: "GET /v1/evaluations/{id}"
+          path: "$.metricSuite.top1_agreement"
+      - key: ece
+        label: "Calibration (ECE)"
+        unit: "%"
+        agg: avg
+        interval: stable
+        source:
+          type: api
+          endpoint: "GET /v1/evaluations/{id}"
+          path: "$.metricSuite.ece"
+  - id: management_datasets
+    title: "Management: Datasets/Exports/Konfig"
+    panels:
+      - key: ingest_increase
+        label: "Importierte Spiele (Δ)"
+        unit: "count/5m"
+        agg: increase
+        interval: stable
+        source:
+          type: promql
+          range: true
+          expr: "sum(increase(chs_ingest_games_total[5m]))"
+      - key: datasets_count
+        label: "Datasets (Anzahl)"
+        unit: count
+        agg: last
+        interval: normal
+        source:
+          type: api
+          endpoint: "GET /v1/datasets"
+          path: "$.length()"
+  - id: play_ui
+    title: "Play UI (Live)"
+    panels:
+      - key: serve_latency_live
+        label: "Zug-Latenz p50/p95"
+        unit: s
+        agg: [p50, p95]
+        interval: fast
+        source:
+          type: promql
+          range: true
+          expr: "histogram_quantile(0.5, sum by(le)(rate(chs_predict_latency_seconds_bucket[1m])))"
+      - key: serve_error_rate
+        label: "Fehlerrate Serve"
+        unit: "1/s"
+        agg: rate
+        interval: normal
+        source:
+          type: promql
+          range: true
+          expr: "sum(rate(chs_predict_errors_total[1m]))"
+
+endpoints:
+  proxy_prom:
+    instant: "GET /v1/obs/promql?q=<expr>&time=<rfc3339>"
+    range:   "GET /v1/obs/range?q=<expr>&start=<epoch>&end=<epoch>&step=<dur>"
+  proxy_loki:
+    query:   "GET /v1/obs/loki?q=<loki_expr>"
+  selfplay_api:
+    read:    "GET /v1/metrics/selfplay/{runId}"
+  train_api:
+    read:    "GET /v1/metrics/train/{runId}"
+  eval_api:
+    read:    "GET /v1/evaluations/{id}"
+
+mocks:
+  selfplay_api:
+    request:  "/v1/metrics/selfplay/sp-5f0e4a1a"
+    response:
+      runId: "sp-5f0e4a1a"
+      status: "running"
+      metrics:
+        gamesTotal: 124
+        movesTotal: 4112
+        winRate: 0.55
+        drawRate: 0.10
+        lossRate: 0.35
+        eloEstimate: 1512.7
+        moveLatency: { p50: 0.17, p95: 0.39 }
+        crashes: 0
+  resources_proxy:
+    request: "/v1/obs/resources?service=serve&window=5m"
+    response:
+      service: "serve"
+      window: "5m"
+      cpuCores: 0.38
+      memoryBytes: 268435456
+      rssBytes: 230686720
+      restartCount: 0
+      ts: "2025-08-31T12:50:00Z"

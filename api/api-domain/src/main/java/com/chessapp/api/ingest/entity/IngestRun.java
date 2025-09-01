@@ -34,7 +34,7 @@ public class IngestRun {
     private Instant finishedAt;
 
     @Column(name = "games_count")
-    private Integer gamesCount = 0;
+    private Long gamesCount = 0L;
 
     @Column(name = "moves_count")
     private Long movesCount = 0L;
@@ -62,8 +62,8 @@ public class IngestRun {
     public void setStartedAt(Instant startedAt) { this.startedAt = startedAt; }
     public Instant getFinishedAt() { return finishedAt; }
     public void setFinishedAt(Instant finishedAt) { this.finishedAt = finishedAt; }
-    public Integer getGamesCount() { return gamesCount; }
-    public void setGamesCount(Integer gamesCount) { this.gamesCount = gamesCount; }
+    public Long getGamesCount() { return gamesCount; }
+    public void setGamesCount(Long gamesCount) { this.gamesCount = gamesCount; }
     public Long getMovesCount() { return movesCount; }
     public void setMovesCount(Long movesCount) { this.movesCount = movesCount; }
     public Long getPositionsCount() { return positionsCount; }

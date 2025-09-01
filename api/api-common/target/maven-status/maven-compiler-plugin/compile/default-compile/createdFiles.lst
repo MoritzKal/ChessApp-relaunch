@@ -1,2 +1,6 @@
 com\chessapp\api\common\GlobalExceptionHandler.class
+com\chessapp\api\common\validation\ValidFen.class
+com\chessapp\api\common\validation\ValidPgnValidator.class
+com\chessapp\api\common\validation\ValidFenValidator.class
+com\chessapp\api\common\validation\ValidPgn.class
 com\chessapp\api\common\MdcFilter.class

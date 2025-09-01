@@ -17,3 +17,6 @@ Bitte:
 4. Falls Code/Docs-Änderungen nötig: liefere präzise Diffs (Pfad + Unified Diff + Begründung + erwarteter Effekt) und einen Mini-Fixplan.
    Guardrails: Observability-first · Tests Pflicht · Wasserfall pro Block · keine /v1-Breakings.  
    Timezone: Europe/Berlin.
+
+## SSOT – Metrics Catalog
+On startup, load `docs/observability/metrics.catalog.v1.yaml` and treat it as the single source of truth for dashboard metrics (queries, intervals, mocks).
