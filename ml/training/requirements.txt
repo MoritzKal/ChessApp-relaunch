@@ -1,0 +1,6 @@
+pandas
+pyarrow
+torch
+numpy
+mlflow==2.15.1
+prometheus-client==0.20.0

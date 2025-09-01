@@ -27,3 +27,6 @@ data/raw/
 reports/
 junit.xml
 **/__pycache__
+ml/training/figures/
+mlruns/
+
