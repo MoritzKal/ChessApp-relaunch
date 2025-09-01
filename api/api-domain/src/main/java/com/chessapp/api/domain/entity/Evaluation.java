@@ -4,12 +4,13 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
-import com.vladmihalcea.hibernate.type.json.JsonType;
-import org.hibernate.annotations.Type;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "evaluations")
@@ -23,15 +24,22 @@ public class Evaluation {
     @Column(name = "baseline_model_id")
     private UUID baselineModelId;
 
-    @Type(JsonType.class)
-    @Column(name = "metric_suite", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "metric_suite", columnDefinition = "jsonb", nullable = false)
     private Map<String, Object> metricSuite;
 
     @Column(name = "report_uri")
     private String reportUri;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
+
+    @PrePersist
+    void prePersist() {
+        if (id == null) id = UUID.randomUUID();
+        if (createdAt == null) createdAt = Instant.now();
+        if (metricSuite == null) metricSuite = new java.util.HashMap<>();
+    }
 
     // getters and setters
     public UUID getId() { return id; }

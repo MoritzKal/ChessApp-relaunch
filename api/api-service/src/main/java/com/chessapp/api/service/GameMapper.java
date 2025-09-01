@@ -2,6 +2,7 @@ package com.chessapp.api.service;
 
 import com.chessapp.api.domain.entity.Game;
 import com.chessapp.api.domain.entity.Position;
+import com.chessapp.api.domain.entity.Color;
 import com.chessapp.api.service.dto.GameDetailDto;
 import com.chessapp.api.service.dto.GameSummaryDto;
 import com.chessapp.api.service.dto.PositionDto;
@@ -31,10 +32,11 @@ public class GameMapper {
     }
 
     public static PositionDto toPositionDto(Position position) {
+        Color side = "W".equalsIgnoreCase(position.getSideToMove()) ? Color.WHITE : Color.BLACK;
         return new PositionDto(
                 position.getPly(),
                 position.getFen(),
-                position.getSideToMove()
+                side
         );
     }
 }

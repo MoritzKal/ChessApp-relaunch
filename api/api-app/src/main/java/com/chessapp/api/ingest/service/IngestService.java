@@ -174,7 +174,7 @@ public class IngestService {
                         mv.setPly(m.ply());
                         mv.setSan(m.san());
                         mv.setUci(m.uci());
-                        mv.setColor(mapColor(m.color()));
+                        mv.setColor(mapColorChar(m.color()));
                         moves.add(mv);
                     }
                     for (PgnParser.ParsedPosition p : parsed.positions()) {
@@ -183,7 +183,7 @@ public class IngestService {
                         pos.setGameId(gameId);
                         pos.setPly(p.ply());
                         pos.setFen(p.fen());
-                        pos.setSideToMove(mapColor(p.sideToMove()));
+                        pos.setSideToMove(mapColorChar(p.sideToMove()));
                         positions.add(pos);
                     }
 
@@ -315,7 +315,7 @@ public class IngestService {
                             mv.setPly(m.ply());
                             mv.setSan(""); // SAN im MVP leer
                             mv.setUci(m.uci());
-                            mv.setColor(mapColor(m.color()));
+                            mv.setColor(mapColorChar(m.color()));
                             moves.add(mv);
                         }
                         for (var p : parsed.positions()) {
@@ -324,7 +324,7 @@ public class IngestService {
                             pos.setGameId(gameId);
                             pos.setPly(p.ply());
                             pos.setFen(p.fen());
-                            pos.setSideToMove(mapColor(p.sideToMove()));
+                            pos.setSideToMove(mapColorChar(p.sideToMove()));
                             positions.add(pos);
                         }
                         gamesCount++;
@@ -419,6 +419,14 @@ public class IngestService {
         if (s.equals("W")) return Color.WHITE;
         if (s.equals("B")) return Color.BLACK;
         return Color.WHITE;
+    }
+
+    private String mapColorChar(String c) {
+        if (c == null) return "W";
+        String s = c.trim().toUpperCase();
+        if ("WHITE".equals(s) || "W".equals(s)) return "W";
+        if ("BLACK".equals(s) || "B".equals(s)) return "B";
+        return "W";
     }
 
 

@@ -65,14 +65,14 @@ class GamesControllerTest extends com.chessapp.api.testutil.AbstractIntegrationT
         p1.setGameId(g.getId());
         p1.setPly(1);
         p1.setFen("fen1");
-        p1.setSideToMove(Color.WHITE);
+        p1.setSideToMove("W");
         positionRepository.save(p1);
         Position p2 = new Position();
         p2.setId(UUID.randomUUID());
         p2.setGameId(g.getId());
         p2.setPly(2);
         p2.setFen("fen2");
-        p2.setSideToMove(Color.BLACK);
+        p2.setSideToMove("B");
         positionRepository.save(p2);
 
         mockMvc.perform(get("/v1/games").param("username", "M3NG00S3"))

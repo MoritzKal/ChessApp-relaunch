@@ -51,6 +51,7 @@ CREATE TABLE games (
   game_id_ext   text,
   end_time      timestamptz,
   time_control  text,
+  time_category text,
   result        text,
   white_rating  integer,
   black_rating  integer,

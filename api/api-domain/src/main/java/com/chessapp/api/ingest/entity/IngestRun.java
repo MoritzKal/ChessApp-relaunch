@@ -9,6 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 @Entity
 @Table(name = "ingest_runs")
@@ -20,10 +21,10 @@ public class IngestRun {
     @Column(nullable = false)
     private String username;
 
-    @Column(name = "from_month", nullable = false)
+    @Transient
     private String fromMonth;
 
-    @Column(name = "to_month", nullable = false)
+    @Transient
     private String toMonth;
 
     @Column(nullable = false)
@@ -35,13 +36,13 @@ public class IngestRun {
     @Column(name = "finished_at")
     private Instant finishedAt;
 
-    @Column(name = "games_count")
+    @Transient
     private Integer gamesCount = 0;
 
-    @Column(name = "moves_count")
+    @Transient
     private Long movesCount = 0L;
 
-    @Column(name = "positions_count")
+    @Transient
     private Long positionsCount = 0L;
 
     private String error;

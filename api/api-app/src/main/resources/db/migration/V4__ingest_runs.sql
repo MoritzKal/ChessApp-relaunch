@@ -1,11 +1,12 @@
-CREATE TABLE ingest_runs (
-  id UUID PRIMARY KEY,
-  username TEXT NOT NULL,
-  range TEXT NULL,
-  status TEXT NOT NULL CHECK (status IN ('PENDING','RUNNING','SUCCEEDED','FAILED')),
-  report_uri TEXT NULL,
-  error TEXT NULL,
-  started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  finished_at TIMESTAMPTZ NULL
+-- Keep compatible with environments where V2 wasn't applied yet
+CREATE TABLE IF NOT EXISTS ingest_runs (
+  id         uuid PRIMARY KEY,
+  username   text NOT NULL,
+  range      text NULL,
+  status     text NOT NULL CHECK (status IN ('PENDING','RUNNING','SUCCEEDED','FAILED')),
+  report_uri text NULL,
+  error      text NULL,
+  started_at timestamptz NOT NULL DEFAULT NOW(),
+  finished_at timestamptz NULL
 );
-CREATE INDEX idx_ingest_runs_started_at ON ingest_runs(started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ingest_runs_started_at ON ingest_runs(started_at DESC);

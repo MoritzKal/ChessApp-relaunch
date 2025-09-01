@@ -2,15 +2,13 @@ package com.chessapp.api.domain.entity;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.ArrayList;
 
-import com.vladmihalcea.hibernate.type.json.JsonType;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.Type;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import org.hibernate.type.SqlTypes;
 
@@ -29,13 +27,18 @@ public class Position {
     @Column(nullable = false)
     private String fen;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "side_to_move", nullable = false)
-    private Color sideToMove;
+    @JdbcTypeCode(SqlTypes.CHAR)
+    @Column(name = "side_to_move", columnDefinition = "char(1)")
+    private String sideToMove;
 
-    @Type(JsonType.class)
-    @Column(name = "legal_moves", columnDefinition = "jsonb")
-    private List<String> legalMoves;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "legal_moves", columnDefinition = "jsonb", nullable = false)
+    private List<String> legalMoves = new ArrayList<>();
+
+    @PrePersist
+    void prePersist() {
+        if (legalMoves == null) legalMoves = new ArrayList<>();
+    }
 
     // getters and setters
     public UUID getId() { return id; }
@@ -46,8 +49,8 @@ public class Position {
     public void setPly(int ply) { this.ply = ply; }
     public String getFen() { return fen; }
     public void setFen(String fen) { this.fen = fen; }
-    public Color getSideToMove() { return sideToMove; }
-    public void setSideToMove(Color sideToMove) { this.sideToMove = sideToMove; }
+    public String getSideToMove() { return sideToMove; }
+    public void setSideToMove(String sideToMove) { this.sideToMove = sideToMove; }
     public List<String> getLegalMoves() { return legalMoves; }
     public void setLegalMoves(List<String> legalMoves) { this.legalMoves = legalMoves; }
 }

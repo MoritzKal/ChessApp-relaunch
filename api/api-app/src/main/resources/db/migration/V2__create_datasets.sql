@@ -1,15 +1,18 @@
--- V2 adjusted to be idempotent and align with V1 schema.
--- Datasets table is created in V1; ensure no failure if it already exists.
-CREATE TABLE IF NOT EXISTS datasets (
-    id UUID PRIMARY KEY,
-    name TEXT NOT NULL,
-    version TEXT NOT NULL,
-    filter_json TEXT NULL,
-    split_json TEXT NULL,
-    size_rows BIGINT NULL,
-    location_uri TEXT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+-- Create ingest_runs used by /v1/ingest
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+CREATE TABLE IF NOT EXISTS ingest_runs (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  username   text NOT NULL,
+  range      text NULL,
+  status     text NOT NULL CHECK (status IN ('PENDING','RUNNING','SUCCEEDED','FAILED')),
+  report_uri text NULL,
+  error      text NULL,
+  started_at timestamptz NOT NULL DEFAULT now(),
+  finished_at timestamptz NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NULL
 );
 
--- Indexes and unique constraints for datasets are defined in V1.
--- Avoid creating duplicate indexes here.
+CREATE INDEX IF NOT EXISTS idx_ingest_runs_started_at ON ingest_runs(started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ingest_runs_updated_at ON ingest_runs(updated_at DESC);

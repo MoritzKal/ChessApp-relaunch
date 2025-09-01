@@ -8,6 +8,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "datasets")
@@ -21,10 +23,12 @@ public class DatasetEntity {
     @Column(nullable = false)
     private String version;
 
-    @Column(name = "filter_json")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "filter_json", columnDefinition = "jsonb", nullable = false)
     private String filterJson;
 
-    @Column(name = "split_json")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "split_json", columnDefinition = "jsonb", nullable = false)
     private String splitJson;
 
     @Column(name = "size_rows")
@@ -44,6 +48,8 @@ public class DatasetEntity {
         if (createdAt == null) {
             createdAt = Instant.now();
         }
+        if (filterJson == null) filterJson = "{}";
+        if (splitJson == null)  splitJson  = "{}";
     }
 
     public UUID getId() { return id; }

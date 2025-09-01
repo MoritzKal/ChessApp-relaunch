@@ -4,8 +4,6 @@ import java.util.UUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
@@ -27,9 +25,9 @@ public class Move {
     private String san;
     private String uci;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "color", nullable = false)
-    private Color color;
+    @JdbcTypeCode(SqlTypes.CHAR)
+    @Column(name = "color", columnDefinition = "char(1)")
+    private String color;
 
     @Column(name = "clock_ms")
     private Integer clockMs;
@@ -54,8 +52,8 @@ public class Move {
     public void setSan(String san) { this.san = san; }
     public String getUci() { return uci; }
     public void setUci(String uci) { this.uci = uci; }
-    public Color getColor() { return color; }
-    public void setColor(Color color) { this.color = color; }
+    public String getColor() { return color; }
+    public void setColor(String color) { this.color = color; }
     public Integer getClockMs() { return clockMs; }
     public void setClockMs(Integer clockMs) { this.clockMs = clockMs; }
     public Integer getEvalCp() { return evalCp; }

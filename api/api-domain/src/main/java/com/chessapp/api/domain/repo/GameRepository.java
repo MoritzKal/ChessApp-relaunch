@@ -26,7 +26,7 @@ public interface GameRepository extends JpaRepository<Game, UUID> {
     @Query(value = """
             SELECT * FROM games
             WHERE user_id = :userId
-              AND (:result IS NULL OR result = CAST(:result AS game_result))
+              AND (:result IS NULL OR result = :result)
               AND (:color IS NULL OR tags->>'color' = :color)
               AND (:since IS NULL OR end_time >= :since)
             ORDER BY end_time DESC

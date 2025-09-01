@@ -4,15 +4,13 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
-import com.vladmihalcea.hibernate.type.json.JsonType;
-import org.hibernate.annotations.Type;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -28,28 +26,35 @@ public class TrainingRun {
     @Column(name = "dataset_id")
     private UUID datasetId;
 
-    @Type(JsonType.class)
-    @Column(columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb", nullable = false)
     private Map<String, Object> params;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "status", columnDefinition = "training_status")
-    @ColumnTransformer(write = "?::training_status")
+    @Column(name = "status", nullable = false)
     private TrainingStatus status;
 
-    @Column(name = "started_at")
+    @Column(name = "started_at", nullable = false)
     private Instant startedAt;
 
     @Column(name = "finished_at")
     private Instant finishedAt;
 
-    @Type(JsonType.class)
-    @Column(columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb", nullable = false)
     private Map<String, Object> metrics;
 
     @Column(name = "logs_uri")
     private String logsUri;
+
+    @PrePersist
+    void prePersist() {
+        if (id == null) id = UUID.randomUUID();
+        if (startedAt == null) startedAt = Instant.now();
+        if (params == null) params = new java.util.HashMap<>();
+        if (metrics == null) metrics = new java.util.HashMap<>();
+        if (status == null) status = TrainingStatus.QUEUED;
+    }
 
     // getters and setters
     public UUID getId() { return id; }

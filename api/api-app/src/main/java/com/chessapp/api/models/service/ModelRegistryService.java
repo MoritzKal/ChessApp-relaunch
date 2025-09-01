@@ -16,6 +16,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class ModelRegistryService {
 
+    private static final Logger log = LoggerFactory.getLogger(ModelRegistryService.class);
     private final ObjectMapper mapper;
     private final String registryPath;
     private final MeterRegistry meters;
@@ -32,7 +35,13 @@ public class ModelRegistryService {
         this.mapper = mapper;
         this.registryPath = path;
         this.meters = meters;
-        tryLoad();
+        // Best-effort: do not fail app startup if registry is missing.
+        try {
+            tryLoad();
+        } catch (Exception e) {
+            log.warn("model-registry.unavailable: {} (serving empty registry)", e.getMessage());
+            this.cached = new Registry();
+        }
     }
 
     public List<ModelSummary> listModels() {
@@ -71,7 +80,11 @@ public class ModelRegistryService {
             registerGauges(reg);
             return reg;
         } catch (IOException e) {
-            throw new RegistryUnavailableException("Failed to load registry", e);
+            log.warn("model-registry.load_failed path='{}' cause='{}'", registryPath, e.toString());
+            if (cached == null) {
+                cached = new Registry();
+            }
+            return cached;
         }
     }
 

@@ -4,20 +4,17 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
-import com.vladmihalcea.hibernate.type.json.JsonType;
-import org.hibernate.annotations.Type;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-import com.chessapp.api.domain.entity.Platform;
-import com.chessapp.api.domain.entity.GameResult;
-import com.chessapp.api.domain.entity.TimeControlCategory;
+import java.util.HashMap;
 
 @Entity
 @Table(name = "games")
@@ -26,15 +23,15 @@ public class Game {
     @Id
     private UUID id;
 
-    @Column(name = "user_id", nullable = false)
+    // DB column is nullable; do not enforce non-null at JPA level
+    @Column(name = "user_id")
     private UUID userId;
 
     @Column(name = "game_id_ext")
     private String gameIdExt;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "platform", columnDefinition = "platform")
+    @Column(name = "platform")
     private Platform platform;
 
     @Column(name = "end_time")
@@ -44,13 +41,11 @@ public class Game {
     private String timeControl;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "time_category", columnDefinition = "time_category")
+    @Column(name = "time_category")
     private TimeControlCategory timeCategory;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "result", columnDefinition = "game_result")
+    @Column(name = "result")
     private GameResult result;
 
     @Column(name = "white_rating")
@@ -59,12 +54,23 @@ public class Game {
     @Column(name = "black_rating")
     private Integer blackRating;
 
-    @Column(name = "pgn", columnDefinition = "text", nullable = false)
-    private String pgn;
+   @Column(name = "pgn_raw")
+   private String pgn;
 
-    @Type(JsonType.class)
-    @Column(columnDefinition = "jsonb")
-    private Map<String, Object> tags;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "tags", columnDefinition = "jsonb", nullable = false)
+    private Map<String, Object> tags = new HashMap<>();
+
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
+
+    @PrePersist
+    void prePersist() {
+        if (id == null) id = UUID.randomUUID();
+        if (createdAt == null) createdAt = Instant.now();
+        // Ensure JSONB defaults are applied if null
+        if (tags == null) tags = new HashMap<>();
+    }
 
     // getters and setters
     public UUID getId() { return id; }
