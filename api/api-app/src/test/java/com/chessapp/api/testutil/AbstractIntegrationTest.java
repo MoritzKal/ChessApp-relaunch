@@ -26,6 +26,7 @@ public abstract class AbstractIntegrationTest {
         // Prefer native Postgres enums for @Enumerated fields
         registry.add("spring.jpa.properties.hibernate.prefer_native_enum_types", () -> "true");
         registry.add("spring.jpa.properties.hibernate.type.preferred_enum_jdbc_type", () -> "postgres_enum");
+        registry.add("app.security.jwt.secret", () -> "test-secret");
     }
 }
 
