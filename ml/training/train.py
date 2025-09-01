@@ -24,6 +24,9 @@ import pandas as pd
 import torch
 from torch import nn
 from torch.utils.data import Dataset
+from torch.utils.data import DataLoader
+import json
+import time
 
 
 LOGGER = logging.getLogger(__name__)
@@ -198,6 +201,145 @@ def load_parquet_splits(path: str, seed: int) -> Tuple[pd.DataFrame, pd.DataFram
 
 
 # ---------------------------------------------------------------------------
+# Training utilities
+# ---------------------------------------------------------------------------
+
+def accuracy_topk(logits: torch.Tensor, targets: torch.Tensor, k: int) -> float:
+    """Return top-k accuracy for given logits and targets."""
+    _, pred = logits.topk(k, dim=1)
+    correct = pred.eq(targets.view(-1, 1)).any(dim=1).float().sum().item()
+    return correct / targets.size(0)
+
+
+def train_epoch(
+    model: nn.Module,
+    loader: DataLoader,
+    optimizer: torch.optim.Optimizer,
+    criterion: nn.Module,
+    device: torch.device,
+) -> Tuple[float, float]:
+    """Train for one epoch and return (avg_loss, throughput)."""
+    model.train()
+    total_loss = 0.0
+    total_samples = 0
+    start = time.time()
+    for xb, yb in loader:
+        xb = xb.to(device)
+        yb = yb.to(device)
+        optimizer.zero_grad()
+        logits = model(xb)
+        loss = criterion(logits, yb)
+        loss.backward()
+        optimizer.step()
+        batch_size = xb.size(0)
+        total_loss += loss.item() * batch_size
+        total_samples += batch_size
+    elapsed = time.time() - start
+    avg_loss = total_loss / total_samples if total_samples else 0.0
+    throughput = total_samples / elapsed if elapsed > 0 else 0.0
+    return avg_loss, throughput
+
+
+def evaluate(
+    model: nn.Module,
+    loader: DataLoader,
+    criterion: nn.Module,
+    device: torch.device,
+) -> Tuple[float, float, float]:
+    """Evaluate the model and return (loss, acc_top1, acc_top3)."""
+    model.eval()
+    total_loss = 0.0
+    total_samples = 0
+    all_logits = []
+    all_targets = []
+    with torch.no_grad():
+        for xb, yb in loader:
+            xb = xb.to(device)
+            yb = yb.to(device)
+            logits = model(xb)
+            loss = criterion(logits, yb)
+            batch_size = xb.size(0)
+            total_loss += loss.item() * batch_size
+            total_samples += batch_size
+            all_logits.append(logits.cpu())
+            all_targets.append(yb.cpu())
+    if total_samples:
+        logits_tensor = torch.cat(all_logits)
+        targets_tensor = torch.cat(all_targets)
+        acc1 = accuracy_topk(logits_tensor, targets_tensor, 1)
+        acc3 = accuracy_topk(logits_tensor, targets_tensor, 3)
+    else:
+        acc1 = acc3 = 0.0
+    avg_loss = total_loss / total_samples if total_samples else 0.0
+    return avg_loss, acc1, acc3
+
+
+def run_training(
+    model: nn.Module,
+    optimizer: torch.optim.Optimizer,
+    criterion: nn.Module,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    device: torch.device,
+    args: argparse.Namespace,
+    move_vocab: Dict[str, int],
+) -> Dict[str, float]:
+    """Execute training loop with early stopping and checkpointing."""
+    artifact_dir = os.path.join(os.path.dirname(__file__), "artifacts")
+    os.makedirs(artifact_dir, exist_ok=True)
+    best_path = os.path.join(artifact_dir, "best.pt")
+    best_val_acc1 = -1.0
+    best_val_acc3 = -1.0
+    no_improve = 0
+    epochs_run = 0
+    for epoch in range(1, args.epochs + 1):
+        epochs_run = epoch
+        train_loss, throughput = train_epoch(model, train_loader, optimizer, criterion, device)
+        LOGGER.info(
+            "Epoch %d train_loss=%.4f throughput=%.2f samples/s",
+            epoch,
+            train_loss,
+            throughput,
+        )
+        val_loss, val_acc1, val_acc3 = evaluate(model, val_loader, criterion, device)
+        LOGGER.info(
+            "Epoch %d val_loss=%.4f val_acc_top1=%.4f val_acc_top3=%.4f",
+            epoch,
+            val_loss,
+            val_acc1,
+            val_acc3,
+        )
+        if val_acc1 > best_val_acc1:
+            best_val_acc1 = val_acc1
+            best_val_acc3 = val_acc3
+            no_improve = 0
+            torch.save(
+                {
+                    "state_dict": model.state_dict(),
+                    "move2id": move_vocab,
+                    "params": {
+                        "vocab_size": len(FEN_VOCAB),
+                        "emb_dim": args.emb_dim,
+                        "num_classes": len(move_vocab),
+                        "max_len": args.max_len,
+                        "p_drop": args.dropout,
+                    },
+                },
+                best_path,
+            )
+            LOGGER.info("Saved new best model to %s", best_path)
+        else:
+            no_improve += 1
+            if no_improve >= args.patience:
+                LOGGER.info("Early stopping at epoch %d", epoch)
+                break
+    return {
+        "best_pt": best_path,
+        "best_val_acc_top1": best_val_acc1,
+        "best_val_acc_top3": best_val_acc3,
+        "epochs_run": epochs_run,
+    }
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -259,6 +401,34 @@ def main() -> None:  # pragma: no cover - CLI entry
     )
 
     # Future work: implement training loop and metric logging.
+
+    train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True)
+    val_loader = DataLoader(val_ds, batch_size=args.batch_size)
+    metrics = run_training(
+        model=model,
+        optimizer=optimizer,
+        criterion=criterion,
+        train_loader=train_loader,
+        val_loader=val_loader,
+        device=device,
+        args=args,
+        move_vocab=move_vocab,
+    )
+    if args.metrics_out:
+        metrics_dir = os.path.dirname(args.metrics_out)
+        if metrics_dir:
+            os.makedirs(metrics_dir, exist_ok=True)
+        with open(args.metrics_out, "w") as f:
+            json.dump(metrics, f)
+    print(
+        json.dumps(
+            {
+                "ok": True,
+                "best_pt": metrics["best_pt"],
+                "best_val_acc_top1": metrics["best_val_acc_top1"],
+            }
+        )
+    )
 
 
 if __name__ == "__main__":
