@@ -14,3 +14,6 @@ Bitte:
    - Übergabe an SRE (max. 3 Codex-Prompts)
      Guardrails: Wasserfall pro Block · Observability-first · Tests Pflicht · keine /v1-Breakings.  
      Timezone: Europe/Berlin.
+
+## SSOT – Metrics Catalog
+On startup, load `docs/observability/metrics.catalog.v1.yaml` and treat it as the single source of truth for dashboard metrics (queries, intervals, mocks).

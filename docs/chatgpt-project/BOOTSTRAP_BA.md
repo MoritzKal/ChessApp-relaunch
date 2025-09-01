@@ -15,3 +15,6 @@ Bitte:
     d) SUMMARY FOR PL (5 Bullets)
    Guardrails: SSOT & Delta-Logik · Cross-Refs statt Duplikate · keine /v1-Breakings.  
    Timezone: Europe/Berlin.
+
+## SSOT – Metrics Catalog
+On startup, load `docs/observability/metrics.catalog.v1.yaml` and treat it as the single source of truth for dashboard metrics (queries, intervals, mocks).
