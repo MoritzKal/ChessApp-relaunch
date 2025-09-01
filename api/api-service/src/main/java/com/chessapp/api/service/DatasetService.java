@@ -15,7 +15,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.chessapp.api.domain.entity.Dataset;
+import com.chessapp.api.domain.entity.DatasetEntity;
 import com.chessapp.api.domain.repo.DatasetRepository;
 import com.chessapp.api.service.dto.DatasetCreateRequest;
 import com.chessapp.api.service.dto.DatasetResponse;
@@ -54,7 +54,7 @@ public class DatasetService {
         UUID id = UUID.randomUUID();
         final String key = id + "/manifest.json";
         final String locationUri = "s3://datasets/" + key;
-        Dataset d = new Dataset();
+        DatasetEntity d = new DatasetEntity();
         d.setId(id);
         d.setName(req.getName());
         d.setVersion(req.getVersion());
