@@ -2,11 +2,29 @@ package com.chessapp.api.service.dto;
 
 import java.util.Map;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+@Schema(name = "DatasetCreateRequest")
 public class DatasetCreateRequest {
+    @NotBlank
+    @Schema(example = "sample_ds")
     private String name;
+
+    @NotBlank
+    @Schema(example = "v1")
     private String version;
+
+    @NotNull
+    @Schema(description = "filter parameters")
     private Map<String, Object> filter;
+
+    @NotNull
+    @Schema(description = "split ratios")
     private Map<String, Object> split;
+
+    @Schema(description = "number of rows")
     private Long sizeRows;
 
     public DatasetCreateRequest() {

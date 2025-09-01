@@ -24,11 +24,11 @@ public class Dataset {
     private String version;
 
     @Type(JsonType.class)
-    @Column(columnDefinition = "jsonb")
+    @Column(columnDefinition = "jsonb", nullable = false)
     private Map<String, Object> filter;
 
     @Type(JsonType.class)
-    @Column(columnDefinition = "jsonb")
+    @Column(columnDefinition = "jsonb", nullable = false)
     private Map<String, Object> split;
 
     @Column(name = "size_rows")
@@ -37,7 +37,7 @@ public class Dataset {
     @Column(name = "location_uri")
     private String locationUri;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
     // getters and setters

@@ -3,11 +3,17 @@ package com.chessapp.api.service.dto;
 import java.time.Instant;
 import java.util.UUID;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(name = "DatasetResponse")
 public class DatasetResponse {
+    @Schema(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
     private UUID id;
     private String name;
     private String version;
+    @Schema(description = "number of rows")
     private Long sizeRows;
+    @Schema(description = "S3 URI of manifest")
     private String locationUri;
     private Instant createdAt;
 

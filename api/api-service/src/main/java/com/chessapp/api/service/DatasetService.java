@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,8 +58,8 @@ public class DatasetService {
         d.setId(id);
         d.setName(req.getName());
         d.setVersion(req.getVersion());
-        d.setFilter(req.getFilter());
-        d.setSplit(req.getSplit());
+        d.setFilter(req.getFilter() != null ? req.getFilter() : Map.of());
+        d.setSplit(req.getSplit() != null ? req.getSplit() : Map.of());
         long rows = req.getSizeRows() != null ? req.getSizeRows() : 0L;
         d.setSizeRows(rows);
         d.setCreatedAt(Instant.now());
@@ -92,8 +93,7 @@ public class DatasetService {
         }
 
         try (MDC.MDCCloseable c1 = MDC.putCloseable("dataset_id", id.toString());
-             MDC.MDCCloseable c2 = MDC.putCloseable("event", "dataset.created");
-             MDC.MDCCloseable c3 = MDC.putCloseable("component", "dataset")) {
+             MDC.MDCCloseable c2 = MDC.putCloseable("event", "dataset.created")) {
             log.info("dataset created");
         }
 
@@ -102,7 +102,8 @@ public class DatasetService {
 
     @Transactional(readOnly = true)
     public List<DatasetResponse> list(int limit, int offset) {
-        return datasetRepository.findAll(PageRequest.of(offset / limit, limit))
+        return datasetRepository.findAll(PageRequest.of(offset / limit, limit,
+                        Sort.by(Sort.Direction.DESC, "createdAt")))
                 .stream()
                 .map(DatasetMapper::toDto)
                 .toList();

@@ -41,7 +41,10 @@ class OpenApiIT extends com.chessapp.api.testutil.AbstractIntegrationTest {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode root = mapper.readTree(body);
         assertThat(root.has("openapi")).isTrue();
-        assertThat(root.path("paths").isObject()).isTrue();
+        JsonNode paths = root.path("paths");
+        assertThat(paths.isObject()).isTrue();
+        assertThat(paths.has("/v1/datasets")).isTrue();
+        assertThat(paths.has("/v1/datasets/{id}")).isTrue();
     }
 }
 
