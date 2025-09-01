@@ -239,6 +239,8 @@ services:
       context: ..
       dockerfile: /api/api-app/Dockerfile
     container_name: chs_api
+    env_file:
+      - ../.env
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -263,6 +265,11 @@ services:
       AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
       AWS_REGION: us-east-1
       ML_S3_ENDPOINT: http://minio:9000
+      # JWT secrets and direct Spring property
+      API_JWT_SECRET: ${API_JWT_SECRET}
+      APP_SECURITY_JWT_SECRET: ${API_JWT_SECRET}
+      SPRING_APPLICATION_JSON: >
+        {"app":{"security":{"jwt":{"secret":"${API_JWT_SECRET}"}}}}
 
     depends_on:
       db:
