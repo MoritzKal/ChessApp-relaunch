@@ -8,6 +8,7 @@ import io.micrometer.core.instrument.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -29,8 +30,10 @@ public class IngestService {
     private final Counter failed;
     private final Timer.Builder durationTimer;
     private final AtomicInteger activeGauge;
+    private final IngestService self;
 
-    public IngestService(IngestRunRepository repository, MeterRegistry meterRegistry) {
+    public IngestService(IngestRunRepository repository, MeterRegistry meterRegistry,
+                         @Lazy IngestService self) {
         this.repository = repository;
         this.meterRegistry = meterRegistry;
         this.starts = meterRegistry.counter("chs_ingest_starts_total");
@@ -40,6 +43,7 @@ public class IngestService {
                 .publishPercentileHistogram()
                 .publishPercentiles(0.5, 0.95);
         this.activeGauge = meterRegistry.gauge("chs_ingest_active", new AtomicInteger());
+        this.self = self;
     }
 
     /**
@@ -54,7 +58,9 @@ public class IngestService {
         run.setStatus("PENDING");
         repository.save(run);
         starts.increment();
-        execute(runId);
+        MDC.put("run_id", runId.toString());
+        self.execute(runId);
+        MDC.remove("run_id");
         return runId;
     }
 
@@ -63,7 +69,6 @@ public class IngestService {
      */
     @Async("ingestExecutor")
     public void execute(UUID runId) {
-        MDC.put("run_id", runId.toString());
         activeGauge.incrementAndGet();
         Timer.Sample sample = Timer.start(meterRegistry);
         try {
@@ -82,7 +87,6 @@ public class IngestService {
             log.error("ingest run {} failed: {}", runId, e.getMessage());
         } finally {
             activeGauge.decrementAndGet();
-            MDC.remove("run_id");
         }
     }
 
