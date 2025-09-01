@@ -24,7 +24,7 @@ WITH u AS (
   RETURNING id
 )
 INSERT INTO moves (game_id, ply, san, uci, color)
-SELECT g.id, v.ply, v.san, v.uci, v.color
+SELECT g.id, v.ply, v.san, v.uci, v.color::color
 FROM g CROSS JOIN (VALUES
   (1, 'e4', 'e2e4', 'WHITE'),
   (2, 'e5', 'e7e5', 'BLACK'),
