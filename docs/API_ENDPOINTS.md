@@ -13,10 +13,13 @@
 
 ## Ingest
 
-- `POST /v1/ingest`
-  - Body: `{"username":"<name>","from":"2025-01","to":"2025-08"}`
-- **Alias:** `POST /v1/data/import` → intern Alias auf `/v1/ingest`
-- `GET /v1/ingest/{runId}` → Status
+- `POST /v1/ingest` – Start offline ingest
+  - Request: `{ "username": "string", "range": "string?" }`
+  - Response `202`: `{ "runId": "uuid" }`
+- `GET /v1/ingest/{runId}` – Status/Report
+  - Response `200`: `{ "status": "RUNNING|SUCCEEDED|FAILED", "reportUri": "string?" }`
+- **Alias (deprecated):** `POST /v1/data/import` → `308` → `/v1/ingest`
+- Metriken: `chs_ingest_runs_started_total`, `chs_ingest_runs_succeeded_total`, `chs_ingest_runs_failed_total`, `chs_ingest_active_runs`
 
 ### Beispiel
 
@@ -24,7 +27,7 @@
 curl -sS -X POST http://localhost:8080/v1/ingest \
   -H 'Content-Type: application/json' \
   -H "Authorization: Bearer $TOKEN" \
-  -d '{"username":"demo","from":"2025-01","to":"2025-08"}'
+  -d '{"username":"demo"}'
 ```
 
 ## Datasets
