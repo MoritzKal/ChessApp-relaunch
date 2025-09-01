@@ -3,13 +3,16 @@ package com.chessapp.api.ingest;
 import com.chessapp.api.ingest.dto.IngestStatusResponse;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.lang.Nullable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -25,15 +28,20 @@ public class IngestService {
     private final Counter succeededCounter;
     private final Counter failedCounter;
     private final AtomicInteger activeRuns;
+    private final Timer jobTimer;
     private final Supplier<Long> sleepSupplier;
+    private final IngestService self;
 
-    public IngestService(IngestRunRepository repository, MeterRegistry registry, Supplier<Long> ingestSleep) {
+    public IngestService(IngestRunRepository repository, MeterRegistry registry, Supplier<Long> ingestSleep,
+                         @Lazy IngestService self) {
         this.repository = repository;
         this.startedCounter = Counter.builder("chs_ingest_runs_started_total").register(registry);
         this.succeededCounter = Counter.builder("chs_ingest_runs_succeeded_total").register(registry);
         this.failedCounter = Counter.builder("chs_ingest_runs_failed_total").register(registry);
         this.activeRuns = registry.gauge("chs_ingest_active_runs", new AtomicInteger(0));
+        this.jobTimer = Timer.builder("chs_ingest_job_duration_seconds").register(registry);
         this.sleepSupplier = ingestSleep;
+        this.self = self;
     }
 
     public UUID startRun(String username, @Nullable String range) {
@@ -53,27 +61,32 @@ public class IngestService {
             log.info("ingest requested username={} range={}", username, range);
         }
 
-        simulateIngest(runId, username, range);
+        self.simulateIngest(runId, username, range);
         return runId;
     }
 
-    @Async
+    @Async("ingestExecutor")
     void simulateIngest(UUID runId, String username, @Nullable String range) {
+        Instant finish = null;
         try (MDC.MDCCloseable c = MDC.putCloseable("run_id", runId.toString())) {
             Thread.sleep(sleepSupplier.get());
             IngestRunEntity entity = repository.findById(runId).orElseThrow();
             entity.setStatus(IngestRunStatus.SUCCEEDED);
             entity.setReportUri("s3://reports/ingest/%s/report.json".formatted(runId));
-            entity.setFinishedAt(Instant.now());
+            finish = Instant.now();
+            entity.setFinishedAt(finish);
             repository.save(entity);
             succeededCounter.increment();
+            jobTimer.record(Duration.between(entity.getStartedAt(), finish));
         } catch (Exception e) {
             IngestRunEntity entity = repository.findById(runId).orElse(null);
+            finish = Instant.now();
             if (entity != null) {
                 entity.setStatus(IngestRunStatus.FAILED);
                 entity.setError(e.getMessage());
-                entity.setFinishedAt(Instant.now());
+                entity.setFinishedAt(finish);
                 repository.save(entity);
+                jobTimer.record(Duration.between(entity.getStartedAt(), finish));
             }
             failedCounter.increment();
             log.error("ingest failed", e);
