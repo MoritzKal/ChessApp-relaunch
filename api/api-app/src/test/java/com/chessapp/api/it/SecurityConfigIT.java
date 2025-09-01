@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -19,7 +20,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.chessapp.api.testutil.AbstractIntegrationTest;
-import com.chessapp.api.testutil.JwtTestUtils;
+import com.chessapp.api.support.JwtTestUtils;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     classes = com.chessapp.api.codex.CodexApplication.class)
@@ -41,10 +42,10 @@ class SecurityConfigIT extends AbstractIntegrationTest {
 
     @Test
     void v1_withUserToken_returns200() throws Exception {
-        String token = JwtTestUtils.createToken(secret, Map.of(
+        String token = JwtTestUtils.signHmac256(secret, Map.of(
                 "preferred_username", "user1",
                 "roles", List.of("USER"),
-                "scope", "api.read"));
+                "scope", "api.read"), Duration.ofMinutes(10));
         mockMvc.perform(get("/v1/datasets")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
                 .andExpect(status().isOk());
@@ -60,16 +61,16 @@ class SecurityConfigIT extends AbstractIntegrationTest {
 
     @Test
     void prometheus_requires_monitoring_role() throws Exception {
-        String userToken = JwtTestUtils.createToken(secret, Map.of(
+        String userToken = JwtTestUtils.signHmac256(secret, Map.of(
                 "sub", "user1",
-                "roles", List.of("USER")));
+                "roles", List.of("USER")), Duration.ofMinutes(5));
         mockMvc.perform(get("/actuator/prometheus")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + userToken))
                 .andExpect(status().isForbidden());
 
-        String monitoringToken = JwtTestUtils.createToken(secret, Map.of(
+        String monitoringToken = JwtTestUtils.signHmac256(secret, Map.of(
                 "sub", "mon",
-                "roles", List.of("MONITORING")));
+                "roles", List.of("MONITORING")), Duration.ofMinutes(5));
         mockMvc.perform(get("/actuator/prometheus")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + monitoringToken))
                 .andExpect(status().isOk());
