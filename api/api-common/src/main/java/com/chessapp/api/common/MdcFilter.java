@@ -2,7 +2,6 @@ package com.chessapp.api.common;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Optional;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -14,6 +13,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
 /**
@@ -26,29 +28,33 @@ public class MdcFilter implements Filter {
     private static final Map<String, String> HEADER_MAPPINGS = Map.of(
             "X-Run-Id", "run_id",
             "X-Dataset-Id", "dataset_id",
-            "X-Model-Id", "model_id",
-            "X-Username", "username",
-            "X-Component", "component"
+            "X-Model-Id", "model_id"
     );
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         try {
+            MDC.put("component", "api");
             if (request instanceof HttpServletRequest http) {
                 HEADER_MAPPINGS.forEach((header, mdcKey) -> {
-                    String value = Optional.ofNullable(http.getHeader(header)).orElse(null);
+                    String value = http.getHeader(header);
                     if (value != null && !value.isEmpty()) {
                         MDC.put(mdcKey, value);
                     }
                 });
             }
-            if (MDC.get("username") == null) {
-                MDC.put("username", "M3NG00S3");
+            String username = "anonymous";
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth instanceof JwtAuthenticationToken jwtAuth) {
+                username = jwtAuth.getName();
+            } else if (request instanceof HttpServletRequest http) {
+                String debugUser = http.getHeader("X-Debug-User");
+                if (debugUser != null && !debugUser.isBlank()) {
+                    username = debugUser;
+                }
             }
-            if (MDC.get("component") == null) {
-                MDC.put("component", "api");
-            }
+            MDC.put("username", username);
             chain.doFilter(request, response);
         } finally {
             MDC.clear();

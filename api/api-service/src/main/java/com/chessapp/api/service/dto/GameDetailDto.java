@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import com.chessapp.api.domain.entity.GameResult;
+import com.chessapp.api.common.validation.ValidPgn;
 
 /**
  * Detailed game information including raw PGN.
@@ -15,6 +16,7 @@ public class GameDetailDto {
     private GameResult result;
     private Integer whiteRating;
     private Integer blackRating;
+    @ValidPgn
     private String pgnRaw;
 
     public GameDetailDto() {

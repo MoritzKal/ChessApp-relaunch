@@ -38,6 +38,12 @@ logging:
     org.springframework.web.reactive.function.client: INFO
   pattern:
     console: "{\"ts\":\"%d{yyyy-MM-dd'T'HH:mm:ss.SSSX}\",\"level\":\"%p\",\"logger\":\"%c{1}\",\"msg\":%m,\"run_id\":\"%X{run_id}\",\"component\":\"training\"}%n"
+app:
+  security:
+    jwt:
+      secret: ${API_JWT_SECRET:changeme}
+  cors:
+    allowed-origins: ${FRONTEND_ORIGIN:http://localhost:5173}
 chs:
   default-username: ${CHESS_USERNAME:M3NG00S3}
   registry:

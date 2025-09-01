@@ -4,6 +4,8 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
+import com.chessapp.api.common.validation.ValidPgn;
+
 import com.vladmihalcea.hibernate.type.json.JsonType;
 import org.hibernate.annotations.Type;
 import jakarta.persistence.Column;
@@ -60,6 +62,7 @@ public class Game {
     private Integer blackRating;
 
     @Column(name = "pgn", columnDefinition = "text", nullable = false)
+    @ValidPgn
     private String pgn;
 
     @Type(JsonType.class)
