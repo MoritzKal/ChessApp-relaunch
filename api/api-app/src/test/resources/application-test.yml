@@ -10,5 +10,6 @@ app:
       secret: test-secret
   cors:
     allowed-origins: http://localhost:5173
+# disable rate limiting during tests
 ratelimit:
   enabled: false
