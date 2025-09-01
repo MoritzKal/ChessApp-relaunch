@@ -1,12 +1,15 @@
 package com.chessapp.api.service.dto;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 public class DatasetResponse {
     private UUID id;
     private String name;
     private String version;
+    private Map<String, Object> filter;
+    private Map<String, Object> split;
     private Long sizeRows;
     private String locationUri;
     private Instant createdAt;
@@ -14,10 +17,19 @@ public class DatasetResponse {
     public DatasetResponse() {
     }
 
-    public DatasetResponse(UUID id, String name, String version, Long sizeRows, String locationUri, Instant createdAt) {
+    public DatasetResponse(UUID id,
+                           String name,
+                           String version,
+                           Map<String, Object> filter,
+                           Map<String, Object> split,
+                           Long sizeRows,
+                           String locationUri,
+                           Instant createdAt) {
         this.id = id;
         this.name = name;
         this.version = version;
+        this.filter = filter;
+        this.split = split;
         this.sizeRows = sizeRows;
         this.locationUri = locationUri;
         this.createdAt = createdAt;
@@ -29,6 +41,10 @@ public class DatasetResponse {
     public void setName(String name) { this.name = name; }
     public String getVersion() { return version; }
     public void setVersion(String version) { this.version = version; }
+    public Map<String, Object> getFilter() { return filter; }
+    public void setFilter(Map<String, Object> filter) { this.filter = filter; }
+    public Map<String, Object> getSplit() { return split; }
+    public void setSplit(Map<String, Object> split) { this.split = split; }
     public Long getSizeRows() { return sizeRows; }
     public void setSizeRows(Long sizeRows) { this.sizeRows = sizeRows; }
     public String getLocationUri() { return locationUri; }

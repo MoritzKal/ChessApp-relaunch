@@ -13,7 +13,7 @@ import com.vladmihalcea.hibernate.type.json.JsonType;
 
 @Entity
 @Table(name = "datasets")
-public class Dataset {
+public class DatasetEntity {
     @Id
     private UUID id;
 

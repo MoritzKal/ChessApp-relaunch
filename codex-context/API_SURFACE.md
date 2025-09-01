@@ -9,8 +9,8 @@ API Surface (/v1)
   - GET /v1/games/{id}/positions: List positions (FEN, moves) for the game.
 
 - Datasets
-  - POST /v1/datasets: Create dataset (JSON body `DatasetCreateRequest`).
-  - GET /v1/datasets: List datasets (query: `limit`, `offset`).
+  - POST /v1/datasets: Create dataset (JSON body `CreateDatasetRequest`).
+  - GET /v1/datasets: List datasets (paged, default sort `createdAt` DESC).
   - GET /v1/datasets/{id}: Get dataset by UUID.
 
 - Ingest
