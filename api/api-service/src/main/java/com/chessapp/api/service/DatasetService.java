@@ -95,7 +95,7 @@ public class DatasetService {
 
         try (MDC.MDCCloseable c1 = MDC.putCloseable("dataset_id", id.toString());
              MDC.MDCCloseable c2 = MDC.putCloseable("event", "dataset.created");
-             MDC.MDCCloseable c3 = MDC.putCloseable("component", "dataset")) {
+             MDC.MDCCloseable c3 = MDC.putCloseable("component", "api")) {
             log.info("dataset created");
         }
 
