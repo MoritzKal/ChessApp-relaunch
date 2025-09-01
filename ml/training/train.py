@@ -22,6 +22,7 @@ from typing import Dict, Iterable, Tuple
 import numpy as np
 import pandas as pd
 import torch
+from torch import nn
 from torch.utils.data import Dataset
 
 
@@ -53,19 +54,21 @@ def set_seed(seed: int) -> None:
 # FEN Encoder
 # ---------------------------------------------------------------------------
 
-class FENEncoder:
-    """Encode FEN strings at character level with fixed padding.
+# Public vocabulary for FEN characters (PAD=0)
+FEN_VOCAB: Dict[str, int] = {
+    ch: idx + 1
+    for idx, ch in enumerate(sorted(set("prnbqkPRNBQK12345678/ wKQkq-0123456789")))
+}
 
-    Characters not present in the known vocabulary map to the padding index.
-    Padding is applied/truncated to ``max_len``.
-    """
+
+class FENEncoder:
+    """Encode FEN strings at character level with fixed padding."""
 
     PAD = 0
 
     def __init__(self, max_len: int) -> None:
         self.max_len = max_len
-        charset = set("prnbqkPRNBQK12345678/ wKQkq-0123456789")
-        self.stoi: Dict[str, int] = {ch: idx + 1 for idx, ch in enumerate(sorted(charset))}
+        self.stoi: Dict[str, int] = dict(FEN_VOCAB)
         self.itos: Dict[int, str] = {idx: ch for ch, idx in self.stoi.items()}
         LOGGER.debug("FENEncoder vocabulary size %d", len(self.stoi) + 1)
 
@@ -106,6 +109,60 @@ class ParquetMoves(Dataset):
         move_idx = torch.tensor(self.move_vocab[row["uci"]], dtype=torch.long)
         return fen_tensor, move_idx
 
+
+# ---------------------------------------------------------------------------
+# TinyPolicy model
+# ---------------------------------------------------------------------------
+
+
+class TinyPolicy(nn.Module):
+    """Minimal policy network over FEN tokens.
+
+    The architecture follows the sequence:
+    Embedding → Conv1d ×2 → AdaptiveAvgPool1d → MLP head.
+    """
+
+    def __init__(
+        self,
+        vocab_size: int,
+        emb_dim: int,
+        num_classes: int,
+        max_len: int = 90,
+        p_drop: float = 0.1,
+    ) -> None:
+        super().__init__()
+        self.max_len = max_len
+        self.embed = nn.Embedding(vocab_size + 1, emb_dim, padding_idx=0)
+        self.dropout = nn.Dropout(p_drop)
+        self.conv = nn.Sequential(
+            nn.Conv1d(emb_dim, emb_dim, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv1d(emb_dim, emb_dim, kernel_size=3, padding=1),
+            nn.ReLU(),
+        )
+        self.pool = nn.AdaptiveAvgPool1d(1)
+        self.head = nn.Sequential(
+            nn.Linear(emb_dim, emb_dim),
+            nn.ReLU(),
+            nn.Dropout(p_drop),
+            nn.Linear(emb_dim, num_classes),
+        )
+
+    def forward(self, x: torch.LongTensor) -> torch.Tensor:
+        """Return logits for each move class.
+
+        Parameters
+        ----------
+        x: torch.LongTensor
+            Tensor of shape ``(B, L)`` with token IDs.
+        """
+
+        emb = self.embed(x)  # (B, L, E)
+        emb = self.dropout(emb)
+        emb = emb.transpose(1, 2)  # (B, E, L)
+        features = self.conv(emb)
+        pooled = self.pool(features).squeeze(-1)
+        return self.head(pooled)
 
 # ---------------------------------------------------------------------------
 # Data loading
@@ -180,7 +237,26 @@ def main() -> None:  # pragma: no cover - CLI entry
 
     LOGGER.info("Datasets prepared: train=%d, val=%d", len(train_ds), len(val_ds))
     LOGGER.info("Move vocab size: %d", len(move_vocab))
-    LOGGER.info("Placeholder training loop not yet implemented. See docs for next steps.")
+
+    device = torch.device(
+        "cuda" if torch.cuda.is_available() and not args.cpu else "cpu"
+    )
+    model = TinyPolicy(
+        vocab_size=len(FEN_VOCAB),
+        emb_dim=args.emb_dim,
+        num_classes=len(move_vocab),
+        max_len=args.max_len,
+        p_drop=args.dropout,
+    ).to(device)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
+    criterion = nn.CrossEntropyLoss()
+
+    LOGGER.info("Model %s initialised on %s", model.__class__.__name__, device)
+    LOGGER.info("Optimizer and loss ready (training loop pending)")
+
+    LOGGER.info(
+        "Placeholder training loop not yet implemented. See docs for next steps."
+    )
 
     # Future work: implement training loop and metric logging.
 
