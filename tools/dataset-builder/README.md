@@ -13,15 +13,21 @@ make build GAMES=out/parquet/games.parquet POS=out/parquet/positions.parquet NAM
 
 | Name | Description |
 | ---- | ----------- |
-| `PUSHGATEWAY_URL` | URL for optional Prometheus Pushgateway (placeholder) |
-| `MINIO_ENDPOINT`  | MinIO server endpoint (placeholder) |
-| `MINIO_ACCESS_KEY`| MinIO access key (placeholder) |
-| `MINIO_SECRET_KEY`| MinIO secret key (placeholder) |
+| `PUSHGATEWAY_URL` | Optional Prometheus Pushgateway URL for metric push |
+| `MINIO_ENDPOINT`  | Optional MinIO/S3 endpoint host:port |
+| `MINIO_ACCESS_KEY`| Access key for MinIO/S3 upload |
+| `MINIO_SECRET_KEY`| Secret key for MinIO/S3 upload |
+| `MINIO_BUCKET`    | Target bucket (default `chess-datasets`) |
+| `MINIO_SECURE`    | Use HTTPS when `1`, HTTP otherwise |
 
 ## Example Commands
 
 ```bash
 make pgn IN=tests/fixtures/sample.pgn OUT=out  # convert PGN to Parquet
+make build GAMES=out/parquet/games.parquet POS=out/parquet/positions.parquet NAME=sample OUT=out
+# push metrics and upload artifacts
+PUSHGATEWAY_URL=http://localhost:9091 \
+MINIO_ENDPOINT=localhost:9000 MINIO_ACCESS_KEY=key MINIO_SECRET_KEY=secret \
 make build GAMES=out/parquet/games.parquet POS=out/parquet/positions.parquet NAME=sample OUT=out
 make all                                      # run full pipeline (placeholder)
 ```
@@ -47,7 +53,8 @@ tools/dataset-builder/
 
 - `manifest/dataset.json` — metadata about the dataset build including `name`,
   `version`, applied `filters`, `splits` with fractions and row counts, absolute
-  `source` paths and the `created_at` timestamp.
+  `source` paths and the `created_at` timestamp. When an upload succeeds the
+  manifest additionally contains an `artifact_uri` pointing to the uploaded tree.
 - `stats/rows.json` — row counts for raw tables and each split.
 - `stats/eco.json` — ECO code frequencies; `stats/eco.png` visualises the top 20
   ECO codes as a bar chart.
@@ -61,5 +68,6 @@ tools/dataset-builder/
 - `make pgn` converts PGN files to Parquet format.
 - `make build` joins, filters, and splits positions into train/val/test Parquet files.
 - Placeholder target exists for `all`.
-- Future observability will expose optional `chs_dataset_rows{split}` metric via Pushgateway.
+- Optional observability pushes `chs_dataset_rows{split}` metrics to a Pushgateway
+  and uploads artifacts to MinIO/S3 when credentials are provided.
 

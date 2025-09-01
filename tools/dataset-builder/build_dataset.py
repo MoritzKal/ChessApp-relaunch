@@ -1,13 +1,69 @@
 import argparse
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
+from typing import Dict, Optional
 
-def main():
+
+def push_metrics(rows: Dict[str, int], name: str) -> None:
+    url = os.getenv("PUSHGATEWAY_URL")
+    if not url:
+        print(json.dumps({"event": "upload_skipped", "target": "pushgateway"}))
+        return
+    try:
+        print(json.dumps({"event": "upload_started", "target": "pushgateway", "url": url}))
+        from prometheus_client import CollectorRegistry, Gauge, push_to_gateway
+
+        registry = CollectorRegistry()
+        gauge = Gauge("chs_dataset_rows", "Number of dataset rows", ["split"], registry=registry)
+        for split, count in rows.items():
+            gauge.labels(split=split).set(count)
+        push_to_gateway(url, job=f"dataset_builder_{name}", registry=registry)
+        print(json.dumps({"event": "upload_done", "target": "pushgateway", "url": url}))
+    except Exception:
+        print(json.dumps({"event": "upload_skipped", "target": "pushgateway", "url": url}))
+
+
+def upload_to_s3(out_dir: Path, name: str, version: str) -> Optional[str]:
+    endpoint = os.getenv("MINIO_ENDPOINT")
+    access = os.getenv("MINIO_ACCESS_KEY")
+    secret = os.getenv("MINIO_SECRET_KEY")
+    bucket = os.getenv("MINIO_BUCKET", "chess-datasets")
+    secure = os.getenv("MINIO_SECURE", "0") == "1"
+    if not endpoint or not access or not secret:
+        print(json.dumps({"event": "upload_skipped", "target": "s3"}))
+        return None
+    try:
+        print(json.dumps({"event": "upload_started", "target": "s3", "bucket": bucket}))
+        import boto3
+        from botocore.client import Config
+
+        scheme = "https" if secure else "http"
+        client = boto3.client(
+            "s3",
+            endpoint_url=f"{scheme}://{endpoint}",
+            aws_access_key_id=access,
+            aws_secret_access_key=secret,
+            config=Config(signature_version="s3v4"),
+        )
+        prefix = f"datasets/{name}/{version}"
+        for file in out_dir.rglob("*"):
+            if file.is_file():
+                key = f"{prefix}/{file.relative_to(out_dir).as_posix()}"
+                client.upload_file(str(file), bucket, key)
+        print(json.dumps({"event": "upload_done", "target": "s3", "bucket": bucket}))
+        return f"s3://{bucket}/{prefix}/"
+    except Exception:
+        print(json.dumps({"event": "upload_skipped", "target": "s3"}))
+        return None
+
+
+def main(argv=None):
     parser = argparse.ArgumentParser(description="Join, filter and split dataset")
     parser.add_argument("--games", required=True, help="Path to games.parquet")
     parser.add_argument("--positions", required=True, help="Path to positions.parquet")
@@ -23,7 +79,9 @@ def main():
     parser.add_argument("--val", type=float, default=0.1)
     parser.add_argument("--test", type=float, default=0.1)
     parser.add_argument("--seed", type=int, default=42)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+
+    start_time = datetime.utcnow()
 
     games_path = Path(args.games).expanduser().resolve()
     positions_path = Path(args.positions).expanduser().resolve()
@@ -122,8 +180,6 @@ def main():
         "source": {"games": str(games_path), "positions": str(positions_path)},
         "created_at": now.isoformat() + "Z",
     }
-    with open(manifest_dir / "dataset.json", "w") as f:
-        json.dump(manifest, f)
 
     stats_dir = out_dir / "stats"
     stats_dir.mkdir(parents=True, exist_ok=True)
@@ -170,6 +226,27 @@ def main():
             }
         )
     )
+
+    rows_counts = {"train": len(train_df), "val": len(val_df), "test": len(test_df)}
+    duration = (datetime.utcnow() - start_time).total_seconds()
+    print(
+        json.dumps(
+            {
+                "event": "dataset_built",
+                "rows": rows_counts,
+                "duration": duration,
+                "out": str(out_dir.resolve()),
+            }
+        )
+    )
+
+    push_metrics(rows_counts, args.name)
+    artifact_uri = upload_to_s3(out_dir, args.name, manifest["version"])
+    if artifact_uri:
+        manifest["artifact_uri"] = artifact_uri
+
+    with open(manifest_dir / "dataset.json", "w") as f:
+        json.dump(manifest, f)
 
 
 if __name__ == "__main__":
