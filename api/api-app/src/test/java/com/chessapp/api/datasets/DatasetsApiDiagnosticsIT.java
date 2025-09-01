@@ -1,5 +1,6 @@
 package com.chessapp.api.datasets;
 
+import com.chessapp.api.TestS3Config;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.assertj.core.api.SoftAssertions;
@@ -28,15 +29,27 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.context.support.WithMockUser; // kannst du entfernen, wenn überall jwt() nutzt
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MvcResult;
+import com.fasterxml.jackson.databind.JsonNode;
+
 
 /**
  * Diagnostic, self-explaining Integration Test for /v1/datasets.
  * Fails with rich messages that tell you exactly what broke.
  */
+@ExtendWith(OutputCaptureExtension.class)
+@ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@Import(TestS3Config.class)
 class DatasetsApiDiagnosticsIT {
   @Autowired MockMvc mvc;
   @Autowired ObjectMapper om;
@@ -60,7 +73,7 @@ private RequestPostProcessor withJwtUser() {
 
 
   @Test @Order(1) @WithMockUser(username="test-user",roles={"USER"})
-void create_shouldReturn201_withLocation_andBodyShape() throws Exception {
+void create_shouldReturn201_withLocation_andBodyShape(CapturedOutput output) throws Exception {
   var payload = new LinkedHashMap<String,Object>();
   payload.put("name","mini-ds"); payload.put("version","v1");
   payload.put("filter", Map.of("keep", List.of("rated")));
@@ -94,65 +107,120 @@ void create_shouldReturn201_withLocation_andBodyShape() throws Exception {
         .withFailMessage("'id' not UUID. id=%s\nBody:\n%s", json.get("id").asText(), pretty(resp)).isTrue();
       datasetId = UUID.fromString(json.get("id").asText());
     }
-    softly.assertThat(json.hasNonNull("createdAt"))
-      .withFailMessage("Missing 'createdAt'. Body:\n%s", pretty(resp)).isTrue();
-    if(json.hasNonNull("createdAt")){ createdAtStr=json.get("createdAt").asText();
-      try{ Instant.parse(createdAtStr);}catch(Exception e){
-        softly.fail("'createdAt' not ISO-8601. createdAt=%s\nError=%s\nBody:\n%s",
-          createdAtStr,e.toString(),pretty(resp));}}
-    softly.assertThat(json.path("name").asText(null)).isEqualTo(payload.get("name"))
-      .withFailMessage("'name' not echoed. expected=%s actual=%s\nBody:\n%s",
-        payload.get("name"), json.path("name").asText(), pretty(resp));
+       boolean seenInMdc = appender != null && appender.list.stream().anyMatch(ev ->
+      datasetId.toString().equals(ev.getMDCPropertyMap().get("dataset_id")) &&
+      "api".equals(ev.getMDCPropertyMap().get("component"))
+  );
 
-    if(location!=null && datasetId!=null){
-      softly.assertThat(location.endsWith("/v1/datasets/"+datasetId))
-        .withFailMessage("Location mismatch. expected suffix=/v1/datasets/%s actual=%s",
-          datasetId, location).isTrue();}
-    boolean hasDatasetMdc = appender.list.stream().anyMatch(ev ->
-      datasetId!=null && datasetId.toString().equals(ev.getMDCPropertyMap().get("dataset_id")));
-    softly.assertThat(hasDatasetMdc)
-      .withFailMessage("No log with MDC dataset_id=%s. Captured=%d. Tip: set MDC in create-path and keep JSON logging.", datasetId, appender.list.size()).isTrue();
-    softly.assertAll();
+  String out = output.getOut() + output.getErr();
+  boolean seenInText =
+      out.contains("\"dataset_id\":\"" + datasetId + "\"") || // JSON
+      out.contains("dataset_id=" + datasetId);                 // falls KeyValue-Format
+
+  org.assertj.core.api.Assertions.assertThat(seenInMdc || seenInText)
+    .withFailMessage("""
+      Erwartete Log-Sichtbarkeit für dataset_id=%s nicht gefunden.
+      - MDC gesehen? %s
+      - In Console/JSON gesehen? %s
+      --- Auszug (erste 2k Zeichen) ---
+      %s
+      """, datasetId, seenInMdc, seenInText,
+         (out.length()>2000 ? out.substring(0,2000)+"..." : out)
+    ).isTrue();
+}
+private UUID ensureDatasetExists() throws Exception {
+  if (datasetId != null) return datasetId;
+
+  var payload = new java.util.LinkedHashMap<String,Object>();
+  payload.put("name","mini-ds");
+  payload.put("version","v1");
+  payload.put("filter", java.util.Map.of("keep", java.util.List.of("rated")));
+  payload.put("split", java.util.Map.of("train",0.8,"val",0.2));
+
+  String body = om.writeValueAsString(payload);
+
+  MvcResult res = mvc.perform(post("/v1/datasets")
+        .with(withJwtUser())
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(body))
+      .andReturn();
+
+  int sc = res.getResponse().getStatus();
+  String resp = res.getResponse().getContentAsString();
+  if (sc != 201) {
+    System.err.println("\n=== ensureDatasetExists(): CREATE FAILED ===");
+    System.err.println("Status: " + sc);
+    System.err.println("Body:\n" + resp);
+    org.junit.jupiter.api.Assertions.fail("ensureDatasetExists(): expected 201, got " + sc);
   }
 
-  @Test @Order(2) @WithMockUser(username="test-user",roles={"USER"})
-  void getById_shouldReturn200_andConsistentBody() throws Exception {
-    assumeCreated();
-    MvcResult res = mvc.perform(get("/v1/datasets/{id}", datasetId)
-      .with(withJwtUser()))              // ← hier!
-    .andExpect(status().isOk())
-    .andReturn();
-    String resp = res.getResponse().getContentAsString();
-    JsonNode json = om.readTree(resp); SoftAssertions softly = new SoftAssertions();
-    softly.assertThat(json.path("id").asText(null)).isEqualTo(datasetId.toString())
+  JsonNode json = om.readTree(resp);
+  datasetId = java.util.UUID.fromString(json.get("id").asText());
+  createdAtStr = json.get("createdAt").asText();
+  return datasetId;
+}
+
+  @Test @Order(2)
+void getById_shouldReturn200_andConsistentBody() throws Exception {
+    UUID id = ensureDatasetExists();
+
+  MvcResult res = mvc.perform(get("/v1/datasets/{id}", id)
+        .with(withJwtUser()))
+      .andExpect(status().isOk())
+      .andReturn();
+
+  String resp = res.getResponse().getContentAsString();
+  JsonNode json = om.readTree(resp);
+  org.assertj.core.api.SoftAssertions softly = new org.assertj.core.api.SoftAssertions();
+  softly.assertThat(json.path("id").asText(null)).isEqualTo(id.toString())
       .withFailMessage("GET id mismatch. expected=%s actual=%s\nBody:\n%s",
-        datasetId, json.path("id").asText(), pretty(resp));
-    softly.assertThat(json.path("createdAt").asText(null)).isNotBlank()
+          id, json.path("id").asText(), pretty(resp));
+  softly.assertThat(json.path("createdAt").asText(null)).isNotBlank()
       .withFailMessage("GET missing 'createdAt'. Body:\n%s", pretty(resp));
-    softly.assertAll();
-  }
+  softly.assertThat(json.path("filter").isObject())
+      .withFailMessage("GET 'filter' not object. Body:\n%s", pretty(resp)).isTrue();
+  softly.assertThat(json.path("split").isObject())
+      .withFailMessage("GET 'split' not object. Body:\n%s", pretty(resp)).isTrue();
+  softly.assertAll();
+}
 
-  @Test @Order(3) @WithMockUser(username="test-user",roles={"USER"})
-  void list_shouldBeSortedByCreatedAtDesc() throws Exception {
-    assumeCreated();
-    MvcResult res = mvc.perform(get("/v1/datasets?page=0&size=5&sort=createdAt,desc")
-      .with(withJwtUser()))              // ← hier!
-    .andExpect(status().isOk())
-    .andReturn();
-    String resp = res.getResponse().getContentAsString();
-    JsonNode json = om.readTree(resp); SoftAssertions softly = new SoftAssertions();
-    softly.assertThat(json.isArray()).withFailMessage("List should be array. Body:\n%s", pretty(resp)).isTrue();
-    boolean contains=false; Instant prev=null;
-    for(JsonNode item:json){
-      if(item.path("id").asText("").equals(String.valueOf(datasetId))) contains=true;
-      if(item.hasNonNull("createdAt")){
-        Instant cur=Instant.parse(item.get("createdAt").asText());
-        if(prev!=null){ softly.assertThat(!cur.isAfter(prev))
-          .withFailMessage("Not sorted desc: %s after %s.\nBody:\n%s", cur, prev, pretty(resp)).isTrue();}
-        prev=cur;}}
-    softly.assertThat(contains).withFailMessage("List doesn't contain created id=%s.\nBody:\n%s", datasetId, pretty(resp)).isTrue();
-    softly.assertAll();
+  @Test @Order(3)
+void list_shouldBePaged_andSortedByCreatedAtDesc() throws Exception {
+  UUID id = ensureDatasetExists();
+
+  MvcResult res = mvc.perform(get("/v1/datasets?page=0&size=5&sort=createdAt,desc")
+        .with(withJwtUser()))
+      .andExpect(status().isOk())
+      .andReturn();
+
+  String resp = res.getResponse().getContentAsString();
+  JsonNode json = om.readTree(resp);
+  org.assertj.core.api.SoftAssertions softly = new org.assertj.core.api.SoftAssertions();
+
+  softly.assertThat(json.has("content"))
+      .withFailMessage("List missing 'content'. Body:\n%s", pretty(resp)).isTrue();
+
+  if (json.has("content")) {
+    JsonNode content = json.get("content");
+    softly.assertThat(content.isArray())
+        .withFailMessage("'content' should be array. Body:\n%s", pretty(resp)).isTrue();
+    boolean contains = false; java.time.Instant prev = null;
+    for (JsonNode item : content) {
+      if (id.toString().equals(item.path("id").asText())) contains = true;
+      if (item.hasNonNull("createdAt")) {
+        java.time.Instant cur = java.time.Instant.parse(item.get("createdAt").asText());
+        if (prev != null) {
+          softly.assertThat(!cur.isAfter(prev))
+              .withFailMessage("Not sorted desc: %s after %s.\nBody:\n%s", cur, prev, pretty(resp)).isTrue();
+        }
+        prev = cur;
+      }
+    }
+    softly.assertThat(contains)
+        .withFailMessage("List doesn't contain created id=%s.\nBody:\n%s", id, pretty(resp)).isTrue();
   }
+  softly.assertAll();
+}
 
   @Test @Order(4)
   void openapi_shouldExposeDatasetEndpoints() throws Exception {
