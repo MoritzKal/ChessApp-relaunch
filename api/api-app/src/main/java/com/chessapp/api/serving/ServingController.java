@@ -24,6 +24,7 @@ import com.chessapp.api.serving.dto.PredictResponse;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/v1")
@@ -43,7 +44,7 @@ public class ServingController {
     }
 
     @PostMapping("/predict")
-    public ResponseEntity<?> predict(@RequestBody PredictRequest body,
+    public ResponseEntity<?> predict(@Valid @RequestBody PredictRequest body,
                                      @RequestHeader(value = "X-Run-Id", required = false) String runId,
                                      @RequestHeader(value = "X-Username", required = false) String username) {
         String rid = runId != null ? runId : UUID.randomUUID().toString();
