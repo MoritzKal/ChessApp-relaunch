@@ -27,6 +27,7 @@ public abstract class AbstractIntegrationTest {
         registry.add("spring.jpa.properties.hibernate.prefer_native_enum_types", () -> "true");
         registry.add("spring.jpa.properties.hibernate.type.preferred_enum_jdbc_type", () -> "postgres_enum");
         registry.add("app.security.jwt.secret", () -> "test-secret");
+        registry.add("app.cors.allowed-origins", () -> "http://localhost:5173");
     }
 }
 

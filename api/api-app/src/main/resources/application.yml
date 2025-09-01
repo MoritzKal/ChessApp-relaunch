@@ -42,6 +42,8 @@ app:
   security:
     jwt:
       secret: ${API_JWT_SECRET:changeme}
+  cors:
+    allowed-origins: ${FRONTEND_ORIGIN:http://localhost:5173}
 chs:
   default-username: ${CHESS_USERNAME:M3NG00S3}
   registry:
