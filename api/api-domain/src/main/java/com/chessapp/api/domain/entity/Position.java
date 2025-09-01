@@ -30,7 +30,8 @@ public class Position {
     private String fen;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "side_to_move", nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "side_to_move", columnDefinition = "color", nullable = false)
     private Color sideToMove;
 
     @Type(JsonType.class)
