@@ -2,6 +2,7 @@ package com.chessapp.api.service;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -9,16 +10,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.chessapp.api.domain.entity.DatasetEntity;
+import com.chessapp.api.domain.entity.Dataset;
 import com.chessapp.api.domain.repo.DatasetRepository;
-import com.chessapp.api.service.dto.CreateDatasetRequest;
+import com.chessapp.api.service.dto.DatasetCreateRequest;
 import com.chessapp.api.service.dto.DatasetResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -51,11 +49,11 @@ public class DatasetService {
     }
 
     @Transactional
-    public DatasetResponse create(CreateDatasetRequest req) {
+    public DatasetResponse create(DatasetCreateRequest req) {
         UUID id = UUID.randomUUID();
         final String key = id + "/manifest.json";
-        final String locationUri = req.getLocationUri() != null ? req.getLocationUri() : "s3://datasets/" + key;
-        DatasetEntity d = new DatasetEntity();
+        final String locationUri = "s3://datasets/" + key;
+        Dataset d = new Dataset();
         d.setId(id);
         d.setName(req.getName());
         d.setVersion(req.getVersion());
@@ -95,7 +93,7 @@ public class DatasetService {
 
         try (MDC.MDCCloseable c1 = MDC.putCloseable("dataset_id", id.toString());
              MDC.MDCCloseable c2 = MDC.putCloseable("event", "dataset.created");
-             MDC.MDCCloseable c3 = MDC.putCloseable("component", "api")) {
+             MDC.MDCCloseable c3 = MDC.putCloseable("component", "dataset")) {
             log.info("dataset created");
         }
 
@@ -103,17 +101,17 @@ public class DatasetService {
     }
 
     @Transactional(readOnly = true)
-    public Page<DatasetResponse> list(Pageable pageable) {
-        Sort sort = pageable.getSort().isSorted() ? pageable.getSort() : Sort.by(Sort.Direction.DESC, "createdAt");
-        Pageable p = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
-        return datasetRepository.findAll(p).map(DatasetMapper::toDto);
+    public List<DatasetResponse> list(int limit, int offset) {
+        return datasetRepository.findAll(PageRequest.of(offset / limit, limit))
+                .stream()
+                .map(DatasetMapper::toDto)
+                .toList();
     }
 
     @Transactional(readOnly = true)
     public DatasetResponse get(UUID id) {
         return datasetRepository.findById(id)
                 .map(DatasetMapper::toDto)
-                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
-                        org.springframework.http.HttpStatus.NOT_FOUND));
+                .orElseThrow();
     }
 }
