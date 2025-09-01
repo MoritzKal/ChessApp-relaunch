@@ -17,12 +17,13 @@ spring:
     baseline-version: 0
 security:
   jwt:
-    secret: ${JWT_SECRET:change_me}
+    # Default for local/dev only. Must be >= 32 bytes for HS256.
+    secret: ${JWT_SECRET:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
     ttlMinutes: ${JWT_TTL_MINUTES:60}
-  cors:
-    allowedOrigin: ${FRONTEND_ORIGIN:http://localhost:3000}
-  scrape:
-    token: ${SCRAPE_TOKEN:change_me}
+  monitoring:
+    token: ${MONITORING_TOKEN:monitoring-test-token}
+cors:
+  allowed-origin: ${FRONTEND_ORIGIN:http://localhost:5173}
 bucket4j:
   filters:
     - cache-name: buckets

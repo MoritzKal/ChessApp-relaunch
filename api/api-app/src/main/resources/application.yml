@@ -17,7 +17,8 @@ spring:
     baseline-version: 0
 security:
   jwt:
-    secret: ${JWT_SECRET:change_me}
+    # Default for local/dev only. Must be >= 32 bytes for HS256.
+    secret: ${JWT_SECRET:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
     ttlMinutes: ${JWT_TTL_MINUTES:60}
   monitoring:
     token: ${MONITORING_TOKEN:monitoring-test-token}
