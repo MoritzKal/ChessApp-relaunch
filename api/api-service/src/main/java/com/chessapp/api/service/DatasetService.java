@@ -2,7 +2,6 @@ package com.chessapp.api.service;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -10,13 +9,16 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.chessapp.api.domain.entity.DatasetEntity;
 import com.chessapp.api.domain.repo.DatasetRepository;
-import com.chessapp.api.service.dto.DatasetCreateRequest;
+import com.chessapp.api.service.dto.CreateDatasetRequest;
 import com.chessapp.api.service.dto.DatasetResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -49,10 +51,10 @@ public class DatasetService {
     }
 
     @Transactional
-    public DatasetResponse create(DatasetCreateRequest req) {
+    public DatasetResponse create(CreateDatasetRequest req) {
         UUID id = UUID.randomUUID();
         final String key = id + "/manifest.json";
-        final String locationUri = "s3://datasets/" + key;
+        final String locationUri = req.getLocationUri() != null ? req.getLocationUri() : "s3://datasets/" + key;
         DatasetEntity d = new DatasetEntity();
         d.setId(id);
         d.setName(req.getName());
@@ -101,17 +103,17 @@ public class DatasetService {
     }
 
     @Transactional(readOnly = true)
-    public List<DatasetResponse> list(int limit, int offset) {
-        return datasetRepository.findAll(PageRequest.of(offset / limit, limit))
-                .stream()
-                .map(DatasetMapper::toDto)
-                .toList();
+    public Page<DatasetResponse> list(Pageable pageable) {
+        Sort sort = pageable.getSort().isSorted() ? pageable.getSort() : Sort.by(Sort.Direction.DESC, "createdAt");
+        Pageable p = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+        return datasetRepository.findAll(p).map(DatasetMapper::toDto);
     }
 
     @Transactional(readOnly = true)
     public DatasetResponse get(UUID id) {
         return datasetRepository.findById(id)
                 .map(DatasetMapper::toDto)
-                .orElseThrow();
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND));
     }
 }

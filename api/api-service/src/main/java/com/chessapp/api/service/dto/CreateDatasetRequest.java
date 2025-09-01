@@ -2,14 +2,20 @@ package com.chessapp.api.service.dto;
 
 import java.util.Map;
 
-public class DatasetCreateRequest {
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
+
+public class CreateDatasetRequest {
+    @NotBlank
     private String name;
     private String version;
     private Map<String, Object> filter;
     private Map<String, Object> split;
+    @Positive
     private Long sizeRows;
+    private String locationUri;
 
-    public DatasetCreateRequest() {
+    public CreateDatasetRequest() {
     }
 
     public String getName() { return name; }
@@ -22,4 +28,6 @@ public class DatasetCreateRequest {
     public void setSplit(Map<String, Object> split) { this.split = split; }
     public Long getSizeRows() { return sizeRows; }
     public void setSizeRows(Long sizeRows) { this.sizeRows = sizeRows; }
+    public String getLocationUri() { return locationUri; }
+    public void setLocationUri(String locationUri) { this.locationUri = locationUri; }
 }
