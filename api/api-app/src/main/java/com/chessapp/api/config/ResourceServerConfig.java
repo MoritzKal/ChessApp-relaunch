@@ -22,7 +22,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
-public class SecurityConfig {
+public class ResourceServerConfig {
 
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
