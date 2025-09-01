@@ -5,6 +5,7 @@
 ```bash
 make install
 make test
+make pgn IN=tests/fixtures/sample.pgn OUT=out
 ```
 
 ## Environment Variables
@@ -19,9 +20,9 @@ make test
 ## Example Commands
 
 ```bash
-make pgn    # convert PGN files to Parquet (placeholder)
-make build  # build dataset (placeholder)
-make all    # run full pipeline (placeholder)
+make pgn IN=tests/fixtures/sample.pgn OUT=out  # convert PGN to Parquet
+make build                                    # build dataset (placeholder)
+make all                                      # run full pipeline (placeholder)
 ```
 
 ## Project Structure
@@ -41,6 +42,7 @@ tools/dataset-builder/
 
 - `make install` installs pinned dependencies.
 - `make test` executes the test suite.
-- Placeholder targets exist for `pgn`, `build`, and `all`.
+- `make pgn` converts PGN files to Parquet format.
+- Placeholder targets exist for `build` and `all`.
 - Future observability will expose optional `chs_dataset_rows{split}` metric via Pushgateway.
 
