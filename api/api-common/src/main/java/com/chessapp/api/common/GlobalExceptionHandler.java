@@ -1,6 +1,8 @@
 package com.chessapp.api.common;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -22,11 +24,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
-        return ResponseEntity.badRequest().body(Map.of(
-                "timestamp", Instant.now().toString(),
-                "status", HttpStatus.BAD_REQUEST.value(),
-                "error", "Validation failed"
-        ));
+        List<Map<String, String>> errors = ex.getBindingResult().getFieldErrors().stream()
+                .map(fe -> Map.of("field", fe.getField(), "message", fe.getDefaultMessage()))
+                .toList();
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", Instant.now().toString());
+        body.put("status", HttpStatus.BAD_REQUEST.value());
+        body.put("error", "Validation failed");
+        body.put("errors", errors);
+        return ResponseEntity.badRequest().body(body);
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)

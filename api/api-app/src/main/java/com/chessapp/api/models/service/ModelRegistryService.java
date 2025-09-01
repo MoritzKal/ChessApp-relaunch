@@ -77,12 +77,25 @@ public class ModelRegistryService {
 
     private Registry load() throws IOException {
         if (registryPath != null && !registryPath.isBlank()) {
-            File f = new File(registryPath);
-            if (!f.exists() || !f.isFile()) {
-                throw new IOException("Registry file not found: " + registryPath);
-            }
-            try (FileInputStream in = new FileInputStream(f)) {
-                return mapper.readValue(in, Registry.class);
+            String p = registryPath.trim();
+            if (p.startsWith("classpath:")) {
+                String cp = p.substring("classpath:".length());
+                if (cp.startsWith("/")) cp = cp.substring(1);
+                ClassPathResource res = new ClassPathResource(cp);
+                if (!res.exists()) {
+                    throw new IOException("Classpath registry not found at " + cp);
+                }
+                try (InputStream in = res.getInputStream()) {
+                    return mapper.readValue(in, Registry.class);
+                }
+            } else {
+                File f = new File(p);
+                if (!f.exists() || !f.isFile()) {
+                    throw new IOException("Registry file not found: " + registryPath);
+                }
+                try (FileInputStream in = new FileInputStream(f)) {
+                    return mapper.readValue(in, Registry.class);
+                }
             }
         } else {
             ClassPathResource res = new ClassPathResource("registry/registry.json");
