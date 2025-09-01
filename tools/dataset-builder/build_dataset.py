@@ -201,6 +201,8 @@ def main(argv=None):
     with open(stats_dir / "ply.json", "w") as f:
         json.dump({int(k): int(v) for k, v in ply_counts.to_dict().items()}, f)
 
+    import matplotlib
+    matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     plt.figure()
