@@ -13,3 +13,7 @@
 
 - Grafana Dashboard „ChessApp – Overview“ (p95 Latenz, Error-Rate)
 - MLflow letzter erfolgreicher Trainings-Run
+
+## Database
+
+- 2025-08-31: DB-01 done — Flyway V1 baseline + indices; seeds added; CRUD tests green. (pgvector planned later)
