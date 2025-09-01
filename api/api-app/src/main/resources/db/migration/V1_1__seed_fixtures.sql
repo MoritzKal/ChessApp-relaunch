@@ -11,19 +11,23 @@ FROM models m CROSS JOIN datasets d
 WHERE m.name='policy_tiny' AND m.version='v0' AND d.name='sample_ds' AND d.version='v0'
 LIMIT 1;
 
--- Demo game with 4 half-moves (Ruy Lopez)
-WITH g AS (
-  INSERT INTO games(platform, game_id_ext, end_time, time_control, result, white_rating, black_rating, pgn_raw, tags)
-  VALUES ('chess.com','demo-0001', now(), '5+0', '1-0', 1500, 1500,
+-- Demo user and game with 4 half-moves (Ruy Lopez)
+WITH u AS (
+  INSERT INTO users(chess_username)
+  VALUES ('demo_user')
+  RETURNING id
+), g AS (
+  INSERT INTO games(user_id, platform, game_id_ext, end_time, time_control, time_category, result, white_rating, black_rating, pgn, tags)
+  VALUES ((SELECT id FROM u), 'CHESS_COM','demo-0001', now(), '5+0', 'BLITZ', 'WHITE_WIN', 1500, 1500,
           '1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 1-0',
           '{"eco":"C60","opening":"Ruy Lopez"}'::jsonb)
   RETURNING id
 )
 INSERT INTO moves (game_id, ply, san, uci, color)
-SELECT id, v.ply, v.san, v.uci, v.color
+SELECT g.id, v.ply, v.san, v.uci, v.color::color
 FROM g CROSS JOIN (VALUES
-  (1, 'e4', 'e2e4', 'w'),
-  (2, 'e5', 'e7e5', 'b'),
-  (3, 'Nf3','g1f3','w'),
-  (4, 'Nc6','b8c6','b')
+  (1, 'e4', 'e2e4', 'WHITE'),
+  (2, 'e5', 'e7e5', 'BLACK'),
+  (3, 'Nf3','g1f3','WHITE'),
+  (4, 'Nc6','b8c6','BLACK')
 ) AS v(ply, san, uci, color);
