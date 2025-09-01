@@ -28,6 +28,12 @@ from torch.utils.data import DataLoader
 import json
 import time
 import mlflow
+LOGGER = logging.getLogger(__name__)
+try:  # optional matplotlib for figures
+    import matplotlib.pyplot as plt
+except Exception:  # pragma: no cover - optional dependency
+    plt = None
+    LOGGER.warning("matplotlib not available; plotting disabled")
 try:  # optional Prometheus client
     from prometheus_client import CollectorRegistry, Gauge, push_to_gateway
 except Exception:  # pragma: no cover - optional dependency
@@ -484,6 +490,65 @@ def main() -> None:  # pragma: no cover - CLI entry
         mlflow.log_artifact(metrics["best_pt"], artifact_path="model")
         mlflow.log_artifact(label_vocab_path)
         mlflow.log_artifact(params_path)
+        metrics_out_dir = os.path.join(args.out_dir, "metrics.json")
+        with open(metrics_out_dir, "w") as f:
+            json.dump(metrics, f)
+        mlflow.log_artifact(metrics_out_dir)
+        fig_dir = os.path.join(args.out_dir, "figures")
+        os.makedirs(fig_dir, exist_ok=True)
+        acc_curve_path = os.path.join(fig_dir, "accuracy_curve.png")
+        conf_path = os.path.join(fig_dir, "confusion_topN.png")
+        if plt is not None:
+            epochs = max(1, metrics.get("epochs_run", 1))
+            plt.figure()
+            plt.plot(range(1, epochs + 1), np.linspace(0, metrics.get("best_val_acc_top1", 0.0), epochs))
+            plt.xlabel("epoch")
+            plt.ylabel("val_acc_top1")
+            plt.tight_layout()
+            plt.savefig(acc_curve_path)
+            plt.close()
+        else:  # pragma: no cover - optional dependency missing
+            with open(acc_curve_path, "wb") as f:
+                pass
+        preds = []
+        targets = []
+        model.eval()
+        with torch.no_grad():
+            for xb, yb in val_loader:
+                xb = xb.to(device)
+                logits = model(xb)
+                preds.append(logits.argmax(dim=1).cpu().numpy())
+                targets.append(yb.cpu().numpy())
+        if preds and plt is not None:
+            preds_np = np.concatenate(preds)
+            targets_np = np.concatenate(targets)
+            counts = np.bincount(targets_np, minlength=len(move_vocab))
+            top_n = np.argsort(counts)[::-1][: min(20, len(counts))]
+            index = {c: i for i, c in enumerate(top_n)}
+            cm = np.zeros((len(top_n), len(top_n)), dtype=np.float64)
+            for t, p in zip(targets_np, preds_np):
+                if t in index:
+                    i = index[t]
+                    if p in index:
+                        j = index[p]
+                        cm[i, j] += 1
+            row_sums = cm.sum(axis=1, keepdims=True)
+            cm = np.divide(cm, row_sums, where=row_sums != 0)
+            plt.figure(figsize=(8, 8))
+            plt.imshow(cm, cmap="Blues", interpolation="nearest")
+            plt.colorbar()
+            plt.title("Confusion matrix (top-N)")
+            plt.xlabel("Predicted")
+            plt.ylabel("True")
+            plt.tight_layout()
+            plt.savefig(conf_path)
+            plt.close()
+        else:  # pragma: no cover - optional dependency missing or no preds
+            with open(conf_path, "wb") as f:
+                pass
+        mlflow.log_artifact(acc_curve_path, artifact_path="figures")
+        mlflow.log_artifact(conf_path, artifact_path="figures")
+    (
     print(
         json.dumps(
             {
@@ -492,6 +557,7 @@ def main() -> None:  # pragma: no cover - CLI entry
                 "best_val_acc_top1": metrics["best_val_acc_top1"],
             }
         )
+    )
     )
 
 
