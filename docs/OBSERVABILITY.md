@@ -35,3 +35,7 @@
 - Training: loss/val_acc, throughput
 - Ingest: jobs/min, failures
 - Logs: Loki Query `{service=~".+"}` + Filter (`component`, `model_id`)
+
+## Metrics SSOT
+The authoritative metric catalog is stored in `docs/observability/metrics.catalog.v1.yaml` (schema chessapp.metrics/1).
+Consumers (FE dashboards, BA/PL/SRE chats) should read from this file.
