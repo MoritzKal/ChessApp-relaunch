@@ -19,14 +19,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.chessapp.api.testutil.AbstractIntegrationTest;
 import com.chessapp.api.support.JwtTestUtils;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     classes = com.chessapp.api.codex.CodexApplication.class)
-@ActiveProfiles("codex")
+@ActiveProfiles("test")
 @AutoConfigureMockMvc
-class SecurityConfigIT extends AbstractIntegrationTest {
+class SecurityIT {
 
     @Autowired
     MockMvc mockMvc;
