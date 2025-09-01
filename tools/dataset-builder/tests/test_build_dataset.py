@@ -1,3 +1,4 @@
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -66,3 +67,23 @@ def test_build_dataset_deterministic(tmp_path):
     )
     total = len(merged)
     assert len(train1) + len(val1) + len(test1) == total
+
+    manifest = json.loads((out1 / "manifest/dataset.json").read_text())
+    for key in ["name", "version", "filters", "splits", "source", "created_at"]:
+        assert key in manifest
+
+    rows = json.loads((out1 / "stats/rows.json").read_text())
+    for key in ["games", "positions", "train", "val", "test"]:
+        assert key in rows
+
+    eco = json.loads((out1 / "stats/eco.json").read_text())
+    assert isinstance(eco, dict)
+    ply = json.loads((out1 / "stats/ply.json").read_text())
+    assert isinstance(ply, dict) and ply
+
+    for png in ["eco.png", "ply.png"]:
+        p = out1 / "stats" / png
+        assert p.is_file()
+        data = p.read_bytes()
+        assert len(data) > 0
+        assert data.startswith(b"\x89PNG\r\n\x1a\n")

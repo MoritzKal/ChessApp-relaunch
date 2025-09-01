@@ -1,5 +1,6 @@
 import argparse
 import json
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
@@ -69,24 +70,106 @@ def main():
     val_df.to_parquet(parquet_dir / "val.parquet", index=False)
     test_df.to_parquet(parquet_dir / "test.parquet", index=False)
 
-    print(json.dumps({
-        "event": "dataset_filtered",
-        "before": before,
-        "after": after,
-        "filters": {
-            "min_elo": args.min_elo,
-            "max_elo": args.max_elo,
-            "since": args.since,
-            "time_control": args.time_control,
-            "eco": args.eco,
-            "color": args.color,
-        },
+    print(
+        json.dumps(
+            {
+                "event": "dataset_filtered",
+                "before": before,
+                "after": after,
+                "filters": {
+                    "min_elo": args.min_elo,
+                    "max_elo": args.max_elo,
+                    "since": args.since,
+                    "time_control": args.time_control,
+                    "eco": args.eco,
+                    "color": args.color,
+                },
+                "splits": {
+                    "train": len(train_df),
+                    "val": len(val_df),
+                    "test": len(test_df),
+                },
+            }
+        )
+    )
+
+    filters_applied = {}
+    if args.min_elo is not None:
+        filters_applied["min_elo"] = args.min_elo
+    if args.max_elo is not None:
+        filters_applied["max_elo"] = args.max_elo
+    if args.since:
+        filters_applied["since"] = args.since
+    if args.time_control:
+        filters_applied["time_control"] = args.time_control
+    if args.eco:
+        filters_applied["eco"] = args.eco
+    if args.color != "both":
+        filters_applied["color"] = args.color
+
+    manifest_dir = out_dir / "manifest"
+    manifest_dir.mkdir(parents=True, exist_ok=True)
+    now = datetime.utcnow()
+    manifest = {
+        "name": args.name,
+        "version": now.strftime("%Y%m%dT%H%M%SZ"),
+        "filters": filters_applied,
         "splits": {
-            "train": len(train_df),
-            "val": len(val_df),
-            "test": len(test_df),
+            "train": {"fraction": args.train, "rows": len(train_df)},
+            "val": {"fraction": args.val, "rows": len(val_df)},
+            "test": {"fraction": args.test, "rows": len(test_df)},
         },
-    }))
+        "source": {"games": str(games_path), "positions": str(positions_path)},
+        "created_at": now.isoformat() + "Z",
+    }
+    with open(manifest_dir / "dataset.json", "w") as f:
+        json.dump(manifest, f)
+
+    stats_dir = out_dir / "stats"
+    stats_dir.mkdir(parents=True, exist_ok=True)
+    with open(stats_dir / "rows.json", "w") as f:
+        json.dump(
+            {
+                "games": len(games_df),
+                "positions": len(positions_df),
+                "train": len(train_df),
+                "val": len(val_df),
+                "test": len(test_df),
+            },
+            f,
+        )
+    eco_counts = df["eco"].value_counts()
+    with open(stats_dir / "eco.json", "w") as f:
+        json.dump(eco_counts.to_dict(), f)
+    ply_counts = df["ply"].value_counts().sort_index()
+    with open(stats_dir / "ply.json", "w") as f:
+        json.dump({int(k): int(v) for k, v in ply_counts.to_dict().items()}, f)
+
+    import matplotlib.pyplot as plt
+
+    plt.figure()
+    if not eco_counts.empty:
+        eco_counts.head(20).plot(kind="bar")
+    plt.tight_layout()
+    plt.savefig(stats_dir / "eco.png")
+    plt.close()
+
+    plt.figure()
+    plt.plot(ply_counts.index, ply_counts.values)
+    plt.tight_layout()
+    plt.savefig(stats_dir / "ply.png")
+    plt.close()
+
+    print(
+        json.dumps(
+            {
+                "event": "stats_written",
+                "eco_top": int(min(len(eco_counts), 20)),
+                "ply_bins": int(len(ply_counts)),
+                "out": str(stats_dir.resolve()),
+            }
+        )
+    )
 
 
 if __name__ == "__main__":

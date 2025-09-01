@@ -43,6 +43,17 @@ tools/dataset-builder/
     └── test_pgn_to_parquet.py
 ```
 
+## Outputs & Interpretation
+
+- `manifest/dataset.json` — metadata about the dataset build including `name`,
+  `version`, applied `filters`, `splits` with fractions and row counts, absolute
+  `source` paths and the `created_at` timestamp.
+- `stats/rows.json` — row counts for raw tables and each split.
+- `stats/eco.json` — ECO code frequencies; `stats/eco.png` visualises the top 20
+  ECO codes as a bar chart.
+- `stats/ply.json` — positions per ply; `stats/ply.png` plots these counts as a
+  line chart.
+
 ## Definition of Done
 
 - `make install` installs pinned dependencies.
