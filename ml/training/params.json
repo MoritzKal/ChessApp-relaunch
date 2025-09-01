@@ -1,0 +1,1 @@
+{"epochs": 1, "batch_size": 32, "lr": 0.001, "emb_dim": 128, "dropout": 0.1, "max_len": 90, "seed": 42, "cpu": true, "data": "/mnt/c/Users/mkalt/IdeaProjects/VSCode Version/ChessApp-relaunch/data/m2.parquet"}
