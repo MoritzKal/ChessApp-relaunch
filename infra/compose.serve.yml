@@ -3,7 +3,7 @@ services:
   serve:
     container_name: chessapp-serve
     build:
-      context: .
+      context: ../
       dockerfile: ml/serve/Dockerfile
     ports:
       - "8001:8001"
