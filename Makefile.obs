@@ -1,19 +1,19 @@
-COMPOSE_BASE=infra/compose.yml
+COMPOSE_BASE=infra/docker-compose.yml
 COMPOSE_OBS=infra/compose.obs-proxy.yml
 
 obs-up:
-@if [ -f $(COMPOSE_BASE) ]; then \
-  docker compose -f $(COMPOSE_BASE) -f $(COMPOSE_OBS) up -d obs-proxy; \
-else \
-  docker compose -f $(COMPOSE_OBS) up -d obs-proxy; \
-fi
+	@if [ -f $(COMPOSE_BASE) ]; then \
+	  docker compose -f $(COMPOSE_BASE) -f $(COMPOSE_OBS) up -d obs-proxy; \
+	else \
+	  docker compose -f $(COMPOSE_OBS) up -d obs-proxy; \
+	fi
 
 obs-down:
-@if [ -f $(COMPOSE_BASE) ]; then \
-  docker compose -f $(COMPOSE_BASE) -f $(COMPOSE_OBS) down; \
-else \
-  docker compose -f $(COMPOSE_OBS) down; \
-fi
+	@if [ -f $(COMPOSE_BASE) ]; then \
+	  docker compose -f $(COMPOSE_BASE) -f $(COMPOSE_OBS) down; \
+	else \
+	  docker compose -f $(COMPOSE_OBS) down; \
+	fi
 
 obs-logs:
-docker logs -f obs-proxy
+	docker logs -f obs-proxy

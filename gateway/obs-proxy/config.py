@@ -1,11 +1,12 @@
 from functools import lru_cache
+from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     PROM_BASE_URL: str
     LOKI_BASE_URL: str
-    OBS_API_KEY: str | None = None
+    OBS_API_KEY: Optional[str] = None
     CORS_ALLOW_ORIGINS: str = "http://localhost:5173"
     RATE_LIMIT: str = "60/minute"
     TIMEOUT_SECONDS: float = 3.0

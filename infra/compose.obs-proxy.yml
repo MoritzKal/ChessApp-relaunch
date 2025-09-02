@@ -2,7 +2,7 @@ version: "3.8"
 services:
   obs-proxy:
     build:
-      context: ./gateway/obs-proxy
+      context: ../gateway/obs-proxy
     image: chessapp/obs-proxy:dev
     container_name: obs-proxy
     environment:
@@ -17,7 +17,12 @@ services:
       - "8088:8088"
     restart: unless-stopped
     networks:
-      - default
+      - chs_net
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8088/healthz"]
       interval: 10s

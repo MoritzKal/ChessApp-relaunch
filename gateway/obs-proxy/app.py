@@ -1,10 +1,11 @@
 import logging
 import time
+import json
 from typing import Optional
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pythonjsonlogger import jsonlogger
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -64,27 +65,39 @@ async def healthz():
 # Prometheus
 @app.get("/obs/prom/query", dependencies=[Depends(enforce_key)])
 @limiter.limit(settings.RATE_LIMIT)
-async def prom_query(query: str):
+async def prom_query(request: Request, query: str):
     settings = get_settings()
     async with prom_client(settings) as client:
-        status, data, headers = await forward_get(client, "/api/v1/query", {"query": query})
-    return JSONResponse(content=data, status_code=status, headers=headers)
+        status, body, ctype = await forward_get(client, "/api/v1/query", {"query": query})
+    # Prefer JSON rendering locally; fallback to raw body
+    try:
+        data = json.loads(body)
+        return JSONResponse(content=data, status_code=status)
+    except Exception:
+        media_type = ctype or "application/octet-stream"
+        return Response(content=body, status_code=status, media_type=media_type)
 
 
 @app.get("/obs/prom/range", dependencies=[Depends(enforce_key)])
 @limiter.limit(settings.RATE_LIMIT)
-async def prom_range(query: str, start: str, end: str, step: str):
+async def prom_range(request: Request, query: str, start: str, end: str, step: str):
     settings = get_settings()
     params = {"query": query, "start": start, "end": end, "step": step}
     async with prom_client(settings) as client:
-        status, data, headers = await forward_get(client, "/api/v1/query_range", params)
-    return JSONResponse(content=data, status_code=status, headers=headers)
+        status, body, ctype = await forward_get(client, "/api/v1/query_range", params)
+    try:
+        data = json.loads(body)
+        return JSONResponse(content=data, status_code=status)
+    except Exception:
+        media_type = ctype or "application/octet-stream"
+        return Response(content=body, status_code=status, media_type=media_type)
 
 
 # Loki
 @app.get("/obs/loki/query", dependencies=[Depends(enforce_key)])
 @limiter.limit(settings.RATE_LIMIT)
 async def loki_query(
+    request: Request,
     query: str,
     limit: Optional[int] = None,
     direction: Optional[str] = None,
@@ -102,13 +115,19 @@ async def loki_query(
     if end is not None:
         params["end"] = end
     async with loki_client(settings) as client:
-        status, data, headers = await forward_get(client, "/loki/api/v1/query", params)
-    return JSONResponse(content=data, status_code=status, headers=headers)
+        status, body, ctype = await forward_get(client, "/loki/api/v1/query", params)
+    try:
+        data = json.loads(body)
+        return JSONResponse(content=data, status_code=status)
+    except Exception:
+        media_type = ctype or "application/octet-stream"
+        return Response(content=body, status_code=status, media_type=media_type)
 
 
 @app.get("/obs/loki/range", dependencies=[Depends(enforce_key)])
 @limiter.limit(settings.RATE_LIMIT)
 async def loki_range(
+    request: Request,
     query: str,
     limit: Optional[int] = None,
     direction: Optional[str] = None,
@@ -126,10 +145,15 @@ async def loki_range(
     if end is not None:
         params["end"] = end
     async with loki_client(settings) as client:
-        status, data, headers = await forward_get(
+        status, body, ctype = await forward_get(
             client, "/loki/api/v1/query_range", params
         )
-    return JSONResponse(content=data, status_code=status, headers=headers)
+    try:
+        data = json.loads(body)
+        return JSONResponse(content=data, status_code=status)
+    except Exception:
+        media_type = ctype or "application/octet-stream"
+        return Response(content=body, status_code=status, media_type=media_type)
 
 
 if __name__ == "__main__":
