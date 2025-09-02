@@ -12,6 +12,7 @@ dependencies = [
     "httpx",
     "tenacity",
     "python-json-logger",
+    "python-chess",
 ]
 
 [build-system]
