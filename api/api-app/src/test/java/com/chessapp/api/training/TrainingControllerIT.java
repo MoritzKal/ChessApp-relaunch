@@ -2,22 +2,29 @@ package com.chessapp.api.training;
 
 import com.chessapp.api.training.api.TrainingStartRequest;
 import com.chessapp.api.training.service.MlClient;
-import com.chessapp.api.training.service.TrainingService;
 import com.chessapp.api.testutil.AbstractIntegrationTest;
 import com.chessapp.api.testutil.TestAuth;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import com.chessapp.api.domain.entity.TrainingRun;
+import com.chessapp.api.domain.repo.TrainingRunRepository;
+import java.util.Optional;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest(
         properties = {"logging.config=classpath:logback-spring.xml"},
@@ -40,9 +47,22 @@ class TrainingControllerIT extends AbstractIntegrationTest {
         }
     }
 
-    @Autowired TrainingService service;
+    @MockBean TrainingRunRepository repo;
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper om;
+
+    Map<UUID, TrainingRun> store;
+
+    @BeforeEach
+    void setupRepo() {
+        store = new ConcurrentHashMap<>();
+        when(repo.save(any())).thenAnswer(invocation -> {
+            TrainingRun tr = invocation.getArgument(0);
+            store.put(tr.getId(), tr);
+            return tr;
+        });
+        when(repo.findById(any())).thenAnswer(invocation -> Optional.ofNullable(store.get(invocation.getArgument(0))));
+    }
 
     @Test
     void start_and_status_ok() throws Exception {

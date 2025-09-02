@@ -8,10 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.time.Duration;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,8 +24,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.chessapp.api.codex.CodexApplication;
-import com.chessapp.api.support.JwtTestUtils;
 import com.chessapp.api.testutil.AbstractIntegrationTest;
+import com.chessapp.api.testutil.TestAuth;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -44,23 +41,14 @@ class DatasetIT extends AbstractIntegrationTest {
     @Value("${app.security.jwt.secret}")
     String secret;
 
-    private String authHeader() {
-        String token = JwtTestUtils.signHmac256(secret, Map.of(
-                "preferred_username", "user1",
-                "roles", List.of("USER"),
-                "scope", "api.write"),
-                Duration.ofMinutes(5));
-        return "Bearer " + token;
-    }
-
     @Test
     void create_get_list_and_log_contains_mdc(CapturedOutput output) throws Exception {
-        String auth = authHeader();
+        String auth = TestAuth.bearerToken(secret, "USER");
 
         var res1 = mvc.perform(post("/v1/datasets")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header(HttpHeaders.AUTHORIZATION, auth)
-                        .content("{\"name\":\"ds1\"}"))
+                        .content("{\"name\":\"ds1\",\"version\":\"v1\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(header().string(HttpHeaders.LOCATION, notNullValue()))
                 .andReturn();
@@ -81,7 +69,7 @@ class DatasetIT extends AbstractIntegrationTest {
         var res2 = mvc.perform(post("/v1/datasets")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header(HttpHeaders.AUTHORIZATION, auth)
-                        .content("{\"name\":\"ds2\"}"))
+                        .content("{\"name\":\"ds2\",\"version\":\"v1\"}"))
                 .andExpect(status().isCreated())
                 .andReturn();
         String body2 = res2.getResponse().getContentAsString();
@@ -103,7 +91,7 @@ class DatasetIT extends AbstractIntegrationTest {
     void missing_auth_returns401() throws Exception {
         mvc.perform(post("/v1/datasets")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"ds\"}"))
+                        .content("{\"name\":\"ds\",\"version\":\"v1\"}"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -111,8 +99,8 @@ class DatasetIT extends AbstractIntegrationTest {
     void blank_name_returns400() throws Exception {
         mvc.perform(post("/v1/datasets")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header(HttpHeaders.AUTHORIZATION, authHeader())
-                        .content("{\"name\":\"\"}"))
+                        .header(HttpHeaders.AUTHORIZATION, TestAuth.bearerToken(secret, "USER"))
+                        .content("{\"name\":\"\",\"version\":\"v1\"}"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -120,7 +108,7 @@ class DatasetIT extends AbstractIntegrationTest {
     void malformed_json_returns400() throws Exception {
         mvc.perform(post("/v1/datasets")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header(HttpHeaders.AUTHORIZATION, authHeader())
+                        .header(HttpHeaders.AUTHORIZATION, TestAuth.bearerToken(secret, "USER"))
                         .content("{\"name\":\"oops"))
                 .andExpect(status().isBadRequest());
     }

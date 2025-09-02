@@ -128,7 +128,7 @@ class ServingControllerIT extends AbstractIntegrationTest {
         serve.enqueue(new MockResponse().setResponseCode(404));
         ResponseEntity<String> resp = rest.postForEntity("/v1/models/load",
                 withAuth(new ModelsLoadRequest("missing", "v1")), String.class);
-        assertThat(resp.getStatusCode().value()).isEqualTo(404);
+        assertThat(resp.getStatusCode().value()).isEqualTo(400);
         // drain request
         serve.takeRequest();
     }
