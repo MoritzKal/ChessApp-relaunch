@@ -13,7 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
-@ControllerAdvice(assignableTypes = ModelsController.class)
+@ControllerAdvice(assignableTypes = ModelController.class)
 public class RegistryExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(RegistryExceptionHandler.class);
