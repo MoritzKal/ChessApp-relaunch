@@ -3,7 +3,7 @@ from typing import Any, Dict, Tuple
 
 import httpx
 
-from .config import Settings
+from config import Settings
 
 
 def prom_client(settings: Settings) -> httpx.AsyncClient:
@@ -33,9 +33,13 @@ async def forward_get(
         try:
             response = await client.get(path, params=params)
             if response.status_code >= 500 and attempt < retries:
+                await response.aclose()
                 await asyncio.sleep(0.2 * (2 ** attempt))
                 continue
-            return response.status_code, response.json(), dict(response.headers)
+            data = response.json()
+            headers = dict(response.headers)
+            await response.aclose()
+            return response.status_code, data, headers
         except (httpx.RequestError, httpx.TimeoutException) as exc:
             if attempt < retries:
                 await asyncio.sleep(0.2 * (2 ** attempt))

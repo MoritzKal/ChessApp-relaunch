@@ -1,6 +1,6 @@
 from fastapi import HTTPException, Request, status
 
-from .config import get_settings
+from config import get_settings
 
 
 async def require_api_key(request: Request) -> None:
