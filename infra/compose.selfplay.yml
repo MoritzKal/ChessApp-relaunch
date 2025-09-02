@@ -1,0 +1,25 @@
+networks:
+  chsapp_selfplay: {}
+
+services:
+  selfplay-runner:
+    build:
+      context: ../ml/selfplay-runner
+      dockerfile: Dockerfile
+    container_name: chs_selfplay_runner
+    environment:
+      SERVE_PREDICT_URL: ${SERVE_PREDICT_URL:-http://api:8080/v1/predict}
+    ports:
+      - "8011:8011"
+    networks: [chsapp_selfplay]
+
+  eval-offline:
+    build:
+      context: ../ml/eval-offline
+      dockerfile: Dockerfile
+    container_name: chs_eval_offline
+    environment:
+      MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI:-http://mlflow:5000}
+    ports:
+      - "8012:8012"
+    networks: [chsapp_selfplay]
