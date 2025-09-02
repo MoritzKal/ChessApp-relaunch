@@ -38,7 +38,7 @@ public class SelfPlayController {
     @Operation(summary = "Start a self-play run",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     content = @Content(schema = @Schema(implementation = SelfPlayRunRequest.class),
-                            examples = @ExampleObject(value = "{\n  \"modelId\": \"modelA\",\n  \"baselineId\": \"baselineA\",\n  \"games\": 100,\n  \"concurrency\": 4,\n  \"seed\": 42\n}")))
+                            examples = @ExampleObject(value = "{\n  \"modelId\": \"modelA\",\n  \"baselineId\": \"baselineA\",\n  \"games\": 100,\n  \"concurrency\": 4,\n  \"seed\": 42\n}"))))
     @ApiResponse(responseCode = "201", description = "Run created",
             content = @Content(schema = @Schema(example = "{\"runId\":\"123e4567-e89b-12d3-a456-426614174000\"}")))
     public ResponseEntity<?> start(@RequestBody SelfPlayRunRequest body,
@@ -47,7 +47,7 @@ public class SelfPlayController {
             UUID runId = service.start(body, idempotencyKey);
             return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("runId", runId.toString()));
         } catch (WebClientResponseException ex) {
-            HttpStatus status = ex.getStatusCode().is5xxServerError() ? HttpStatus.BAD_GATEWAY : ex.getStatusCode();
+            HttpStatus status = ex.getStatusCode().is5xxServerError() ? HttpStatus.BAD_GATEWAY : (HttpStatus) ex.getStatusCode();
             return ResponseEntity.status(status).body(ex.getResponseBodyAsString());
         } catch (WebClientRequestException ex) {
             String res = String.format("{\"status\":502,\"error\":\"Bad Gateway\",\"message\":%s}", jsonEscape(ex.getMessage()));
@@ -64,7 +64,7 @@ public class SelfPlayController {
             Map<String, Object> resp = service.get(runId);
             return ResponseEntity.ok(resp);
         } catch (WebClientResponseException ex) {
-            HttpStatus status = ex.getStatusCode().is5xxServerError() ? HttpStatus.BAD_GATEWAY : ex.getStatusCode();
+            HttpStatus status = ex.getStatusCode().is5xxServerError() ? HttpStatus.BAD_GATEWAY : (HttpStatus) ex.getStatusCode();
             return ResponseEntity.status(status).body(ex.getResponseBodyAsString());
         } catch (WebClientRequestException ex) {
             String res = String.format("{\"status\":502,\"error\":\"Bad Gateway\",\"message\":%s}", jsonEscape(ex.getMessage()));

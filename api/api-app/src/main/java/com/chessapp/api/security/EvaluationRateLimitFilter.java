@@ -21,7 +21,6 @@ import com.chessapp.api.config.RateLimitConfig;
 
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
-import io.github.bucket4j.Bucket4j;
 import io.github.bucket4j.Refill;
 
 @Component
@@ -46,7 +45,7 @@ public class EvaluationRateLimitFilter extends OncePerRequestFilter {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String key = auth != null ? auth.getName() : request.getRemoteAddr();
         int limit = config.getEvaluationPerMin();
-        Bucket bucket = buckets.computeIfAbsent(key, k -> Bucket4j.builder()
+        Bucket bucket = buckets.computeIfAbsent(key, k -> Bucket.builder()
                 .addLimit(Bandwidth.classic(limit, Refill.greedy(limit, Duration.ofMinutes(1))))
                 .build());
         if (bucket.tryConsume(1)) {

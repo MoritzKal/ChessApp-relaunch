@@ -10,10 +10,14 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import org.springframework.cglib.core.CollectionUtils;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.core.Authentication;
@@ -90,7 +94,7 @@ public class IdempotencyFilter extends OncePerRequestFilter {
         byte[] respBytes = respWrapper.getContentAsByteArray();
         Map<String, List<String>> headers = new HashMap<>();
         for (String h : respWrapper.getHeaderNames()) {
-            headers.put(h, respWrapper.getHeaders(h));
+            headers.put(h, new ArrayList<>(respWrapper.getHeaders(h)));
         }
         cache.put(cacheKey, new CachedResponse(respWrapper.getStatus(), respBytes, headers));
         registry.counter("chs_api_requests_total", "route", request.getRequestURI(), "code", String.valueOf(respWrapper.getStatus()), "method", request.getMethod()).increment();

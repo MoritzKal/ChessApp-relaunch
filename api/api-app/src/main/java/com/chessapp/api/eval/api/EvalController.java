@@ -39,7 +39,7 @@ public class EvalController {
     @Operation(summary = "Start an evaluation",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     content = @Content(schema = @Schema(implementation = EvalStartRequest.class),
-                            examples = @ExampleObject(value = "{\n  \"modelId\": \"modelA\",\n  \"datasetId\": \"datasetA\",\n  \"metrics\": [\"accuracy\", \"loss\"]\n}")))
+                            examples = @ExampleObject(value = "{\n  \"modelId\": \"modelA\",\n  \"datasetId\": \"datasetA\",\n  \"metrics\": [\"accuracy\", \"loss\"]\n}"))))
     @ApiResponse(responseCode = "202", description = "Evaluation started",
             content = @Content(schema = @Schema(example = "{\"evalId\":\"123e4567-e89b-12d3-a456-426614174000\"}")))
     public ResponseEntity<?> start(@RequestBody EvalStartRequest body,
@@ -48,7 +48,7 @@ public class EvalController {
             UUID evalId = service.start(body, idempotencyKey);
             return ResponseEntity.status(HttpStatus.ACCEPTED).body(Map.of("evalId", evalId.toString()));
         } catch (WebClientResponseException ex) {
-            HttpStatus status = ex.getStatusCode().is5xxServerError() ? HttpStatus.SERVICE_UNAVAILABLE : ex.getStatusCode();
+            HttpStatus status = ex.getStatusCode().is5xxServerError() ? HttpStatus.SERVICE_UNAVAILABLE : (HttpStatus) ex.getStatusCode();
             if (ex.getStatusCode().is5xxServerError()) {
                 return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(errorBody());
             }
@@ -67,7 +67,7 @@ public class EvalController {
             Map<String, Object> resp = service.get(evalId);
             return ResponseEntity.ok(resp);
         } catch (WebClientResponseException ex) {
-            HttpStatus status = ex.getStatusCode().is5xxServerError() ? HttpStatus.SERVICE_UNAVAILABLE : ex.getStatusCode();
+            HttpStatus status = ex.getStatusCode().is5xxServerError() ? HttpStatus.SERVICE_UNAVAILABLE : (HttpStatus) ex.getStatusCode();
             if (ex.getStatusCode().is5xxServerError()) {
                 return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(errorBody());
             }
