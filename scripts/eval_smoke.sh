@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 set -euo pipefail
-python ml/eval-offline/eval.py --model-id dummy --limit 5 >/dev/null
+python -m ml.eval-offline.eval --model-id candidate_foo --dataset /tmp/mini.parquet --limit 100

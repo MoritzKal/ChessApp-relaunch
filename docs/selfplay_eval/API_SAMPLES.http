@@ -1,0 +1,27 @@
+### Start Self-Play
+POST http://localhost:8011/runner/selfplay/start
+Content-Type: application/json
+
+{
+  "modelId": "candidate_foo",
+  "baselineId": "prod",
+  "games": 10,
+  "concurrency": 2,
+  "seed": 42
+}
+
+### Get Self-Play Status
+GET http://localhost:8011/runner/selfplay/runs/{{runId}}
+
+### Start Eval
+POST http://localhost:8012/runner/eval/start
+Content-Type: application/json
+
+{
+  "modelId": "candidate_foo",
+  "datasetId": "val_2025_08",
+  "metrics": ["val_loss","val_acc_top1","ece"]
+}
+
+### Get Eval Status
+GET http://localhost:8012/runner/eval/{{evalId}}
