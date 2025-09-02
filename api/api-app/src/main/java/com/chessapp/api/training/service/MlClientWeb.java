@@ -30,7 +30,7 @@ public class MlClientWeb implements MlClient {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(body)
                 .retrieve()
-                .bodyToMono(Map.class)
+                .bodyToMono(new org.springframework.core.ParameterizedTypeReference<java.util.Map<String,Object>>() {})
                 .block();
     }
 
@@ -38,7 +38,7 @@ public class MlClientWeb implements MlClient {
     public Map<String, Object> getRun(UUID runId) {
         return web.get().uri("/runs/{id}", runId.toString())
                 .retrieve()
-                .bodyToMono(Map.class)
+                .bodyToMono(new org.springframework.core.ParameterizedTypeReference<java.util.Map<String,Object>>() {})
                 .blockOptional()
                 .orElse(Map.of("status","unknown"));
     }

@@ -25,7 +25,8 @@ class PrometheusTextExportIT extends com.chessapp.api.testutil.AbstractIntegrati
 
     assertThat(resp.getStatusCode().value()).isEqualTo(200);
     String ct = resp.getHeaders().getFirst("Content-Type");
-    assertThat(ct).isNotNull();
+    // Normalize to avoid potential null pointer in static analysis
+    ct = (ct == null) ? "" : ct;
     // Spring Boot may emit with/without space before version and include charset
     assertThat(ct.replace(" ", "")).startsWith("text/plain;version=0.0.4");
     assertThat(resp.getBody()).contains("chs_ingest_games_total");

@@ -17,9 +17,6 @@ import jakarta.persistence.Table;
 
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-import com.chessapp.api.domain.entity.Platform;
-import com.chessapp.api.domain.entity.GameResult;
-import com.chessapp.api.domain.entity.TimeControlCategory;
 
 @Entity
 @Table(name = "games")

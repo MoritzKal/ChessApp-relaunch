@@ -17,28 +17,19 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import java.time.Instant;
 import java.util.*;
 import java.util.regex.Pattern;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import org.springframework.test.context.ActiveProfiles;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.test.context.support.WithMockUser; // kannst du entfernen, wenn überall jwt() nutzt
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.boot.test.system.CapturedOutput;
-import org.springframework.boot.test.system.OutputCaptureExtension;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MvcResult;
-import com.fasterxml.jackson.databind.JsonNode;
 
 
 /**
@@ -50,6 +41,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(TestS3Config.class)
+@SuppressWarnings({"unused"})
 class DatasetsApiDiagnosticsIT {
   @Autowired MockMvc mvc;
   @Autowired ObjectMapper om;

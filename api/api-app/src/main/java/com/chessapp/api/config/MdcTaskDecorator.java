@@ -10,7 +10,7 @@ import java.util.Map;
  */
 public class MdcTaskDecorator implements TaskDecorator {
     @Override
-    public Runnable decorate(Runnable runnable) {
+    public @org.springframework.lang.NonNull Runnable decorate(@org.springframework.lang.NonNull Runnable runnable) {
         Map<String, String> context = MDC.getCopyOfContextMap();
         return () -> {
             Map<String, String> previous = MDC.getCopyOfContextMap();

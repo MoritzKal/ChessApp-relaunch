@@ -9,11 +9,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
-import org.springframework.http.MediaType;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.ParameterizedTypeReference;
-
 import java.util.Map;
 import java.util.UUID;
 
@@ -50,12 +47,12 @@ class TrainingControllerIT extends AbstractIntegrationTest {
         var startResp = rest.postForEntity("/v1/trainings", req, Map.class);
         org.assertj.core.api.Assertions.assertThat(startResp.getStatusCode().value()).isEqualTo(202);
         @SuppressWarnings("unchecked")
-        String runId = String.valueOf(((Map<String,Object>) startResp.getBody()).get("runId"));
+        String runId = String.valueOf(((Map<String,Object>) java.util.Objects.requireNonNull(startResp.getBody())).get("runId"));
 
         var statusResp = rest.getForEntity("/v1/trainings/{id}", Map.class, runId);
         org.assertj.core.api.Assertions.assertThat(statusResp.getStatusCode().value()).isEqualTo(200);
         @SuppressWarnings("unchecked")
-        Map<String,Object> body = (Map<String,Object>) statusResp.getBody();
+        Map<String,Object> body = (Map<String,Object>) java.util.Objects.requireNonNull(statusResp.getBody());
         org.assertj.core.api.Assertions.assertThat(body.get("status")).isEqualTo("succeeded");
         @SuppressWarnings("unchecked")
         Map<String,Object> metrics = (Map<String,Object>) body.get("metrics");
@@ -64,4 +61,3 @@ class TrainingControllerIT extends AbstractIntegrationTest {
         org.assertj.core.api.Assertions.assertThat(metrics.containsKey("val_acc")).isTrue();
     }
 }
-

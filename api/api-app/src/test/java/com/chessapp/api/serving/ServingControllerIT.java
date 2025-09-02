@@ -62,8 +62,8 @@ class ServingControllerIT extends AbstractIntegrationTest {
                 new PredictRequest("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"), PredictResponse.class);
 
         assertThat(resp.getStatusCode().value()).isEqualTo(200);
-        assertThat(resp.getBody()).isNotNull();
-        assertThat(resp.getBody().move()).isEqualTo("e2e4");
+        var body = java.util.Objects.requireNonNull(resp.getBody());
+        assertThat(body.move()).isEqualTo("e2e4");
 
         RecordedRequest req = serve.takeRequest();
         assertThat(req.getHeader("X-Run-Id")).isNotBlank();
@@ -74,7 +74,8 @@ class ServingControllerIT extends AbstractIntegrationTest {
                 .tags("model_id", "dummy", "model_version", "0")
                 .counter();
         assertThat(c).isNotNull();
-        assertThat(c.count()).isEqualTo(1.0);
+        double cnt = java.util.Objects.requireNonNull(c).count();
+        assertThat(cnt).isEqualTo(1.0);
     }
 
     @Test

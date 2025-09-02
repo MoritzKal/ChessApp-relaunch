@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
@@ -27,8 +29,13 @@ class OpenApiContractTest {
     }
 
     private String tryGet(String urlStr) {
+        URL url;
         try {
-            URL url = new URL(urlStr);
+            try {
+                url = new URI(urlStr).toURL();
+            } catch (URISyntaxException e) {
+                return null;
+            }
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setConnectTimeout(1000);
