@@ -6,6 +6,8 @@
 - strukturierte **JSON-Logs** (MDC: run_id, dataset_id, model_id, username, component)
 - **Prometheus + Grafana + Loki**, **MLflow** für Runs/Artefakte
 
+Scrape-Policy: `/actuator/prometheus` erfordert Monitoring-JWT (Role `MONITORING` oder Scope `monitoring`); `/actuator/health` bleibt öffentlich. Details zur Authentifizierung siehe [Security Guide](SECURITY_GUIDE.md).
+
 ## KPIs (Serve/Play)
 
 - **chs_predict_latency_p95** (ms) — Ziel <150
@@ -38,6 +40,7 @@ Siehe Grafana Panel *Ingest* (Prometheus).
 
 ## Panels (Grafana)
 
+- Dashboard „ChessApp – Overview“ (UID `chs-overview-v1`): `p_reqmin`, `p_p95`, `p_errratio`
 - Serve: p50/p95 Latenz, Error-Rate, QPS
 - Training: loss/val_acc, throughput
 - Ingest: jobs/min, failures

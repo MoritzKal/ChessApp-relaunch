@@ -2,6 +2,9 @@
 
 > Stabilität gemäß Contract-Board. Nur additive Änderungen. **Standard:** `/v1/ingest` · **Alias (Bestand):** `/v1/data/import` (keine v1-Breakings).
 
+> **Security:** bearerAuth (JWT) nötig – ausgenommen `/v1/health` und `/v1/auth/token`. Beispiel-Header:
+> `Authorization: Bearer <TOKEN>`
+
 ## Health/Meta
 
 - `GET /v1/health` → 200 OK
@@ -14,8 +17,21 @@
   - Response: `{"runId":"<UUID>"}`
 - `GET /v1/ingest/{runId}` → 200 OK  
   - Response: `{"status":"PENDING|RUNNING|SUCCEEDED|FAILED","reportUri":"s3://reports/ingest/<runId>/report.json"}` (`reportUri` optional)
-- **Alias:** `POST /v1/data/import` → intern Alias auf `/v1/ingest`  
+- **Alias:** `POST /v1/data/import` → intern Alias auf `/v1/ingest`
   - Response: 308 Permanent Redirect
+
+Alias-Beispiel:
+
+```bash
+curl -i -X POST http://localhost:8080/v1/data/import
+```
+
+Antwort:
+
+```http
+HTTP/1.1 308 Permanent Redirect
+Location: /v1/ingest
+```
 
 ### Beispiele
 
@@ -76,4 +92,4 @@ Antwort:
 ## Observability/Links
 
 - `GET /actuator/prometheus` (Scrape)
-- Logs/Traces via Grafana/Loki (siehe [OBSERVABILITY](./OBSERVABILITY.md))
+- Logs/Traces via Grafana/Loki (siehe [OBSERVABILITY](./OBSERVABILITY.md); Dashboard UID `chs-overview-v1`)
