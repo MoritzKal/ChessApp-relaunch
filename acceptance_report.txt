@@ -1,40 +1,26 @@
-[2025-08-31T15:09:37Z] Active Serve detected: http://localhost:8001
+Branch: development
+Commit: 832d9bc19166958022ac015a507965bedd033547 (2025-09-02T11:59:05Z)
 
-===== Environment =====
-[2025-08-31T15:09:37Z] API_BASE=http://localhost:8080
-[2025-08-31T15:09:37Z] SERVE_BASE=http://localhost:8001
-[2025-08-31T15:09:37Z] SERVE_ALT=http://localhost:8001
-[2025-08-31T15:09:37Z] PROM_URL=http://localhost:9090
-[2025-08-31T15:09:37Z] MODEL_ID=default
-[2025-08-31T15:09:37Z] MODEL_VERSION=0
-[2025-08-31T15:09:37Z] Artifacts dir: artifacts/accept_blockB_20250831T150937Z
+Coverage:
+  Line %: N/A (Maven build failed: Non-resolvable parent POM)
+  Report: api/api-app/target/site/jacoco/index.html
 
-===== Health checks =====
-[2025-08-31T15:09:37Z] OK: http://localhost:8080/v1/health
-[2025-08-31T15:09:37Z] OK: http://localhost:8001/health
+Smoke:
+  datasetId: N/A
+  runId: N/A
+  status: N/A (API health check failed)
+  reportUri: N/A
 
-===== OpenAPI contract (/v3/api-docs/v1) =====
-[2025-08-31T15:09:38Z] OpenAPI contains expected paths
-[2025-08-31T15:09:38Z] OpenAPI also exposes /v1/models/load (proxy present).
+Prom Target: DOWN (scrape failed: connection refused)
 
-===== B2 – Reload by Version (auto-detect endpoint) =====
-[2025-08-31T15:09:38Z] Trying: POST http://localhost:8001/models/load with body file: artifacts/accept_blockB_20250831T150937Z/api_load_request.json
-[2025-08-31T15:09:38Z] HTTP 200 (headers:artifacts/accept_blockB_20250831T150937Z/serve_active_load_headers.txt, body:artifacts/accept_blockB_20250831T150937Z/serve_active_load_body.txt, trace:artifacts/accept_blockB_20250831T150937Z/serve_active_load_trace.txt)
-[2025-08-31T15:09:38Z] Model load looks OK at http://localhost:8001/models/load
+Grafana/Dashboard:
+  Dashboard UID: chs-overview-v1 (loaded: no)
+  Panel UIDs:
+    - p_reqmin (present)
+    - p_p95 (present)
+    - p_errratio (present)
 
-===== Predict invalid FEN (expects 400 INVALID_FEN) =====
-[2025-08-31T15:09:38Z] Trying: POST http://localhost:8001/predict with invalid FEN
-[2025-08-31T15:09:38Z] HTTP 400 (headers:artifacts/accept_blockB_20250831T150937Z/serve_active_predict_headers.txt, body:artifacts/accept_blockB_20250831T150937Z/serve_active_predict_body.txt, trace:artifacts/accept_blockB_20250831T150937Z/serve_active_predict_trace.txt)
-[2025-08-31T15:09:38Z] Got expected 400 INVALID_FEN at http://localhost:8001/predict
-
-===== Predict warm-up (valid FEN to generate metrics) =====
-[2025-08-31T15:09:38Z] Warm-up: POST http://localhost:8001/predict -> HTTP 200 (headers:artifacts/accept_blockB_20250831T150937Z/serve_predict_warm_headers.txt, body:artifacts/accept_blockB_20250831T150937Z/serve_predict_warm_body.txt)
-
-===== Metrics presence =====
-[2025-08-31T15:09:38Z] Found expected metrics in Serve /metrics.
-[2025-08-31T15:09:38Z] INFO: API actuator fetched but needles not found.
-
-===== DIAG SUMMARY =====
-[2025-08-31T15:09:38Z] LOAD endpoint tried -> status: 200   url: http://localhost:8001/models/load
-[2025-08-31T15:09:38Z] PREDICT invalid-FEN -> status: 400   url: http://localhost:8001/predict
-[2025-08-31T15:09:38Z] Next actions written to artifacts/accept_blockB_20250831T150937Z/next_actions.txt
+Remarks:
+  - Maven could not resolve spring-boot-starter-parent (network unreachable)
+  - Smoke test failed: API health check failed
+  - Prometheus endpoint not reachable; dashboard panels not verified
