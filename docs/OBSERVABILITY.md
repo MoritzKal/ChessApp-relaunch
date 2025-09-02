@@ -6,6 +6,9 @@
 - strukturierte **JSON-Logs** (MDC: run_id, dataset_id, model_id, username, component)
 - **Prometheus + Grafana + Loki**, **MLflow** für Runs/Artefakte
 
+Für Scraping wird `/actuator/prometheus` ausschließlich mit Monitoring-JWT (Role `MONITORING` oder Scope `monitoring`) freigegeben;
+`/actuator/health` bleibt öffentlich. Weitere Details zur Authentifizierung siehe [Security Guide](SECURITY_GUIDE.md).
+
 ## KPIs (Serve/Play)
 
 - **chs_predict_latency_p95** (ms) — Ziel <150
