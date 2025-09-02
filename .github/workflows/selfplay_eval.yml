@@ -1,0 +1,74 @@
+name: selfplay-eval
+
+on:
+  push:
+    branches: [development]
+  pull_request:
+    branches: [development]
+
+jobs:
+  build-runner:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: |
+          pip install fastapi httpx tenacity python-chess prometheus_client pydantic \
+            python-json-logger uvicorn[standard] pandas matplotlib numpy mlflow pyarrow torch pytest
+      - name: Lint
+        run: python -m py_compile ml/selfplay-runner/app/*.py
+      - name: Tests
+        run: pytest tests/selfplay -q
+
+  build-eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: |
+          pip install fastapi httpx tenacity python-chess prometheus_client pydantic \
+            python-json-logger uvicorn[standard] pandas matplotlib numpy mlflow pyarrow torch pytest
+      - name: Tests
+        run: pytest tests/eval -q
+
+  smoke:
+    needs: [build-runner, build-eval]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: |
+          pip install fastapi httpx tenacity python-chess prometheus_client pydantic \
+            python-json-logger uvicorn[standard] pandas matplotlib numpy mlflow pyarrow torch pytest
+      - name: Start services
+        run: make -f Makefile.selfplay up
+      - name: Smoke selfplay
+        run: bash scripts/selfplay_smoke.sh
+      - name: Smoke eval
+        run: bash scripts/eval_smoke.sh
+      - name: Upload selfplay artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: selfplay-artifacts
+          path: artifacts/selfplay
+          if-no-files-found: ignore
+      - name: Upload eval artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-artifacts
+          path: artifacts/eval
+          if-no-files-found: ignore
+      - name: Stop services
+        if: always()
+        run: make -f Makefile.selfplay down

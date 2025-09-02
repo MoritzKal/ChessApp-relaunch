@@ -1,0 +1,20 @@
+[project]
+name = "selfplay-runner"
+version = "0.1.0"
+description = "Self-play runner service"
+authors = [{name = "ChessApp Team"}]
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "prometheus_client",
+    "pydantic",
+    "httpx",
+    "tenacity",
+    "python-json-logger",
+    "python-chess",
+]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
