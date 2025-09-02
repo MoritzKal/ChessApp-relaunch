@@ -1,0 +1,38 @@
+name: selfplay-eval
+
+on:
+  push:
+    paths:
+      - 'ml/selfplay-runner/**'
+      - 'ml/eval-offline/**'
+      - 'tests/selfplay/**'
+      - 'tests/eval/**'
+      - 'scripts/**'
+      - '.github/workflows/selfplay_eval.yml'
+  pull_request:
+    paths:
+      - 'ml/selfplay-runner/**'
+      - 'ml/eval-offline/**'
+      - 'tests/selfplay/**'
+      - 'tests/eval/**'
+      - 'scripts/**'
+      - '.github/workflows/selfplay_eval.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: |
+          pip install fastapi httpx tenacity python-chess prometheus_client pydantic \
+            python-json-logger uvicorn[standard] pandas matplotlib numpy mlflow pyarrow torch pytest
+      - name: Run tests
+        run: pytest tests/selfplay tests/eval -q
+      - name: Smoke eval
+        run: bash scripts/eval_smoke.sh
+      - name: Smoke selfplay
+        run: bash scripts/selfplay_smoke.sh
