@@ -270,6 +270,8 @@ services:
       APP_SECURITY_JWT_SECRET: ${API_JWT_SECRET}
       SPRING_APPLICATION_JSON: >
         {"app":{"security":{"jwt":{"secret":"${API_JWT_SECRET}"}}}}
+      # Enable dev token mint endpoint (disable in prod!)
+      APP_SECURITY_DEV_TOKEN_ENABLED: "true"
 
     depends_on:
       db:

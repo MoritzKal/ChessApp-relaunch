@@ -33,7 +33,8 @@ public class IngestService {
     private final Counter starts;
     private final Counter success;
     private final Counter failed;
-    private final Timer.Builder durationTimer;
+    private final Timer durationSuccess;
+    private final Timer durationFailed;
     private final AtomicInteger activeGauge;
     private final IngestService self;
 
@@ -44,9 +45,16 @@ public class IngestService {
         this.starts = meterRegistry.counter("chs_ingest_starts_total");
         this.success = meterRegistry.counter("chs_ingest_success_total");
         this.failed = meterRegistry.counter("chs_ingest_failed_total");
-        this.durationTimer = Timer.builder("chs_ingest_duration_seconds")
-                .publishPercentileHistogram()
-                .publishPercentiles(0.5, 0.95);
+        this.durationSuccess = Timer.builder("chs_ingest_duration_seconds")
+            .publishPercentileHistogram()
+            .publishPercentiles(0.5, 0.95)
+            .tags("outcome","success")
+            .register(meterRegistry);
+         this.durationFailed = Timer.builder("chs_ingest_duration_seconds")
+            .publishPercentileHistogram()
+            .publishPercentiles(0.5, 0.95)
+            .tags("outcome","failed")
+            .register(meterRegistry);
         this.activeGauge = meterRegistry.gauge("chs_ingest_active", new AtomicInteger());
         this.self = self;
     }
@@ -134,12 +142,12 @@ public class IngestService {
             String report = "s3://reports/ingest/" + runId + "/report.json";
             update(runId, "SUCCEEDED", report);
             success.increment();
-            sample.stop(durationTimer.tag("outcome", "success").register(meterRegistry));
+            sample.stop(durationSuccess);
             log.info("ingest run {} succeeded", runId);
         } catch (Exception e) {
             update(runId, "FAILED", null);
             failed.increment();
-            sample.stop(durationTimer.tag("outcome", "failed").register(meterRegistry));
+            sample.stop(durationFailed);
             log.error("ingest run {} failed: {}", runId, e.getMessage());
         } finally {
             activeGauge.decrementAndGet();
