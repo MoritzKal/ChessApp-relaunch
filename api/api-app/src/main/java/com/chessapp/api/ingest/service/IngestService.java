@@ -10,8 +10,13 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.YearMonth;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -46,6 +51,39 @@ public class IngestService {
         this.self = self;
     }
 
+    /** Resolve current username from SecurityContext, fallback to CHESS_USERNAME env or "system". */
+    private static String currentUsername() {
+        var ctx = SecurityContextHolder.getContext();
+        var auth = (ctx != null) ? ctx.getAuthentication() : null;
+        if (auth != null && auth.isAuthenticated() && auth.getName() != null) {
+            return auth.getName();
+        }
+        return Optional.ofNullable(System.getenv("CHESS_USERNAME")).orElse("system");
+    }
+
+    /**
+     * Parse month values from ENV. Supports either:
+     * - plain month 1..12 (e.g. "9"), or
+     * - yyyymm compact form (e.g. "202509").
+     * We simply store the parsed integer; the entity/DB column type must match.
+     */
+    private static int parseMonthEnvOrDefault(String key, int fallback) {
+        var v = System.getenv(key);
+        if (v == null || v.isBlank()) return fallback;
+        try {
+            return Integer.parseInt(v.trim());
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
+    }
+
+    /** Default strategy: both months = current UTC month (either 9 or 202509 depending on schema expectation). */
+    private static int defaultMonthValue() {
+        // If your DB column stores only 1..12, this returns 1..12.
+        // If your DB stores yyyymm, prefer using INGEST_FROM_MONTH/INGEST_TO_MONTH ENV to pass yyyymm explicitly.
+        return YearMonth.now(ZoneOffset.UTC).getMonthValue();
+    }
+
     /**
      * Starts a new ingest run and schedules async execution.
      *
@@ -53,14 +91,29 @@ public class IngestService {
      */
     public UUID start() {
         UUID runId = UUID.randomUUID();
+
+        // Resolve required NOT NULLs
+        int defaultMonth = defaultMonthValue();
+        int fromMonth = parseMonthEnvOrDefault("INGEST_FROM_MONTH", defaultMonth);
+        int toMonth   = parseMonthEnvOrDefault("INGEST_TO_MONTH",   fromMonth);
+
         IngestRunEntity run = new IngestRunEntity();
         run.setRunId(runId);
+        run.setUsername(currentUsername());     // NOT NULL
+        run.setFromMonth(fromMonth);            // NOT NULL in DB
+        run.setToMonth(toMonth);                // likely NOT NULL as well (safe to set)
         run.setStatus("PENDING");
+        run.setStartedAt(Instant.now());
         repository.save(run);
+
         starts.increment();
+
         MDC.put("run_id", runId.toString());
-        self.execute(runId);
-        MDC.remove("run_id");
+        try {
+            self.execute(runId);                // trigger async
+        } finally {
+            MDC.remove("run_id");
+        }
         return runId;
     }
 
@@ -74,7 +127,10 @@ public class IngestService {
         try {
             update(runId, "RUNNING", null);
             log.info("ingest run {} running", runId);
-            Thread.sleep(1000); // simulate work
+
+            // simulate work
+            Thread.sleep(1000);
+
             String report = "s3://reports/ingest/" + runId + "/report.json";
             update(runId, "SUCCEEDED", report);
             success.increment();
@@ -95,6 +151,9 @@ public class IngestService {
         run.setStatus(status);
         if (reportUri != null) {
             run.setReportUri(reportUri);
+        }
+        if ("SUCCEEDED".equals(status) || "FAILED".equals(status)) {
+            run.setFinishedAt(Instant.now());
         }
         repository.save(run);
     }

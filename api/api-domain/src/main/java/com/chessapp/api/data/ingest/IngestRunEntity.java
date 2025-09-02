@@ -12,36 +12,47 @@ import java.util.UUID;
 public class IngestRunEntity {
 
     @Id
-    @Column(name = "run_id")
+    @Column(name = "id", nullable = false, updatable = false)
     private UUID runId;
 
-    @Column(nullable = false)
+    @Column(name = "username", nullable = false, length = 64)
+    private String username;
+
+    @Column(name = "status", nullable = false)
     private String status;
 
     @Column(name = "report_uri")
     private String reportUri;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
+    @Column(name = "started_at")
+    private Instant startedAt;
 
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+    @Column(name = "finished_at")
+    private Instant finishedAt;
+
+    @Column(name = "from_month", nullable = false)
+    private Integer fromMonth;
+
+    @Column(name = "to_month", nullable = false)
+    private Integer toMonth;
 
     @PrePersist
     public void prePersist() {
-        Instant now = Instant.now();
-        this.createdAt = now;
-        this.updatedAt = now;
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = Instant.now();
+        if (this.startedAt == null) {
+            this.startedAt = Instant.now();
+        }
+        if (this.runId == null) {
+            this.runId = UUID.randomUUID();
+        }
     }
 
     public UUID getRunId() {
         return runId;
     }
+
+    public String getUsername() { return username; }
+
+    public void setUsername(String username) { this.username = username; }
 
     public void setRunId(UUID runId) {
         this.runId = runId;
@@ -63,11 +74,19 @@ public class IngestRunEntity {
         this.reportUri = reportUri;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
+    public Instant getStartedAt() { return startedAt; }
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
+    public void setStartedAt(Instant startedAt) { this.startedAt = startedAt; }
+
+    public Instant getFinishedAt() { return finishedAt; }
+
+    public void setFinishedAt(Instant finishedAt) { this.finishedAt = finishedAt; }
+
+    public Integer getFromMonth() { return fromMonth; }
+
+    public void setFromMonth(Integer fromMonth) { this.fromMonth = fromMonth; }
+
+    public Integer getToMonth() { return toMonth; }
+
+    public void setToMonth(Integer toMonth) { this.toMonth = toMonth; }
 }
