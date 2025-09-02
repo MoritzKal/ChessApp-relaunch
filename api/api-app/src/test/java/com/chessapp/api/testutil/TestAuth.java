@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
@@ -31,7 +32,7 @@ public final class TestAuth {
             })
             .authorities(Arrays.stream(roles)
                 .map(r -> new SimpleGrantedAuthority("ROLE_" + r))
-                .toList());
+                .toArray(GrantedAuthority[]::new));
     }
 
     /** Convenience for a regular USER token. */
