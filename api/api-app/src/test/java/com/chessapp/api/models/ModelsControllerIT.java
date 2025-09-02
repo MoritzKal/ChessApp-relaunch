@@ -18,6 +18,7 @@ import java.util.Map;
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import com.chessapp.api.testutil.TestAuth;
 
 @SpringBootTest(classes = com.chessapp.api.codex.CodexApplication.class)
 @AutoConfigureMockMvc
@@ -36,26 +37,25 @@ class ModelsControllerIT extends AbstractIntegrationTest {
   }
 
   @Test void listModels_returns200AndFields() throws Exception {
-    mvc.perform(get("/v1/models").header(HttpHeaders.AUTHORIZATION, authHeader()))
+    mvc.perform(get("/v1/models").with(TestAuth.jwtUser()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].modelId", notNullValue()));
   }
 
   @Test void listVersions_returns200AndFields() throws Exception {
-    mvc.perform(get("/v1/models/policy_tiny/versions").header(HttpHeaders.AUTHORIZATION, authHeader()))
+    mvc.perform(get("/v1/models/policy_tiny/versions").with(TestAuth.jwtUser()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].modelVersion", notNullValue()));
   }
 
   @Test void listVersions_unknownModel_returns404() throws Exception {
-    mvc.perform(get("/v1/models/does_not_exist/versions").header(HttpHeaders.AUTHORIZATION, authHeader()))
+    mvc.perform(get("/v1/models/does_not_exist/versions").with(TestAuth.jwtUser()))
         .andExpect(status().isNotFound());
   }
 
   @Test void metrics_smoke_present_after_request() throws Exception {
-    String auth = authHeader();
-    mvc.perform(get("/v1/models").header(HttpHeaders.AUTHORIZATION, auth)).andExpect(status().isOk());
-    mvc.perform(get("/actuator/prometheus").header(HttpHeaders.AUTHORIZATION, auth))
+    mvc.perform(get("/v1/models").with(TestAuth.jwtUser())).andExpect(status().isOk());
+    mvc.perform(get("/actuator/prometheus").with(TestAuth.jwtMonitoring()))
         .andExpect(status().isOk())
         // Global metric tags (application, component, username, ...) are present,
         // so we assert key substrings rather than exact label set/order.
