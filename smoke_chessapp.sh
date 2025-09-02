@@ -168,12 +168,12 @@ else
   warn "Could not parse targets (no jq)."
 fi
 
-# 8) Grafana dashboard (UID chs-overview)
-say "8) Grafana dashboard chs-overview"
-DASH=$(curl -s -u "${GRAFANA_USER}:${GRAFANA_PASSWORD}" "${GRAFANA_BASE}/api/dashboards/uid/chs-overview" || true)
-if echo "$DASH" | grep -q '"uid":"chs-overview"'; then
+# 8) Grafana dashboard (UID chs-overview-v1)
+say "8) Grafana dashboard chs-overview-v1"
+DASH=$(curl -s -u "${GRAFANA_USER}:${GRAFANA_PASSWORD}" "${GRAFANA_BASE}/api/dashboards/uid/chs-overview-v1" || true)
+if echo "$DASH" | grep -q '"uid":"chs-overview-v1"'; then
   SUMMARY_GRAFANA="yes"
-  ok "Dashboard found (chs-overview)"
+  ok "Dashboard found (chs-overview-v1)"
 else
   warn "Dashboard not found or auth failed"
 fi
@@ -205,7 +205,7 @@ API – DATASETS
 
 PATCHES APPLIED
 - (validated by presence at runtime) Flyway enabled + ddl-auto=validate
-- Grafana provisioning expected (UID chs-overview)
+- Grafana provisioning expected (UID chs-overview-v1)
 - Dataset endpoints + metrics/logs exposed
 
 OPEN ITEMS

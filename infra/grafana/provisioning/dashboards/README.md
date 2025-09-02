@@ -10,4 +10,5 @@ Dashboards werden per Provisioning geladen:
 - Datasources: infra/grafana/provisioning/datasources/datasources.yml
 - Dashboards:  infra/grafana/provisioning/dashboards/{dashboards.yml,json/}
 
-Übersicht: Dashboards → Folder „ChessApp“ → „ChessApp – Overview“ (UID: chs-overview).
+Übersicht: Dashboards → Folder „ChessApp“ → „ChessApp – Overview“ (UID: chs-overview-v1).
+
