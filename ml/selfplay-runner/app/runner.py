@@ -66,6 +66,7 @@ class SelfPlayRunner:
         info = self.runs[run_id]
         req = info.request
         wins = losses = draws = 0
+        counter_lock = threading.Lock()
         random.seed(req.seed)
         metrics.queue_depth.set(req.games)
 
@@ -91,21 +92,25 @@ class SelfPlayRunner:
             result = board.result()
             if result == "1-0":
                 if white_model == req.modelId:
-                    wins += 1
                     res = "win"
+                    dw, dl, dd = 1, 0, 0
                 else:
-                    losses += 1
                     res = "loss"
+                    dw, dl, dd = 0, 1, 0
             elif result == "0-1":
                 if black_model == req.modelId:
-                    wins += 1
                     res = "win"
+                    dw, dl, dd = 1, 0, 0
                 else:
-                    losses += 1
                     res = "loss"
+                    dw, dl, dd = 0, 1, 0
             else:
-                draws += 1
                 res = "draw"
+                dw, dl, dd = 0, 0, 1
+            with counter_lock:
+                wins += dw
+                losses += dl
+                draws += dd
             metrics.games_total.labels(result=res).inc()
             info.results.append(
                 {"gameIdx": game_idx, "result": res, "plyCount": board.ply()}
