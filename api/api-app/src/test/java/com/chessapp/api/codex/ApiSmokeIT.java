@@ -1,12 +1,11 @@
 package com.chessapp.api.codex;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -18,6 +17,8 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import com.chessapp.api.testutil.TestAuth;
+import org.springframework.beans.factory.annotation.Value;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -34,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ApiSmokeIT {
 
     @Container
+    @SuppressWarnings("resource")
     static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
             .withDatabaseName("testdb")
             .withUsername("test")
@@ -58,6 +60,9 @@ class ApiSmokeIT {
     @LocalServerPort
     int port;
 
+    @Value("${app.security.jwt.secret}")
+    String secret;
+
     @Test
     void contextStarts_andDataSourceAndFlywayHealthy_andHealthIsUp() throws Exception {
         // DataSource connects
@@ -71,7 +76,10 @@ class ApiSmokeIT {
         }
 
         // Actuator health is UP
-        ResponseEntity<String> resp = rest.getForEntity("http://localhost:" + port + "/actuator/health", String.class);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(TestAuth.token(secret, "USER"));
+        ResponseEntity<String> resp = rest.exchange("http://localhost:" + port + "/actuator/health", HttpMethod.GET,
+                new HttpEntity<>(headers), String.class);
         assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
         assertThat(resp.getBody()).contains("\"status\":\"UP\"");
     }

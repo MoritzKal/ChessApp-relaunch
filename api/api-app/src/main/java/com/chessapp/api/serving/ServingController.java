@@ -85,7 +85,7 @@ public class ServingController {
             String resbody = String.format("{\"status\":502,\"error\":\"Bad Gateway\",\"message\":%s}",
                     jsonEscape(ex.getMessage()));
             log.warn("event=predict.failed cause=connect_error msg={}", ex.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(body);
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(resbody);
         } finally {
             MDC.clear();
         }

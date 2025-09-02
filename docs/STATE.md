@@ -4,6 +4,7 @@
 
 - Compose-Stack lauffähig (API, MLflow, Prometheus, Grafana, Loki)
 - B1–B3 live (Registry read-only, Serve Reload by Version, Observability-Panels)
+- M1 abgeschlossen am 2025-09-01 (Europe/Berlin); siehe [ROADMAP](./ROADMAP.md) & [API_ENDPOINTS](./API_ENDPOINTS.md)
 
 ## In Arbeit (Next)
 

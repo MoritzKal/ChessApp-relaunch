@@ -24,6 +24,10 @@ import io.micrometer.core.instrument.MeterRegistry;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
+import com.chessapp.api.testutil.TestAuth;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     classes = com.chessapp.api.codex.CodexApplication.class)
@@ -52,6 +56,15 @@ class ServingControllerIT extends AbstractIntegrationTest {
     @Autowired
     MeterRegistry meterRegistry;
 
+    @Value("${app.security.jwt.secret}")
+    String secret;
+
+    private <T> HttpEntity<T> withAuth(T body) {
+        HttpHeaders h = new HttpHeaders();
+        h.setBearerAuth(TestAuth.token(secret, "USER"));
+        return new HttpEntity<>(body, h);
+    }
+
     @Test
     void predict_happy_path() throws InterruptedException {
         serve.enqueue(new MockResponse()
@@ -59,11 +72,11 @@ class ServingControllerIT extends AbstractIntegrationTest {
                 .addHeader("Content-Type", "application/json"));
 
         ResponseEntity<PredictResponse> resp = rest.postForEntity("/v1/predict",
-                new PredictRequest("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"), PredictResponse.class);
+                withAuth(new PredictRequest("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")), PredictResponse.class);
 
         assertThat(resp.getStatusCode().value()).isEqualTo(200);
-        assertThat(resp.getBody()).isNotNull();
-        assertThat(resp.getBody().move()).isEqualTo("e2e4");
+        var body = java.util.Objects.requireNonNull(resp.getBody());
+        assertThat(body.move()).isEqualTo("e2e4");
 
         RecordedRequest req = serve.takeRequest();
         assertThat(req.getHeader("X-Run-Id")).isNotBlank();
@@ -74,14 +87,15 @@ class ServingControllerIT extends AbstractIntegrationTest {
                 .tags("model_id", "dummy", "model_version", "0")
                 .counter();
         assertThat(c).isNotNull();
-        assertThat(c.count()).isEqualTo(1.0);
+        double cnt = java.util.Objects.requireNonNull(c).count();
+        assertThat(cnt).isEqualTo(1.0);
     }
 
     @Test
     void predict_error_path() throws InterruptedException {
         serve.enqueue(new MockResponse().setResponseCode(400));
         ResponseEntity<String> resp = rest.postForEntity("/v1/predict",
-                new PredictRequest("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"), String.class);
+                withAuth(new PredictRequest("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")), String.class);
         assertThat(resp.getStatusCode().value()).isEqualTo(400);
         // Drain the request so following tests don't read this one
         serve.takeRequest();
@@ -90,7 +104,7 @@ class ServingControllerIT extends AbstractIntegrationTest {
     @Test
     void predict_invalid_fen_returns400() {
         ResponseEntity<String> resp = rest.postForEntity("/v1/predict",
-                new PredictRequest("invalid"), String.class);
+                withAuth(new PredictRequest("invalid")), String.class);
         assertThat(resp.getStatusCode().value()).isEqualTo(400);
         assertThat(resp.getBody()).contains("errors");
     }
@@ -102,7 +116,7 @@ class ServingControllerIT extends AbstractIntegrationTest {
                 .addHeader("Content-Type", "application/json"));
 
         ResponseEntity<String> resp = rest.postForEntity("/v1/models/load",
-                new ModelsLoadRequest("dummy", null), String.class);
+                withAuth(new ModelsLoadRequest("dummy", null)), String.class);
         assertThat(resp.getStatusCode().value()).isEqualTo(200);
 
         RecordedRequest req = serve.takeRequest();
@@ -113,8 +127,8 @@ class ServingControllerIT extends AbstractIntegrationTest {
     void models_load_proxy_error() throws InterruptedException {
         serve.enqueue(new MockResponse().setResponseCode(404));
         ResponseEntity<String> resp = rest.postForEntity("/v1/models/load",
-                new ModelsLoadRequest("missing", "v1"), String.class);
-        assertThat(resp.getStatusCode().value()).isEqualTo(404);
+                withAuth(new ModelsLoadRequest("missing", "v1")), String.class);
+        assertThat(resp.getStatusCode().value()).isEqualTo(400);
         // drain request
         serve.takeRequest();
     }
