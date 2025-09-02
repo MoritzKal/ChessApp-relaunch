@@ -32,7 +32,10 @@ public class MdcFilter implements Filter {
     );
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+    public void doFilter(
+            @org.springframework.lang.Nullable ServletRequest request,
+            @org.springframework.lang.Nullable ServletResponse response,
+            @org.springframework.lang.Nullable FilterChain chain)
             throws IOException, ServletException {
         try {
             MDC.put("component", "api");
@@ -55,7 +58,9 @@ public class MdcFilter implements Filter {
                 }
             }
             MDC.put("username", username);
-            chain.doFilter(request, response);
+            if (chain != null) {
+                chain.doFilter(request, response);
+            }
         } finally {
             MDC.clear();
         }
