@@ -9,17 +9,40 @@
 
 ## Ingest
 
-- `POST /v1/ingest`
-  - Body: `{"username":"<name>","from":"2025-01","to":"2025-08"}`
-- **Alias:** `POST /v1/data/import` → intern Alias auf `/v1/ingest`
-- `GET /v1/ingest/{runId}` → Status
+- `POST /v1/ingest` → 202 Accepted  
+  - Header: `Location: /v1/ingest/{runId}`  
+  - Response: `{"runId":"<UUID>"}`
+- `GET /v1/ingest/{runId}` → 200 OK  
+  - Response: `{"status":"PENDING|RUNNING|SUCCEEDED|FAILED","reportUri":"s3://reports/ingest/<runId>/report.json"}` (`reportUri` optional)
+- **Alias:** `POST /v1/data/import` → intern Alias auf `/v1/ingest`  
+  - Response: 308 Permanent Redirect
 
-### Beispiel
+### Beispiele
+
+POST
 
 ```bash
-curl -sS -X POST http://localhost:8080/v1/ingest \
-  -H 'Content-Type: application/json' \
-  -d '{"username":"demo","from":"2025-01","to":"2025-08"}'
+curl -i -X POST http://localhost:8080/v1/ingest
+```
+
+Antwort:
+
+```http
+HTTP/1.1 202 Accepted
+Location: /v1/ingest/<runId>
+{"runId":"<runId>"}
+```
+
+GET
+
+```bash
+curl -sS http://localhost:8080/v1/ingest/<runId>
+```
+
+Antwort:
+
+```json
+{"status":"SUCCEEDED","reportUri":"s3://reports/ingest/<runId>/report.json"}
 ```
 
 ## Datasets

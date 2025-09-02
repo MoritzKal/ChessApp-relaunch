@@ -23,6 +23,13 @@
 - **chs_model_registry_requests_total**
 - **chs_training_runs_total**
 - **chs_dataset_export_duration_seconds**
+- **chs_ingest_starts_total**
+- **chs_ingest_success_total**
+- **chs_ingest_failed_total**
+- **chs_ingest_duration_seconds**
+- **chs_ingest_active**
+
+Siehe Grafana Panel *Ingest* (Prometheus).
 
 ## Alerts (Beispiele)
 

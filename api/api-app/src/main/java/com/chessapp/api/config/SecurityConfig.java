@@ -45,6 +45,7 @@ public class SecurityConfig {
                 .cors(withDefaults())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
+                        .requestMatchers("/v1/auth/token").permitAll()
                         .requestMatchers("/actuator/prometheus").hasRole("MONITORING")
                         .requestMatchers("/actuator/**").authenticated()
                         .requestMatchers("/v1/**").authenticated()
