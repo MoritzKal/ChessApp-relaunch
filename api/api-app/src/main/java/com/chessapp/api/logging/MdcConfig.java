@@ -70,18 +70,25 @@ public class MdcConfig implements WebMvcConfigurer {
         public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex)
                 throws Exception {
             Long start = (Long) request.getAttribute("_startTime");
-            if (start != null) {
-                long duration = System.nanoTime() - start;
-                Timer.builder("chs_api_request_duration_seconds")
-                        .tags("route", request.getRequestURI())
-                        .register(registry)
-                        .record(duration, TimeUnit.NANOSECONDS);
-                io.micrometer.core.instrument.Counter.builder("chs_api_requests_total")
-                        .tags("route", request.getRequestURI(),
-                                "code", String.valueOf(response.getStatus()),
-                                "method", request.getMethod())
-                        .register(registry)
-                        .increment();
+            try {
+                if (start != null) {
+                    long duration = System.nanoTime() - start;
+                    Timer.builder("chs_api_request_duration_seconds")
+                            .tags("route", request.getRequestURI())
+                            .register(registry)
+                            .record(duration, TimeUnit.NANOSECONDS);
+                    io.micrometer.core.instrument.Counter.builder("chs_api_requests_total")
+                            .tags("route", request.getRequestURI(),
+                                    "code", String.valueOf(response.getStatus()),
+                                    "method", request.getMethod())
+                            .register(registry)
+                            .increment();
+                }
+            } finally {
+                try {
+                    MDC.clear();
+                } catch (Exception ignore) {
+                }
             }
         }
     }

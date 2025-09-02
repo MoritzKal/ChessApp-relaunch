@@ -62,7 +62,8 @@ chess:
         reports: reports
       prefix:
         ingest: ingest
-selfplayRunner:
-  baseUrl: ${SELFPLAY_RUNNER_BASEURL:http://selfplay-runner:8011}
-evalOffline:
-  baseUrl: ${EVAL_OFFLINE_BASEURL:http://eval-offline:8012}
+clients:
+  selfplayRunner:
+    baseUrl: ${SELFPLAY_RUNNER_URL:http://selfplay-runner:8011}
+  evalOffline:
+    baseUrl: ${EVAL_RUNNER_URL:http://eval-offline:8012}

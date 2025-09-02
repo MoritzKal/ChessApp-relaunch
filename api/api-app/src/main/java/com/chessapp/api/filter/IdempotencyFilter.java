@@ -78,8 +78,12 @@ public class IdempotencyFilter extends OncePerRequestFilter {
         CachedResponse cached = cache.getIfPresent(cacheKey);
         if (cached != null) {
             response.setStatus(cached.status());
-            cached.headers().forEach((h, v) -> v.forEach(val -> response.addHeader(h, val)));
-            response.addHeader("Idempotent-Replay", "true");
+            cached.headers().forEach((h, v) -> {
+                if (!"Idempotent-Replay".equalsIgnoreCase(h)) {
+                    v.forEach(val -> response.addHeader(h, val));
+                }
+            });
+            response.setHeader("Idempotent-Replay", "true");
             registry.counter("chs_api_requests_total", "route", request.getRequestURI(), "code", String.valueOf(cached.status()), "method", request.getMethod()).increment();
             Timer.builder("chs_api_request_duration_seconds").tags("route", request.getRequestURI()).register(registry).record(0, TimeUnit.MILLISECONDS);
             response.getOutputStream().write(cached.body());
@@ -94,7 +98,9 @@ public class IdempotencyFilter extends OncePerRequestFilter {
         byte[] respBytes = respWrapper.getContentAsByteArray();
         Map<String, List<String>> headers = new HashMap<>();
         for (String h : respWrapper.getHeaderNames()) {
-            headers.put(h, new ArrayList<>(respWrapper.getHeaders(h)));
+            if (!"Idempotent-Replay".equalsIgnoreCase(h)) {
+                headers.put(h, new ArrayList<>(respWrapper.getHeaders(h)));
+            }
         }
         cache.put(cacheKey, new CachedResponse(respWrapper.getStatus(), respBytes, headers));
         registry.counter("chs_api_requests_total", "route", request.getRequestURI(), "code", String.valueOf(respWrapper.getStatus()), "method", request.getMethod()).increment();

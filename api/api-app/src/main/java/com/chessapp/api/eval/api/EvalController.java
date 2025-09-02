@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.chessapp.api.eval.api.dto.EvalStartRequest;
 import com.chessapp.api.eval.service.EvalService;
@@ -50,11 +52,19 @@ public class EvalController {
         } catch (WebClientResponseException ex) {
             HttpStatus status = ex.getStatusCode().is5xxServerError() ? HttpStatus.SERVICE_UNAVAILABLE : (HttpStatus) ex.getStatusCode();
             if (ex.getStatusCode().is5xxServerError()) {
-                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(errorBody());
+                String cid = correlationId();
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                        .header("X-Reason", "upstream_failure")
+                        .header("X-Correlation-Id", cid)
+                        .body(errorBody(cid));
             }
             return ResponseEntity.status(status).body(ex.getResponseBodyAsString());
         } catch (WebClientRequestException ex) {
-            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(errorBody());
+            String cid = correlationId();
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .header("X-Reason", "upstream_failure")
+                    .header("X-Correlation-Id", cid)
+                    .body(errorBody(cid));
         }
     }
 
@@ -69,15 +79,34 @@ public class EvalController {
         } catch (WebClientResponseException ex) {
             HttpStatus status = ex.getStatusCode().is5xxServerError() ? HttpStatus.SERVICE_UNAVAILABLE : (HttpStatus) ex.getStatusCode();
             if (ex.getStatusCode().is5xxServerError()) {
-                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(errorBody());
+                String cid = correlationId();
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                        .header("X-Reason", "upstream_failure")
+                        .header("X-Correlation-Id", cid)
+                        .body(errorBody(cid));
             }
             return ResponseEntity.status(status).body(ex.getResponseBodyAsString());
         } catch (WebClientRequestException ex) {
-            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(errorBody());
+            String cid = correlationId();
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .header("X-Reason", "upstream_failure")
+                    .header("X-Correlation-Id", cid)
+                    .body(errorBody(cid));
         }
     }
 
-    private static Map<String, String> errorBody() {
-        return Map.of("reason", "upstream_failure", "correlationId", "");
+    private static Map<String, String> errorBody(String cid) {
+        return Map.of("reason", "upstream_failure", "correlationId", cid);
+    }
+
+    private static String correlationId() {
+        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attrs != null) {
+            String id = attrs.getRequest().getHeader("X-Request-Id");
+            if (id != null) {
+                return id;
+            }
+        }
+        return "";
     }
 }

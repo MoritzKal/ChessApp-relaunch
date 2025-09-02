@@ -35,16 +35,17 @@ class IdempotencyFilterTest {
         String payload = "{\"a\":1}";
         String key = "abc123";
 
-        String first = mvc.perform(post("/v1/test").contentType(MediaType.APPLICATION_JSON).content(payload).header("Idempotency-Key", key))
+        var firstResult = mvc.perform(post("/v1/test").contentType(MediaType.APPLICATION_JSON).content(payload).header("Idempotency-Key", key))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Idempotent-Replay", "false"))
-                .andReturn().getResponse().getContentAsString();
+                .andReturn();
 
-        String second = mvc.perform(post("/v1/test").contentType(MediaType.APPLICATION_JSON).content(payload).header("Idempotency-Key", key))
+        var secondResult = mvc.perform(post("/v1/test").contentType(MediaType.APPLICATION_JSON).content(payload).header("Idempotency-Key", key))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Idempotent-Replay", "true"))
-                .andReturn().getResponse().getContentAsString();
+                .andReturn();
 
-        assertThat(second).isEqualTo(first);
+        assertThat(secondResult.getResponse().getStatus()).isEqualTo(firstResult.getResponse().getStatus());
+        assertThat(secondResult.getResponse().getContentAsString()).isEqualTo(firstResult.getResponse().getContentAsString());
     }
 }
