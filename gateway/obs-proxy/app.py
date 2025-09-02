@@ -9,9 +9,9 @@ from pythonjsonlogger import jsonlogger
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-from .config import get_settings
-from .security import client_ip, require_api_key
-from .proxy_clients import forward_get, loki_client, prom_client
+from config import get_settings
+from security import client_ip, require_api_key
+from proxy_clients import forward_get, loki_client, prom_client
 
 settings = get_settings()
 

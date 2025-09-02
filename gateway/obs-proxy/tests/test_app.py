@@ -1,17 +1,13 @@
 import os
 import sys
-import types
 from pathlib import Path
 
 import httpx
 import pytest
 import respx
 
-# Setup fake package for obs_proxy because directory name has hyphen
 BASE_DIR = Path(__file__).resolve().parents[1]
-pkg = types.ModuleType("obs_proxy")
-pkg.__path__ = [str(BASE_DIR)]
-sys.modules["obs_proxy"] = pkg
+sys.path.insert(0, str(BASE_DIR))
 
 # Configure environment before importing settings/app
 os.environ.update(
@@ -24,9 +20,9 @@ os.environ.update(
     }
 )
 
-from obs_proxy.config import get_settings  # type: ignore
+from config import get_settings
 get_settings.cache_clear()
-from obs_proxy.app import app  # type: ignore
+from app import app
 
 
 @pytest.mark.asyncio
