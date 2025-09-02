@@ -1,0 +1,40 @@
+{
+  "uid": "obs-eval-v1",
+  "title": "ChessApp – Evaluation (v1)",
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Eval Top-1",
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "chs_eval_top1_accuracy" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Eval Top-3",
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "chs_eval_top3_accuracy" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Blunder Rate (/100 moves)",
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "chs_eval_blunders_per_100" }
+      ]
+    },
+    {
+      "type": "logs",
+      "title": "Logs",
+      "datasource": "Loki",
+      "targets": [
+        { "expr": "{component=\"evaluation\"} |= \"report\"" }
+      ]
+    }
+  ]
+}
