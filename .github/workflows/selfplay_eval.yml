@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Install deps
@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Install deps
@@ -40,33 +40,163 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-      - name: Install deps
+      
+      - name: Pre-req: CLI tools
+        shell: bash
         run: |
-          pip install fastapi httpx tenacity python-chess prometheus_client pydantic \
-            python-json-logger uvicorn[standard] pandas matplotlib numpy mlflow pyarrow torch pytest
-      - name: Start services
-        run: make -f Makefile.selfplay up
-      - name: Smoke selfplay
-        run: bash scripts/selfplay_smoke.sh
-      - name: Smoke eval
-        run: bash scripts/eval_smoke.sh
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+
+      # WICHTIG: Artefakt-Verzeichnisse am Host anlegen (Bind-Mount writable),
+      # beide Varianten, je nachdem wie Docker Compose relativ auflöst.
+      - name: Prepare artifacts on host
+        run: |
+          mkdir -p artifacts/selfplay artifacts/eval || true
+          mkdir -p infra/artifacts/selfplay infra/artifacts/eval || true
+          chmod -R 0777 artifacts || true
+          chmod -R 0777 infra/artifacts || true
+
+      # Runner soll im CI gegen den internen Stub gehen (kein JWT nötig).
+      - name: Create env for selfplay stack
+        run: |
+          cat > .env.selfplay <<'EOF'
+          SERVE_PREDICT_URL=http://chs_eval_offline:8009/v1/predict
+          SERVE_BEARER_TOKEN=
+          EOF
+          cat .env.selfplay
+
+      # Services hochfahren (Runner+Eval) MIT Env-Override und Build
+      - name: Start selfplay stack
+        run: |
+          docker compose --env-file .env.selfplay -f infra/compose.selfplay.yml up -d --build
+          docker compose -f infra/compose.selfplay.yml ps
+
+      # Predictor-Stub IM eval-offline-Container auf :8009 starten (Hintergrund)
+      - name: Start predictor stub inside eval-offline (port 8009)
+        run: |
+          docker compose -f infra/compose.selfplay.yml exec -T eval-offline sh -lc '
+            python - << "PY" > /tmp/predictor_stub.py
+            import random, sys
+            from fastapi import FastAPI
+            from pydantic import BaseModel
+            try:
+            import chess
+            except Exception:
+            import subprocess, sys
+            subprocess.check_call([sys.executable,"-m","pip","install","python-chess<2"])
+            import chess
+
+            app = FastAPI()
+            class Req(BaseModel):
+                fen: str
+                modelId: str | None = None
+
+            @app.get("/health")
+            def health():
+                return {"status":"ok"}
+
+            @app.post("/v1/predict")
+            def predict(r: Req):
+                b = chess.Board(r.fen)
+                mv = random.choice(list(b.legal_moves)) if b.legal_moves.count() > 0 else None
+                return {"move": (mv.uci() if mv else "0000")}
+            PY
+            nohup python -m uvicorn --host 0.0.0.0 --port 8009 predictor_stub:app >/tmp/predictor_stub.log 2>&1 & disown
+          '
+
+      # Warten bis Stub erreichbar ist – aus Sicht des Runner-Containers
+      - name: Wait for predictor stub to be ready
+        run: |
+          for i in $(seq 1 30); do
+            set +e
+            docker compose -f infra/compose.selfplay.yml exec -T selfplay-runner sh -lc \
+              "python - << 'PY'
+              import os, sys, httpx, json
+              u = os.environ.get('SERVE_PREDICT_URL','http://chs_eval_offline:8009/v1/predict')
+              try:
+                  r = httpx.post(u, json={'fen':'rn1qkbnr/ppp1pppp/8/3p4/8/5NP1/PPPPPP1P/RNBQKB1R b KQkq - 0 3'})
+                  print('STATUS', r.status_code)
+                  sys.exit(0 if r.status_code in (200,201) else 1)
+              except Exception as e:
+                  print('ERR', e); sys.exit(1)
+              PY"
+            RC=$?
+            set -e
+            if [ "$RC" = "0" ]; then echo "Stub ready"; break; fi
+            sleep 2
+          done
+
+      # Selfplay-Smoke: neuen Run starten & warten bis completed
+      - name: Smoke selfplay (start & poll)
+        run: |
+          # Start
+          RUN_JSON=$(curl -s -X POST localhost:8011/runner/selfplay/start \
+            -H 'content-type: application/json' \
+            -d '{"modelId":"candidate_ci","baselineId":"prod","games":10,"concurrency":2,"seed":1}')
+          echo "$RUN_JSON" | jq .
+          RUN_ID=$(echo "$RUN_JSON" | jq -r .runId)
+
+          # Poll
+          for i in $(seq 1 120); do
+            ST=$(curl -s localhost:8011/runner/selfplay/runs/$RUN_ID)
+            echo "$ST" | jq '{status,progress,metrics,reportUri}'
+            STATUS=$(echo "$ST" | jq -r .status)
+            [ "$STATUS" = "completed" ] && break
+            sleep 2
+          done
+
+          # Artefakt prüfen (Mount kann je nach Compose relativ sein)
+          if [ -f artifacts/selfplay/$RUN_ID/report.json ]; then
+            cat artifacts/selfplay/$RUN_ID/report.json | jq '.summary'
+          elif [ -f infra/artifacts/selfplay/$RUN_ID/report.json ]; then
+            cat infra/artifacts/selfplay/$RUN_ID/report.json | jq '.summary'
+          else
+            echo "WARN: report.json nicht gefunden"; ls -R artifacts infra/artifacts || true
+            exit 1
+          fi
+
+          # Metriken-Sanity
+          curl -s localhost:8011/metrics | egrep '^chs_selfplay_(games_total|elo_estimate)'
+
+      # Eval-Smoke: Mini-Parquet erzeugen & CLI laufen lassen (im Container)
+      - name: Smoke eval (generate mini dataset + run CLI)
+        run: |
+          docker compose -f infra/compose.selfplay.yml exec -T eval-offline sh -lc '
+            python - << "PY"
+            import pandas as pd, numpy as np, pyarrow as pa, pyarrow.parquet as pq
+            N=200
+            df = pd.DataFrame({
+              "fen": ["rn1qkbnr/ppp1pppp/8/3p4/8/5NP1/PPPPPP1P/RNBQKB1R b KQkq - 0 3"]*N,
+              "label_uci": ["e2e4"]*N
+            })
+            pq.write_table(pa.Table.from_pandas(df), "/data/mini.parquet")
+            print("wrote /data/mini.parquet")
+            PY
+            python -m ml.eval-offline.eval --model-id candidate_ci --dataset /data/mini.parquet --limit 100 --batch-size 64 --seed 42
+          '
+
       - name: Upload selfplay artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: selfplay-artifacts
-          path: artifacts/selfplay
-          if-no-files-found: ignore
+          path: |
+            artifacts/selfplay
+            infra/artifacts/selfplay
+          if-no-files-found: warn
+
       - name: Upload eval artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: eval-artifacts
-          path: artifacts/eval
-          if-no-files-found: ignore
-      - name: Stop services
+          path: |
+            artifacts/eval
+            infra/artifacts/eval
+          if-no-files-found: warn
+
+      - name: Stop selfplay stack
         if: always()
-        run: make -f Makefile.selfplay down
+        run: |
+          docker compose -f infra/compose.selfplay.yml down -v
