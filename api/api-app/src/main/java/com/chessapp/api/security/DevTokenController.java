@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
@@ -35,6 +37,7 @@ public class DevTokenController {
     }
 
     @GetMapping("/token")
+    @Operation(summary = "Mint dev token", security = {})
     public Map<String, Object> mintToken(
             @RequestParam(name = "user", defaultValue = "user1") String user,
             @RequestParam(name = "roles", defaultValue = "USER") String rolesCsv,
