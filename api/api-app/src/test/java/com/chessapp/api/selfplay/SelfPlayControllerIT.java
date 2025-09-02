@@ -32,7 +32,7 @@ class SelfPlayControllerIT {
     @DynamicPropertySource
     static void configure(DynamicPropertyRegistry registry) {
         wm.start();
-        registry.add("selfplayRunner.baseUrl", wm::baseUrl);
+        registry.add("clients.selfplayRunner.baseUrl", wm::baseUrl);
     }
 
     @AfterAll

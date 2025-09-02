@@ -32,7 +32,7 @@ class EvalControllerIT {
     @DynamicPropertySource
     static void configure(DynamicPropertyRegistry registry) {
         wm.start();
-        registry.add("evalOffline.baseUrl", wm::baseUrl);
+        registry.add("clients.evalOffline.baseUrl", wm::baseUrl);
     }
 
     @AfterAll
@@ -111,7 +111,24 @@ class EvalControllerIT {
         wm.stubFor(WireMock.get(urlEqualTo("/runner/eval/err"))
                 .willReturn(aResponse().withStatus(500)));
         mvc.perform(get("/v1/evaluations/err")
-                .with(jwt().jwt(j -> j.claim("scope", "eval").claim("preferred_username", "bob"))))
-                .andExpect(status().isServiceUnavailable());
+                .with(jwt().jwt(j -> j.claim("scope", "eval").claim("preferred_username", "bob")))
+                .header("X-Request-Id", "req-1"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(header().string("X-Reason", "upstream_failure"))
+                .andExpect(header().string("X-Correlation-Id", "req-1"))
+                .andExpect(jsonPath("$.reason").value("upstream_failure"))
+                .andExpect(jsonPath("$.correlationId").value("req-1"));
+    }
+
+    @Test
+    void upstream400PassesThrough() throws Exception {
+        wm.stubFor(WireMock.get(urlEqualTo("/runner/eval/boom"))
+                .willReturn(aResponse().withStatus(404).withBody("not-found")));
+
+        mvc.perform(get("/v1/evaluations/boom")
+                .with(jwt().jwt(j -> j.claim("scope", "eval").claim("preferred_username", "bob")))
+                .header("X-Request-Id", "req-2"))
+                .andExpect(status().isNotFound())
+                .andExpect(content().string("not-found"));
     }
 }

@@ -35,9 +35,10 @@ poll_status() {
   while true; do
     resp=$(get "$endpoint")
     status=$(echo "$resp" | jq -r '.status')
-    if [[ "$status" == "SUCCEEDED" || "$status" == "FAILED" ]]; then
+    if [[ "$status" =~ ^(completed|failed|SUCCEEDED|FAILED)$ ]]; then
       echo "$resp" | jq -S . > "$outfile"
-      [[ "$status" == "FAILED" ]] && return 1
+      echo "final status: $status"
+      [[ "$status" =~ ^(failed|FAILED)$ ]] && return 1
       return 0
     fi
     if (( $(date +%s) - start > timeout )); then

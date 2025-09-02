@@ -21,7 +21,7 @@ import reactor.netty.http.client.HttpClient;
 public class SelfPlayRunnerClientConfig {
 
     @Bean
-    public WebClient selfPlayRunnerWebClient(@Value("${selfplayRunner.baseUrl:http://selfplay-runner:8011}") String baseUrl) {
+    public WebClient selfPlayRunnerWebClient(@Value("${clients.selfplayRunner.baseUrl:http://selfplay-runner:8011}") String baseUrl) {
         HttpClient httpClient = HttpClient.create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
                 .responseTimeout(Duration.ofSeconds(5))

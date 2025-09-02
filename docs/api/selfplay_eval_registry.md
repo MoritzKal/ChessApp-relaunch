@@ -54,3 +54,11 @@ curl -X POST https://api.example.com/v1/models/promote \
 
 `/v1` ist stabil, keine Breaking Changes. Details siehe [ENDPOINT_STABILITY_POLICY](../ENDPOINT_STABILITY_POLICY.md) und das Contract-Board.
 
+## Statuswerte
+
+Runner liefern die Stati `running`, `completed` oder `failed`.
+
+## Konfiguration
+
+Die Basis-URLs der Runner lassen sich über die Umgebungsvariablen `SELFPLAY_RUNNER_URL` und `EVAL_RUNNER_URL` überschreiben.
+

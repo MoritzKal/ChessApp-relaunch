@@ -21,7 +21,7 @@ import reactor.netty.http.client.HttpClient;
 public class EvalOfflineClientConfig {
 
     @Bean
-    public WebClient evalOfflineWebClient(@Value("${evalOffline.baseUrl:http://eval-offline:8012}") String baseUrl) {
+    public WebClient evalOfflineWebClient(@Value("${clients.evalOffline.baseUrl:http://eval-offline:8012}") String baseUrl) {
         HttpClient httpClient = HttpClient.create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
                 .responseTimeout(Duration.ofSeconds(5))
