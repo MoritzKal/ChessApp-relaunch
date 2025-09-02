@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.http.MediaType;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import com.chessapp.api.testutil.TestAuth;
 
 import com.chessapp.api.domain.entity.Game;
 import com.chessapp.api.domain.entity.GameResult;
@@ -57,40 +58,40 @@ class GamesControllerTest extends com.chessapp.api.testutil.AbstractIntegrationT
         g.setWhiteRating(1500);
         g.setBlackRating(1500);
         g.setPlatform(Platform.CHESS_COM);
-        g.setPgn("pgn");
+        g.setPgn("[Event \"?\"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 1/2-1/2");
         gameRepository.save(g);
 
         Position p1 = new Position();
         p1.setId(UUID.randomUUID());
         p1.setGameId(g.getId());
         p1.setPly(1);
-        p1.setFen("fen1");
+        p1.setFen("8/8/8/8/8/8/8/8 w - - 0 1");
         p1.setSideToMove(Color.WHITE);
         positionRepository.save(p1);
         Position p2 = new Position();
         p2.setId(UUID.randomUUID());
         p2.setGameId(g.getId());
         p2.setPly(2);
-        p2.setFen("fen2");
+        p2.setFen("8/8/8/8/8/8/8/8 b - - 0 1");
         p2.setSideToMove(Color.BLACK);
         positionRepository.save(p2);
 
-        mockMvc.perform(get("/v1/games").param("username", "M3NG00S3"))
+        mockMvc.perform(get("/v1/games").param("username", "M3NG00S3").with(TestAuth.jwtUser()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(g.getId().toString()));
 
-        mockMvc.perform(get("/v1/games/" + g.getId()))
+        mockMvc.perform(get("/v1/games/" + g.getId()).with(TestAuth.jwtUser()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.pgnRaw").value("pgn"));
 
-        mockMvc.perform(get("/v1/games/" + g.getId() + "/positions"))
+        mockMvc.perform(get("/v1/games/" + g.getId() + "/positions").with(TestAuth.jwtUser()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].ply").value(1));
     }
 
     @Test
     void list_withoutUsername_returns400WithHelpfulMessage() throws Exception {
-        mockMvc.perform(get("/v1/games").param("limit", "5"))
+        mockMvc.perform(get("/v1/games").param("limit", "5").with(TestAuth.jwtUser()))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(content().string(containsString("username")));

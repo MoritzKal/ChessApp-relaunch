@@ -17,15 +17,13 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import com.chessapp.api.testutil.TestAuth;
 import java.util.*;
 import java.util.regex.Pattern;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import org.springframework.test.context.ActiveProfiles;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
@@ -48,20 +46,8 @@ class DatasetsApiDiagnosticsIT {
   static UUID datasetId; static String createdAtStr;
   static ListAppender<ILoggingEvent> appender; static Logger rootLogger;
   @BeforeAll static void attachLogCaptor(){ var ctx=(LoggerContext)LoggerFactory.getILoggerFactory();
-    rootLogger=ctx.getLogger("ROOT"); appender=new ListAppender<>(); appender.start(); rootLogger.addAppender(appender);} 
+    rootLogger=ctx.getLogger("ROOT"); appender=new ListAppender<>(); appender.start(); rootLogger.addAppender(appender);}
   @AfterAll static void detachLogCaptor(){ if(rootLogger!=null&&appender!=null) rootLogger.detachAppender(appender); }
-
-private RequestPostProcessor withJwtUser() {
-  return jwt()
-    .jwt(claims -> {
-      claims.subject("sub-123");
-      claims.claim("preferred_username", "test-user");
-      // optional – deine Converter lesen "roles" zusätzlich
-      claims.claim("roles", java.util.List.of("USER"));
-      claims.claim("scope", "api"); // wird von JwtGrantedAuthoritiesConverter zu SCOPE_api
-    })
-    .authorities(new SimpleGrantedAuthority("ROLE_USER"));
-}
 
 
   @Test @Order(1) @WithMockUser(username="test-user",roles={"USER"})
@@ -74,7 +60,7 @@ void create_shouldReturn201_withLocation_andBodyShape(CapturedOutput output) thr
 
   // 1) NICHT sofort assertEquals(201) – erst Response einsammeln:
   MvcResult res = mvc.perform(post("/v1/datasets")
-      .with(withJwtUser())               // ← hier!
+      .with(TestAuth.jwtUser())               // ← hier!
       .contentType(MediaType.APPLICATION_JSON)
       .content(body))
     .andReturn();
@@ -132,7 +118,7 @@ private UUID ensureDatasetExists() throws Exception {
   String body = om.writeValueAsString(payload);
 
   MvcResult res = mvc.perform(post("/v1/datasets")
-        .with(withJwtUser())
+        .with(TestAuth.jwtUser())
         .contentType(MediaType.APPLICATION_JSON)
         .content(body))
       .andReturn();
@@ -157,7 +143,7 @@ void getById_shouldReturn200_andConsistentBody() throws Exception {
     UUID id = ensureDatasetExists();
 
   MvcResult res = mvc.perform(get("/v1/datasets/{id}", id)
-        .with(withJwtUser()))
+        .with(TestAuth.jwtUser()))
       .andExpect(status().isOk())
       .andReturn();
 
@@ -181,7 +167,7 @@ void list_shouldBePaged_andSortedByCreatedAtDesc() throws Exception {
   UUID id = ensureDatasetExists();
 
   MvcResult res = mvc.perform(get("/v1/datasets?page=0&size=5&sort=createdAt,desc")
-        .with(withJwtUser()))
+        .with(TestAuth.jwtUser()))
       .andExpect(status().isOk())
       .andReturn();
 
