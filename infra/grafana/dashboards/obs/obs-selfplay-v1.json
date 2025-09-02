@@ -1,0 +1,67 @@
+{
+  "id": null,
+  "uid": "obs-selfplay-v1",
+  "title": "Self-Play — v1",
+  "timezone": "",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": {"from": "now-6h", "to": "now"},
+  "templating": {"list": []},
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Games/s",
+      "targets": [
+        {"expr": "sum(rate(chs_selfplay_games_total[5m]))", "refId": "A"}
+      ],
+      "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8}
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Win-Rate %",
+      "targets": [
+        {"expr": "100 * (sum(increase(chs_selfplay_games_total{result=\"win\"}[1h])) / sum(increase(chs_selfplay_games_total[1h])))", "refId": "A"}
+      ],
+      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8}
+    },
+    {
+      "id": 3,
+      "type": "gauge",
+      "title": "Elo Estimate",
+      "targets": [
+        {"expr": "max(chs_selfplay_elo_estimate)", "refId": "A"}
+      ],
+      "gridPos": {"x": 0, "y": 8, "w": 6, "h": 8}
+    },
+    {
+      "id": 4,
+      "type": "gauge",
+      "title": "Queue Depth",
+      "targets": [
+        {"expr": "max(chs_selfplay_queue_depth)", "refId": "A"}
+      ],
+      "gridPos": {"x": 6, "y": 8, "w": 6, "h": 8}
+    },
+    {
+      "id": 5,
+      "type": "heatmap",
+      "title": "Move Time",
+      "targets": [
+        {"expr": "rate(chs_selfplay_move_time_seconds_bucket[5m])", "refId": "A"}
+      ],
+      "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8}
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Errors",
+      "targets": [
+        {"expr": "sum(increase(chs_selfplay_errors_total[1h])) by (type)", "refId": "A"}
+      ],
+      "gridPos": {"x": 0, "y": 16, "w": 24, "h": 8}
+    }
+  ]
+}

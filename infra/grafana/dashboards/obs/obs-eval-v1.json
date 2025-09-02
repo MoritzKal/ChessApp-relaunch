@@ -1,0 +1,67 @@
+{
+  "id": null,
+  "uid": "obs-eval-v1",
+  "title": "Offline Eval — v1",
+  "timezone": "",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": {"from": "now-6h", "to": "now"},
+  "templating": {"list": []},
+  "panels": [
+    {
+      "id": 1,
+      "type": "gauge",
+      "title": "val_loss",
+      "targets": [
+        {"expr": "max(chs_eval_last_val_loss)", "refId": "A"}
+      ],
+      "gridPos": {"x": 0, "y": 0, "w": 8, "h": 8}
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "val_acc_top1",
+      "targets": [
+        {"expr": "max(chs_eval_last_val_acc_top1)", "refId": "A"}
+      ],
+      "gridPos": {"x": 8, "y": 0, "w": 8, "h": 8}
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "val_acc_top3",
+      "targets": [
+        {"expr": "max(chs_eval_last_val_acc_top3)", "refId": "A"}
+      ],
+      "gridPos": {"x": 16, "y": 0, "w": 8, "h": 8}
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "ece",
+      "targets": [
+        {"expr": "max(chs_eval_last_ece)", "refId": "A"}
+      ],
+      "gridPos": {"x": 0, "y": 8, "w": 8, "h": 8}
+    },
+    {
+      "id": 5,
+      "type": "heatmap",
+      "title": "Eval Duration",
+      "targets": [
+        {"expr": "rate(chs_eval_runtime_seconds_bucket[5m])", "refId": "A"}
+      ],
+      "gridPos": {"x": 8, "y": 8, "w": 8, "h": 8}
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Errors",
+      "targets": [
+        {"expr": "sum(increase(chs_eval_errors_total[6h])) by (type)", "refId": "A"}
+      ],
+      "gridPos": {"x": 16, "y": 8, "w": 8, "h": 8}
+    }
+  ]
+}
