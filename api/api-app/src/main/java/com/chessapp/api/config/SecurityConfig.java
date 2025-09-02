@@ -50,6 +50,7 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/prometheus").hasAnyAuthority("ROLE_ADMIN", "ROLE_MONITORING", "SCOPE_monitoring")
                         .requestMatchers("/actuator/**").authenticated()
                         .requestMatchers("/v1/selfplay/**").hasAuthority("SCOPE_selfplay")
+                        .requestMatchers("/v1/evaluations/**").hasAuthority("SCOPE_eval")
                         .requestMatchers("/v1/**").authenticated()
                         .anyRequest().permitAll()
                 )

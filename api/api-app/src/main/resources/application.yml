@@ -63,3 +63,5 @@ chess:
         ingest: ingest
 selfplayRunner:
   baseUrl: ${SELFPLAY_RUNNER_BASEURL:http://selfplay-runner:8011}
+evalOffline:
+  baseUrl: ${EVAL_OFFLINE_BASEURL:http://eval-offline:8012}

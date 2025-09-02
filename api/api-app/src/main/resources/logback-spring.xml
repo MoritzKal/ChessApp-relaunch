@@ -12,6 +12,7 @@
           <includeMdcKey>run_id</includeMdcKey>
           <includeMdcKey>dataset_id</includeMdcKey>
           <includeMdcKey>model_id</includeMdcKey>
+          <includeMdcKey>eval_id</includeMdcKey>
           <includeMdcKey>username</includeMdcKey>
           <includeMdcKey>component</includeMdcKey>
           <includeMdcKey>route</includeMdcKey>
