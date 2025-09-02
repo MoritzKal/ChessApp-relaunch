@@ -20,6 +20,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 
 @SpringBootTest
@@ -49,7 +50,7 @@ class EvalControllerIT {
 
     @Test
     void postEvalHappyPath() throws Exception {
-        wm.stubFor(post("/runner/eval/start")
+        wm.stubFor(WireMock.post("/runner/eval/start")
                 .withHeader("Idempotency-Key", equalTo("abc"))
                 .willReturn(aResponse().withStatus(202)
                         .withBody("{\"evalId\":\"" + UUID.randomUUID() + "\"}")));
@@ -68,7 +69,7 @@ class EvalControllerIT {
 
     @Test
     void getEvalHappyPath() throws Exception {
-        wm.stubFor(get(urlEqualTo("/runner/eval/123"))
+        wm.stubFor(WireMock.get(urlEqualTo("/runner/eval/123"))
                 .willReturn(aResponse().withStatus(200)
                         .withBody("{\"evalId\":\"123\",\"status\":\"running\"}")));
 
@@ -93,7 +94,7 @@ class EvalControllerIT {
 
     @Test
     void rateLimit() throws Exception {
-        wm.stubFor(get(urlMatching("/runner/eval/.*"))
+        wm.stubFor(WireMock.get(urlMatching("/runner/eval/.*"))
                 .willReturn(aResponse().withStatus(200).withBody("{}")));
         for (int i = 0; i < 60; i++) {
             mvc.perform(get("/v1/evaluations/" + i)
@@ -107,7 +108,7 @@ class EvalControllerIT {
 
     @Test
     void upstream500Returns503() throws Exception {
-        wm.stubFor(get(urlEqualTo("/runner/eval/err"))
+        wm.stubFor(WireMock.get(urlEqualTo("/runner/eval/err"))
                 .willReturn(aResponse().withStatus(500)));
         mvc.perform(get("/v1/evaluations/err")
                 .with(jwt().jwt(j -> j.claim("scope", "eval").claim("preferred_username", "bob"))))

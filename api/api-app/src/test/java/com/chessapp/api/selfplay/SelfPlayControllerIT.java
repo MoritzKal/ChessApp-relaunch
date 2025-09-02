@@ -20,6 +20,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 
 @SpringBootTest
@@ -49,7 +50,7 @@ class SelfPlayControllerIT {
 
     @Test
     void postRunHappyPath() throws Exception {
-        wm.stubFor(post("/runner/selfplay/start")
+        wm.stubFor(WireMock.post("/runner/selfplay/start")
                 .withHeader("Idempotency-Key", equalTo("abc"))
                 .willReturn(aResponse().withStatus(201)
                         .withBody("{\"runId\":\"" + UUID.randomUUID() + "\"}")));
@@ -68,7 +69,7 @@ class SelfPlayControllerIT {
 
     @Test
     void getRunHappyPath() throws Exception {
-        wm.stubFor(get(urlEqualTo("/runner/selfplay/runs/123"))
+        wm.stubFor(WireMock.get(urlEqualTo("/runner/selfplay/runs/123"))
                 .willReturn(aResponse().withStatus(200)
                         .withBody("{\"runId\":\"123\",\"status\":\"running\"}")));
 
@@ -93,7 +94,7 @@ class SelfPlayControllerIT {
 
     @Test
     void rateLimit() throws Exception {
-        wm.stubFor(get(urlMatching("/runner/selfplay/runs/.*"))
+        wm.stubFor(WireMock.get(urlMatching("/runner/selfplay/runs/.*"))
                 .willReturn(aResponse().withStatus(200).withBody("{}")));
         for (int i = 0; i < 60; i++) {
             mvc.perform(get("/v1/selfplay/runs/" + i)
@@ -107,7 +108,7 @@ class SelfPlayControllerIT {
 
     @Test
     void upstream500Returns502() throws Exception {
-        wm.stubFor(get(urlEqualTo("/runner/selfplay/runs/err"))
+        wm.stubFor(WireMock.get(urlEqualTo("/runner/selfplay/runs/err"))
                 .willReturn(aResponse().withStatus(500)));
         mvc.perform(get("/v1/selfplay/runs/err")
                 .with(jwt().jwt(j -> j.claim("scope", "selfplay").claim("preferred_username", "bob"))))
