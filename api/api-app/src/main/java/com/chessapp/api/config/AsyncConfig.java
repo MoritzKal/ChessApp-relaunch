@@ -19,6 +19,7 @@ public class AsyncConfig implements AsyncConfigurer {
         ex.setMaxPoolSize(8);
         ex.setQueueCapacity(200);
         ex.setThreadNamePrefix("ingest-");
+        ex.setTaskDecorator(new MdcTaskDecorator());
         ex.initialize();
         return ex;
     }
