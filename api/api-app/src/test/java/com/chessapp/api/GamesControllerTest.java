@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.http.MediaType;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import com.chessapp.api.testutil.TestAuth;
 
 import com.chessapp.api.domain.entity.Game;
 import com.chessapp.api.domain.entity.GameResult;
@@ -75,22 +76,22 @@ class GamesControllerTest extends com.chessapp.api.testutil.AbstractIntegrationT
         p2.setSideToMove(Color.BLACK);
         positionRepository.save(p2);
 
-        mockMvc.perform(get("/v1/games").param("username", "M3NG00S3"))
+        mockMvc.perform(get("/v1/games").param("username", "M3NG00S3").with(TestAuth.jwtUser()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(g.getId().toString()));
 
-        mockMvc.perform(get("/v1/games/" + g.getId()))
+        mockMvc.perform(get("/v1/games/" + g.getId()).with(TestAuth.jwtUser()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.pgnRaw").value("pgn"));
 
-        mockMvc.perform(get("/v1/games/" + g.getId() + "/positions"))
+        mockMvc.perform(get("/v1/games/" + g.getId() + "/positions").with(TestAuth.jwtUser()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].ply").value(1));
     }
 
     @Test
     void list_withoutUsername_returns400WithHelpfulMessage() throws Exception {
-        mockMvc.perform(get("/v1/games").param("limit", "5"))
+        mockMvc.perform(get("/v1/games").param("limit", "5").with(TestAuth.jwtUser()))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(content().string(containsString("username")));

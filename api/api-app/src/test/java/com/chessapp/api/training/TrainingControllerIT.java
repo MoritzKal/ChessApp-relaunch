@@ -4,21 +4,26 @@ import com.chessapp.api.training.api.TrainingStartRequest;
 import com.chessapp.api.training.service.MlClient;
 import com.chessapp.api.training.service.TrainingService;
 import com.chessapp.api.testutil.AbstractIntegrationTest;
+import com.chessapp.api.testutil.TestAuth;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import java.util.Map;
 import java.util.UUID;
 
 @SpringBootTest(
         properties = {"logging.config=classpath:logback-spring.xml"},
-        classes = com.chessapp.api.codex.CodexApplication.class,
-        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
+        classes = com.chessapp.api.codex.CodexApplication.class
 )
+@AutoConfigureMockMvc
 class TrainingControllerIT extends AbstractIntegrationTest {
 
     @TestConfiguration
@@ -35,27 +40,32 @@ class TrainingControllerIT extends AbstractIntegrationTest {
         }
     }
 
-    @Autowired
-    TrainingService service;
-
-    @Autowired
-    TestRestTemplate rest;
+    @Autowired TrainingService service;
+    @Autowired MockMvc mvc;
+    @Autowired ObjectMapper om;
 
     @Test
-    void start_and_status_ok() {
+    void start_and_status_ok() throws Exception {
         var req = new TrainingStartRequest(null, "policy_tiny", Map.of("epochs",2,"stepsPerEpoch",3,"lr",1e-3));
-        var startResp = rest.postForEntity("/v1/trainings", req, Map.class);
-        org.assertj.core.api.Assertions.assertThat(startResp.getStatusCode().value()).isEqualTo(202);
-        @SuppressWarnings("unchecked")
-        String runId = String.valueOf(((Map<String,Object>) java.util.Objects.requireNonNull(startResp.getBody())).get("runId"));
+        String body = om.writeValueAsString(req);
+        MvcResult start = mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/v1/trainings")
+                        .with(TestAuth.jwtUser())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isAccepted())
+                .andReturn();
 
-        var statusResp = rest.getForEntity("/v1/trainings/{id}", Map.class, runId);
-        org.assertj.core.api.Assertions.assertThat(statusResp.getStatusCode().value()).isEqualTo(200);
+        String runId = String.valueOf(om.readTree(start.getResponse().getContentAsString()).get("runId").asText());
+
+        MvcResult status = mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/v1/trainings/{id}", runId)
+                        .with(TestAuth.jwtUser()))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+                .andReturn();
+
+        Map<?,?> resp = om.readValue(status.getResponse().getContentAsString(), Map.class);
+        org.assertj.core.api.Assertions.assertThat(resp.get("status")).isEqualTo("succeeded");
         @SuppressWarnings("unchecked")
-        Map<String,Object> body = (Map<String,Object>) java.util.Objects.requireNonNull(statusResp.getBody());
-        org.assertj.core.api.Assertions.assertThat(body.get("status")).isEqualTo("succeeded");
-        @SuppressWarnings("unchecked")
-        Map<String,Object> metrics = (Map<String,Object>) body.get("metrics");
+        Map<String,Object> metrics = (Map<String,Object>) resp.get("metrics");
         org.assertj.core.api.Assertions.assertThat(metrics).isNotNull();
         org.assertj.core.api.Assertions.assertThat(metrics.containsKey("loss")).isTrue();
         org.assertj.core.api.Assertions.assertThat(metrics.containsKey("val_acc")).isTrue();
