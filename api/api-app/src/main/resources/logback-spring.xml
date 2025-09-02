@@ -8,7 +8,13 @@
         <threadName/>
         <message/>
         <logLevel/>
-        <mdc/>
+        <mdc>
+          <includeMdcKey>run_id</includeMdcKey>
+          <includeMdcKey>dataset_id</includeMdcKey>
+          <includeMdcKey>model_id</includeMdcKey>
+          <includeMdcKey>username</includeMdcKey>
+          <includeMdcKey>component</includeMdcKey>
+        </mdc>
         <context/>
         <stackTrace/>
       </providers>
