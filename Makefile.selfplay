@@ -1,0 +1,19 @@
+COMPOSE=infra/compose.selfplay.yml
+
+up:
+	docker compose -f $(COMPOSE) up -d --build
+
+down:
+	docker compose -f $(COMPOSE) down -v
+
+logs:
+	docker compose -f $(COMPOSE) logs -f
+
+ps:
+	docker compose -f $(COMPOSE) ps
+
+curl:
+	curl -s localhost:8011/healthz && echo && curl -s localhost:8012/healthz || true
+
+rebuild:
+	docker compose -f $(COMPOSE) up -d --build --force-recreate
