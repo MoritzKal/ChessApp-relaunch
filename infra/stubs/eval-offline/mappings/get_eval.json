@@ -1,0 +1,8 @@
+{ "request": { "method": "GET", "urlPattern": "/runner/eval/.*" },
+  "response": { "status": 200, "headers":{"Content-Type":"application/json"},
+    "jsonBody": {
+      "evalId": "{{request.pathSegments.[2]}}",
+      "status": "SUCCEEDED",
+      "metrics": {"val_loss": 0.42, "val_acc_top1": 0.73, "ece": 0.02},
+      "reportUri": "s3://reports/eval/{{request.pathSegments.[2]}}/report.json"
+    } } }

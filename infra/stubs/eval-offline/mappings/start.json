@@ -1,0 +1,3 @@
+{ "request": { "method": "POST", "urlPath": "/runner/eval/start" },
+  "response": { "status": 202, "headers": {"Content-Type":"application/json"},
+    "jsonBody": { "evalId": "eval-mock" } } }

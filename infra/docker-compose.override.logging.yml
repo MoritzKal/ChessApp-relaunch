@@ -1,0 +1,4 @@
+services:
+  api:
+    environment:
+      LOGGING_CONFIG: classpath:logback-spring.xml

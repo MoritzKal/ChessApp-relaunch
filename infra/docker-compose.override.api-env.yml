@@ -1,0 +1,7 @@
+services:
+  api:
+    environment:
+      SELFPLAY_RUNNER_URL: http://host.docker.internal:8011
+      EVAL_RUNNER_URL: http://host.docker.internal:8012
+    ports:
+      - "8080:8080"
