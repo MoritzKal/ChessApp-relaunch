@@ -1,12 +1,19 @@
 package com.chessapp.api.models;
 
+import com.chessapp.api.support.JwtTestUtils;
 import com.chessapp.api.testutil.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -18,6 +25,16 @@ import com.chessapp.api.testutil.TestAuth;
 @ActiveProfiles("codex")
 class ModelsControllerIT extends AbstractIntegrationTest {
   @Autowired MockMvc mvc;
+  @Value("${app.security.jwt.secret}") String secret;
+
+  private String authHeader() {
+    String token = JwtTestUtils.signHmac256(secret, Map.of(
+        "preferred_username", "user1",
+        "roles", List.of("USER", "MONITORING"),
+        "scope", "api.read"),
+        Duration.ofMinutes(5));
+    return "Bearer " + token;
+  }
 
   @Test void listModels_returns200AndFields() throws Exception {
     mvc.perform(get("/v1/models").with(TestAuth.jwtUser()))

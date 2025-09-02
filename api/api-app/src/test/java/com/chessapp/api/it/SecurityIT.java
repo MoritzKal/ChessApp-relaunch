@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Duration;
@@ -60,6 +61,9 @@ class SecurityIT {
 
     @Test
     void prometheus_requires_monitoring_role() throws Exception {
+        mockMvc.perform(get("/actuator/prometheus"))
+                .andExpect(status().isUnauthorized());
+
         String userToken = JwtTestUtils.signHmac256(secret, Map.of(
                 "sub", "user1",
                 "roles", List.of("USER")), Duration.ofMinutes(5));
@@ -72,6 +76,13 @@ class SecurityIT {
                 "roles", List.of("MONITORING")), Duration.ofMinutes(5));
         mockMvc.perform(get("/actuator/prometheus")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + monitoringToken))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("# HELP")));
+    }
+
+    @Test
+    void health_is_public() throws Exception {
+        mockMvc.perform(get("/actuator/health"))
                 .andExpect(status().isOk());
     }
 

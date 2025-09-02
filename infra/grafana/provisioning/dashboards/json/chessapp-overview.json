@@ -1,6 +1,6 @@
 {
   "id": null,
-  "uid": "chs-overview",
+  "uid": "chs-overview-v1",
   "title": "ChessApp – Overview",
   "timezone": "browser",
   "schemaVersion": 39,
@@ -210,6 +210,48 @@
       "title": "Predict by Version \u2192",
       "gridPos": { "x": 0, "y": 37, "w": 6, "h": 4 },
       "options": { "content": "[Predict by Version \u2192](/d/predict-by-version)" }
+    },
+    {
+      "uid": "p_reqmin",
+      "type": "timeseries",
+      "title": "Requests/min",
+      "gridPos": { "x": 0, "y": 57, "w": 8, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(rate(http_server_requests_seconds_count{outcome!~\"REDIRECTION\"}[1m]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "uid": "p_p95",
+      "type": "timeseries",
+      "title": "p95 Latency",
+      "gridPos": { "x": 8, "y": 57, "w": 8, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket[5m])))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "uid": "p_errratio",
+      "type": "timeseries",
+      "title": "Error Ratio",
+      "gridPos": { "x": 16, "y": 57, "w": 8, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(rate(http_server_requests_seconds_count{status=~\"5..\"}[5m])) / sum(rate(http_server_requests_seconds_count[5m]))",
+          "refId": "A"
+        }
+      ]
     }
   ]
 }
