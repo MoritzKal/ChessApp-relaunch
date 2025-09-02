@@ -17,6 +17,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.chessapp.api.config.RateLimitConfig;
+
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Bucket4j;
@@ -27,6 +29,11 @@ import io.github.bucket4j.Refill;
 public class SelfPlayRateLimitFilter extends OncePerRequestFilter {
 
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
+    private final RateLimitConfig config;
+
+    public SelfPlayRateLimitFilter(RateLimitConfig config) {
+        this.config = config;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -38,8 +45,9 @@ public class SelfPlayRateLimitFilter extends OncePerRequestFilter {
         }
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String key = auth != null ? auth.getName() : request.getRemoteAddr();
+        int limit = config.getSelfplayPerMin();
         Bucket bucket = buckets.computeIfAbsent(key, k -> Bucket4j.builder()
-                .addLimit(Bandwidth.classic(60, Refill.greedy(60, Duration.ofMinutes(1))))
+                .addLimit(Bandwidth.classic(limit, Refill.greedy(limit, Duration.ofMinutes(1))))
                 .build());
         if (bucket.tryConsume(1)) {
             filterChain.doFilter(request, response);

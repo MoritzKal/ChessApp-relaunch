@@ -29,6 +29,7 @@ management:
     metrics:
       export:
         enabled: true
+  metrics.web.server.request.autotime.enabled: true
 logging:
   level:
     root: INFO
