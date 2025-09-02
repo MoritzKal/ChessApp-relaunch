@@ -1,8 +1,6 @@
 name: selfplay-eval
 
-on:
-  pull_request:
-    branches: [main]
+
 
 jobs:
   build-runner:
