@@ -1,0 +1,16 @@
+version: "3.9"
+services:
+  serve:
+    container_name: chessapp-serve
+    build:
+      context: ../
+      dockerfile: ml/serve/Dockerfile
+    ports:
+      - "8001:8001"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/metrics').read()"]
+      interval: 10s
+      timeout: 2s
+      retries: 5
+      start_period: 5s

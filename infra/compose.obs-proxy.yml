@@ -1,0 +1,30 @@
+version: "3.8"
+services:
+  obs-proxy:
+    build:
+      context: ../gateway/obs-proxy
+    image: chessapp/obs-proxy:dev
+    container_name: obs-proxy
+    environment:
+      - PROM_BASE_URL=${PROM_BASE_URL:-http://prometheus:9090}
+      - LOKI_BASE_URL=${LOKI_BASE_URL:-http://loki:3100}
+      - OBS_API_KEY=${OBS_API_KEY:-}
+      - CORS_ALLOW_ORIGINS=${CORS_ALLOW_ORIGINS:-http://localhost:5173}
+      - RATE_LIMIT=${RATE_LIMIT:-60/minute}
+      - TIMEOUT_SECONDS=${TIMEOUT_SECONDS:-3.0}
+      - RETRIES=${RETRIES:-2}
+    ports:
+      - "8088:8088"
+    restart: unless-stopped
+    networks:
+      - chs_net
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8088/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5

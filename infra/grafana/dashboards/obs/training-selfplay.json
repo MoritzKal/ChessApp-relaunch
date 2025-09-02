@@ -1,0 +1,40 @@
+{
+  "uid": "obs-train-v1",
+  "title": "ChessApp – Training & Self-Play (v1)",
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Training Loss",
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "chs_training_loss" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Samples/sec",
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "chs_training_throughput_samples_per_sec" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Self-Play Games/min",
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "chs_selfplay_games_per_min" }
+      ]
+    },
+    {
+      "type": "logs",
+      "title": "Training Errors",
+      "datasource": "Loki",
+      "targets": [
+        { "expr": "{component=\"training\"} |= \"ERROR\"" }
+      ]
+    }
+  ]
+}
