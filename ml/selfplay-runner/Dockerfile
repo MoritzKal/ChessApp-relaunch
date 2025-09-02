@@ -5,9 +5,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 
 RUN pip install --no-cache-dir uv
 COPY pyproject.toml .
-RUN uv pip install --system -r pyproject.toml
-
 COPY app ./app
+RUN uv pip install --system -e .
 
 RUN useradd -m appuser
 USER appuser
