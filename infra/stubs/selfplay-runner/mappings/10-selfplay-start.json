@@ -1,0 +1,2 @@
+{ "request": { "method": "POST", "urlPath": "/runner/selfplay/start" },
+  "response": { "status": 202, "headers": { "Content-Type":"application/json" }, "jsonBody": { "runId": "stub-run-1" } } }

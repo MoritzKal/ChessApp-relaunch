@@ -1,11 +1,23 @@
+version: "3.9"
 services:
   selfplay-runner:
-    image: wiremock/wiremock:2.35.0
-    command: ["--port","8011","--verbose","--global-response-templating","--disable-request-logging"]
-    ports: ["8011:8011"]
-    volumes: ["./infra/stubs/selfplay-runner:/home/wiremock"]
+    image: wiremock/wiremock:3.3.1
+    container_name: chs_selfplay_runner
+    ports: ["8011:8080"]
+    volumes: [ "./stubs/selfplay-runner:/home/wiremock" ]
+    healthcheck:
+      test: ["CMD","wget","-qO-","http://localhost:8080/healthz"]
+      interval: 5s
+      timeout: 2s
+      retries: 20
+
   eval-offline:
-    image: wiremock/wiremock:2.35.0
-    command: ["--port","8012","--verbose","--global-response-templating","--disable-request-logging"]
-    ports: ["8012:8012"]
-    volumes: ["./infra/stubs/eval-offline:/home/wiremock"]
+    image: wiremock/wiremock:3.3.1
+    container_name: chs_eval_offline
+    ports: ["8012:8080"]
+    volumes: [ "./stubs/eval-offline:/home/wiremock" ]
+    healthcheck:
+      test: ["CMD","wget","-qO-","http://localhost:8080/healthz"]
+      interval: 5s
+      timeout: 2s
+      retries: 20

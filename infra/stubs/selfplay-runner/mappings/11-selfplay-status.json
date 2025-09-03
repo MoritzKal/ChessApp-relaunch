@@ -1,0 +1,3 @@
+{ "request": { "method": "GET", "urlPathPattern": "/runner/selfplay/runs/.*" },
+  "response": { "status": 200, "headers": { "Content-Type":"application/json" },
+    "jsonBody": { "status": "SUCCEEDED", "gamesPlayed": 100, "wins": 52, "losses": 48 } } }

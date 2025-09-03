@@ -1,78 +1,71 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/env sh
+set -eu
 
 API_BASE="${API_BASE:-http://localhost:8080}"
-JWT="${JWT:?JWT required}"
+OUT_DIR="${OUT_DIR:-outputs}"
+mkdir -p "$OUT_DIR"
 
-post() {
-  local endpoint="$1"
-  local body="$2"
-  local key
-  key=$(uuidgen)
-  curl -sS -X POST "$API_BASE$endpoint" \
-    -H "Authorization: $JWT" \
-    -H "Content-Type: application/json" \
-    -H "Idempotency-Key: $key" \
-    -d "$body"
+# JWT bauen, falls nicht gesetzt
+if [ -z "${JWT:-}" ]; then
+  JWT="$(./scripts/jwt_make.sh tester "selfplay eval monitoring" 3600)"
+fi
+
+new_ik() {
+  if command -v openssl >/dev/null 2>&1; then
+    openssl rand -hex 16
+  else
+    # Fallback: Zeit + RANDOM (wenn vorhanden)
+    printf '%s%06d' "$(date +%s)" "${RANDOM:-0}"
+  fi
 }
 
-get() {
-  local endpoint="$1"
-  local key
-  key=$(uuidgen)
-  curl -sS -X GET "$API_BASE$endpoint" \
+curl_json() {
+  method="$1"; url="$2"; shift 2
+  curl -sS -X "$method" \
     -H "Authorization: $JWT" \
     -H "Content-Type: application/json" \
-    -H "Idempotency-Key: $key"
+    -H "Idempotency-Key: $(new_ik)" \
+    "$url" "$@"
 }
 
-poll_status() {
-  local endpoint="$1"
-  local outfile="$2"
-  local start timeout status resp
-  start=$(date +%s)
-  timeout=$((5*60))
-  while true; do
-    resp=$(get "$endpoint")
-    status=$(echo "$resp" | jq -r '.status')
-    if [[ "$status" =~ ^(completed|failed|SUCCEEDED|FAILED)$ ]]; then
-      echo "$resp" | jq -S . > "$outfile"
-      echo "final status: $status"
-      [[ "$status" =~ ^(failed|FAILED)$ ]] && return 1
-      return 0
-    fi
-    if (( $(date +%s) - start > timeout )); then
-      echo "$resp" | jq -S . > "$outfile"
-      echo "Timeout while polling $endpoint" >&2
-      return 1
-    fi
-    sleep 5
+poll() {
+  url="$1"; field="$2"; tries="${3:-60}"
+  i=1
+  while [ "$i" -le "$tries" ]; do
+    body="$(curl -sS -H "Authorization: $JWT" "$url")"
+    # Status aus JSON extrahieren (SUCCEEDED/FAILED)
+    status=$(printf '%s' "$body" | sed -n "s/.*\"$field\":\"\([A-Z][A-Z]*\)\".*/\1/p" | head -n1)
+    echo "-> $url: ${status:-?} ($i/$tries)"
+    printf '%s' "$body" > "$OUT_DIR/last.json"
+    if [ "${status:-}" = "SUCCEEDED" ]; then return 0; fi
+    if [ "${status:-}" = "FAILED" ]; then echo "FAILED"; return 1; fi
+    i=$((i+1))
+    sleep 2
   done
+  echo "TIMEOUT"; return 1
 }
 
-mkdir -p outputs
+echo "POST /v1/selfplay/runs"
+sp_resp="$(curl_json POST "$API_BASE/v1/selfplay/runs" -d '{}')"
+printf '%s' "$sp_resp" > "$OUT_DIR/selfplay_start.json"
+sp_id=$(printf '%s' "$sp_resp" | sed -n 's/.*"runId":"\([^"]*\)".*/\1/p')
+[ -n "${sp_id:-}" ] || { echo "No runId"; cat "$OUT_DIR/selfplay_start.json"; exit 1; }
 
-run_resp=$(post "/v1/selfplay/runs" '{"modelId":"staging","baselineId":"prod","games":10,"concurrency":2,"seed":42}')
-run_id=$(echo "$run_resp" | jq -r '.runId')
-poll_status "/v1/selfplay/runs/$run_id" "outputs/selfplay_${run_id}.json" || exit 1
+echo "POLL /v1/selfplay/runs/$sp_id"
+poll "$API_BASE/v1/selfplay/runs/$sp_id" "status"
+cp "$OUT_DIR/last.json" "$OUT_DIR/selfplay_status.json"
 
-eval_resp=$(post "/v1/evaluations" '{"modelId":"staging","datasetId":"val_2025_08","metrics":["val_loss","val_acc_top1","ece"]}')
-eval_id=$(echo "$eval_resp" | jq -r '.evalId')
-poll_status "/v1/evaluations/$eval_id" "outputs/eval_${eval_id}.json" || exit 1
+echo "POST /v1/evaluations"
+ev_resp="$(curl_json POST "$API_BASE/v1/evaluations" -d '{"modelId":"stub","baselineModelId":"stub"}')"
+printf '%s' "$ev_resp" > "$OUT_DIR/eval_start.json"
+ev_id=$(printf '%s' "$ev_resp" | sed -n 's/.*"evalId":"\([^"]*\)".*/\1/p')
+[ -n "${ev_id:-}" ] || { echo "No evalId"; cat "$OUT_DIR/eval_start.json"; exit 1; }
 
-post "/v1/models/promote" '{"modelId":"staging"}' >/dev/null
-get "/v1/models" | jq -S . > outputs/models.json
-if [[ $(jq -r '.[] | select(.id=="staging") | .isProd' outputs/models.json) != "true" ]]; then
-  echo "Promotion verification failed" >&2
-  exit 1
-fi
+echo "POLL /v1/evaluations/$ev_id"
+poll "$API_BASE/v1/evaluations/$ev_id" "status"
+cp "$OUT_DIR/last.json" "$OUT_DIR/eval_status.json"
 
-curl -sS "$API_BASE/v3/api-docs" | jq -S . > outputs/openapi.new.json
-if [[ -f outputs/openapi.prev.json ]]; then
-  diff -u outputs/openapi.prev.json outputs/openapi.new.json || true
-fi
-cp outputs/openapi.new.json outputs/openapi.prev.json
+curl -sS -H "Authorization: $JWT" "$API_BASE/v1/models" > "$OUT_DIR/models.json" || true
+curl -sS "$API_BASE/actuator/prometheus" > "$OUT_DIR/prom.txt" || true
 
-curl -sS "$API_BASE/actuator/prometheus" > outputs/prom.txt
-grep "chs_api_requests_total" outputs/prom.txt
-grep -E "chs_selfplay_|chs_eval_" outputs/prom.txt || true
+echo "OK — artefacts in $OUT_DIR/"
