@@ -35,6 +35,9 @@ public class Model {
     @Column(name = "created_at")
     private Instant createdAt;
 
+    @Column(name = "is_prod", nullable = false)
+    private boolean isProd;
+
     // getters and setters
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
@@ -50,4 +53,6 @@ public class Model {
     public void setArtifactUri(String artifactUri) { this.artifactUri = artifactUri; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+    public boolean isProd() { return isProd; }
+    public void setProd(boolean prod) { isProd = prod; }
 }

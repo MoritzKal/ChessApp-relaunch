@@ -30,4 +30,8 @@ junit.xml
 ml/training/figures/
 mlruns/
 
+
 .m2_cache/**
+outputs/selfplay_start.body
+outputs/selfplay_start.hdrs
+outputs/selfplay_start.json

@@ -1,0 +1,128 @@
+services:
+  api:
+    container_name: chs_api
+    build:
+      context: ..
+      dockerfile: api/Dockerfile.dev
+    depends_on:
+      db:
+        condition: service_healthy
+      selfplay-runner:
+        condition: service_healthy
+      eval-offline:
+        condition: service_healthy
+    environment:
+      # ---- JWT: roh, nicht Base64; Singular-Property! ----
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWS_ALGORITHM: HS256
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_SECRET_KEY: dev-secret
+
+      # Optional (nur falls Dev-Bypass im Code genutzt wird):
+      APP_SECURITY_DEV_TOKEN_ENABLED: "true"
+      APP_SECURITY_JWT_SECRET: dev-secret
+
+      # ---- DB konsistent zum DB-Container ----
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/chess
+      SPRING_DATASOURCE_USERNAME: chess
+      SPRING_DATASOURCE_PASSWORD: chess
+
+      # ---- Runner/Eval ----
+      RUNNER_SELFPLAY_BASEURL: http://selfplay-runner:8080
+      RUNNER_EVAL_BASEURL: http://eval-offline:8080
+
+      # ---- Logging/Docs (optional, wie gehabt) ----
+      LOGGING_CONFIG: classpath:logback-spring.xml
+      SPRINGDOC_SWAGGER_UI_URL: /v3/api-docs/v1
+
+      # ---- Aufräumen: Doppelkonfiguration vermeiden ----
+      # SPRING_APPLICATION_JSON:  # bitte entfernen
+
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 3s
+      retries: 60
+    ports:
+      - "8080:8080"
+    networks: [chs_net]
+    restart: unless-stopped
+
+  selfplay-runner:
+    image: wiremock/wiremock:3.7.0
+    container_name: chs_selfplay_runner
+    command: ["--port", "8080", "--verbose", "--global-response-templating"]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/__admin"]
+      interval: 5s
+    networks: [chs_net]
+    restart: unless-stopped
+
+  eval-offline:
+    image: wiremock/wiremock:3.7.0
+    container_name: chs_eval_offline
+    command: ["--port", "8080", "--verbose", "--global-response-templating"]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/__admin"]
+      interval: 5s
+    networks: [chs_net]
+    restart: unless-stopped
+
+  db:
+    image: postgres:16
+    container_name: chs_db
+    environment:
+      POSTGRES_DB: chess
+      POSTGRES_USER: chess
+      POSTGRES_PASSWORD: chess
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chess"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    ports:
+      - "5432:5432"
+    networks: [chs_net]
+    restart: unless-stopped
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  minio:
+    # (falls in der Basisdatei fehlt, hier ergänzen – ansonsten weglassen)
+    image: minio/minio:latest
+    container_name: chs_minio
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: chs_minio
+      MINIO_ROOT_PASSWORD: chs_minio_password_change_me
+    ports: ["9000:9000","9001:9001"]
+    networks: [chs_net]
+    volumes:
+      - minio-data:/data
+
+  create-buckets:
+    image: minio/mc:latest
+    container_name: chs_minio_mc
+    depends_on:
+      minio:
+        condition: service_started
+    entrypoint: >
+      /bin/sh -c '
+        until (/usr/bin/mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} >/dev/null 2>&1);
+        do echo "...waiting for minio"; sleep 2; done &&
+        /usr/bin/mc mb -p local/datasets || true &&
+        /usr/bin/mc mb -p local/models || true &&
+        /usr/bin/mc mb -p local/reports || true &&
+        /usr/bin/mc mb -p local/logs || true &&
+        /usr/bin/mc mb -p local/mlflow || true &&
+        /usr/bin/mc anonymous set public local/mlflow || true &&
+        echo "MinIO buckets ready"
+      '
+    environment:
+      MINIO_ROOT_USER: chs_minio
+      MINIO_ROOT_PASSWORD: chs_minio_password_change_me
+    networks: [chs_net]
+
+networks:
+  chs_net: {}
+
+volumes:
+  db-data: {}
+  minio-data: {}

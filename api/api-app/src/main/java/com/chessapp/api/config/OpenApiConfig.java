@@ -21,7 +21,9 @@ public class OpenApiConfig {
                 .packagesToScan(
                         "com.chessapp.api.web",
                         "com.chessapp.api.models.api",
-                        "com.chessapp.api.serving")
+                        "com.chessapp.api.serving",
+                        "com.chessapp.api.selfplay.api",
+                        "com.chessapp.api.eval.api")
                 .pathsToMatch("/v1/**")
                 .build();
     }

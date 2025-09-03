@@ -1,0 +1,3 @@
+{ "request": { "method": "POST", "urlPath": "/runner/selfplay/start" },
+  "response": { "status": 201, "headers": {"Content-Type":"application/json"},
+    "jsonBody": { "runId": "run-mock" } } }

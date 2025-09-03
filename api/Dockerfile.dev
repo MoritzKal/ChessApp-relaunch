@@ -1,0 +1,23 @@
+# --- Build stage ---
+FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /build
+# Nur das api-Repo kopieren (besseres Caching)
+COPY api /build/api
+# API-App-Modul bauen (Domain wird mitgebaut über -am)
+RUN mvn -q -f api/pom.xml -pl api-app -am -DskipTests package
+
+# --- Runtime stage ---
+FROM eclipse-temurin:21-jre
+WORKDIR /opt/app
+# Fat Jar der App ins Runtime-Image kopieren
+COPY --from=build /build/api/api-app/target/*.jar /opt/app/app.jar
+# Standard-Profil für lokale Dev
+ENV SPRING_PROFILES_ACTIVE=codex
+EXPOSE 8080
+# Java startet die Spring Boot App (Compose liefert weitere ENV wie SPRING_APPLICATION_JSON)
+ENTRYPOINT ["sh","-lc","exec java \
+  -Dlogging.config=classpath:logback-codex.xml \
+  -Dspring.security.oauth2.resourceserver.jwt.jws-algorithm=HS256 \
+  -jar /opt/app/app.jar"]
+
+  

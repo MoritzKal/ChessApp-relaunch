@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  api:
+    container_name: chs_api
+    build:
+      context: ..
+      dockerfile: api/Dockerfile.dev
+    environment:
+      SPRING_PROFILES_ACTIVE: codex
+      JWT_SECRET: ${JWT_SECRET:-dev-secret}  # für dein Script/jwt_make.sh
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWS_ALGORITHMS: HS256
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_SECRET_KEY: ZGV2LXNlY3JldA==  # base64("dev-secret")
+      SPRING_APPLICATION_JSON: |
+        {
+          "runner": {
+            "selfplay": { "baseUrl": "http://selfplay-runner:8080" },
+            "eval":     { "baseUrl": "http://eval-offline:8080" }
+          }
+        }
+    ports: ["8080:8080"]
+    depends_on:
+      selfplay-runner: { condition: service_healthy }
+      eval-offline:    { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 40
+    volumes:
+      - ../.m2_cache:/root/.m2

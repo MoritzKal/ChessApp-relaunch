@@ -29,6 +29,7 @@ management:
     metrics:
       export:
         enabled: true
+  metrics.web.server.request.autotime.enabled: true
 logging:
   level:
     root: INFO
@@ -61,3 +62,8 @@ chess:
         reports: reports
       prefix:
         ingest: ingest
+clients:
+  selfplayRunner:
+    baseUrl: ${SELFPLAY_RUNNER_URL:http://selfplay-runner:8011}
+  evalOffline:
+    baseUrl: ${EVAL_RUNNER_URL:http://eval-offline:8012}

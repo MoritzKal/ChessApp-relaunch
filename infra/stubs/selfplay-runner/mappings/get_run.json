@@ -1,0 +1,9 @@
+{ "request": { "method": "GET", "urlPattern": "/runner/selfplay/runs/.*" },
+  "response": { "status": 200, "headers":{"Content-Type":"application/json"},
+    "jsonBody": {
+      "runId": "{{request.pathSegments.[3]}}",
+      "status": "SUCCEEDED",
+      "progress": {"played": 10, "total": 10},
+      "metrics": {"elo": 25, "winRate": 0.62},
+      "reportUri": "s3://reports/selfplay/{{request.pathSegments.[3]}}/report.json"
+    } } }

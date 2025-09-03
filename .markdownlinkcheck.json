@@ -2,6 +2,7 @@
   "ignorePatterns": [
     { "pattern": "^https?://(localhost|127\\.0\\.0\\.1|0\\.0\\.0\\.0|host\\.docker\\.internal)(:[0-9]+)?(/|$)" },
     { "pattern": "^https?://[^@]+@(localhost|127\\.0\\.0\\.1|0\\.0\\.0\\.0|host\\.docker\\.internal)(:[0-9]+)?(/|$)" },
-    { "pattern": "^/swagger-ui\\.html$" }
+    { "pattern": "^/swagger-ui\\.html" },
+    { "pattern": "^/v3/api-docs" }
   ]
 }

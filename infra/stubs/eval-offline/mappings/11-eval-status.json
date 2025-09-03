@@ -1,0 +1,3 @@
+{ "request": { "method": "GET", "urlPathPattern": "/runner/eval/.*" },
+  "response": { "status": 200, "headers": { "Content-Type":"application/json" },
+    "jsonBody": { "status": "SUCCEEDED", "reportUri": "s3://reports/eval/stub-eval-1/report.json" } } }
