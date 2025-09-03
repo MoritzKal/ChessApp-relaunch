@@ -1,11 +1,6 @@
 name: selfplay-eval
 
-on:
-  push:
-    branches: [development]
-  pull_request:
-    branches: [development]
-
+on: [release]
 jobs:
   build-runner:
     runs-on: ubuntu-latest
