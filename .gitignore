@@ -30,3 +30,4 @@ junit.xml
 ml/training/figures/
 mlruns/
 
+.m2_cache/**
