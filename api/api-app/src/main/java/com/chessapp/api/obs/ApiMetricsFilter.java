@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerMapping;
+import org.springframework.core.Ordered;
 
 import java.io.IOException;
 import java.security.Principal;
@@ -17,7 +18,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Component
-@Order(50) // nach Security, vor Handler
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class ApiMetricsFilter implements Filter {
   private final MeterRegistry registry;
   public ApiMetricsFilter(MeterRegistry registry) { this.registry = registry; }

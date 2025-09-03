@@ -106,6 +106,8 @@ services:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./prometheus/alerts/:/etc/prometheus/alerts/:ro
       - ./prometheus/secrets:/run/secrets:ro
+      - ./prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - ./infra/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     healthcheck:

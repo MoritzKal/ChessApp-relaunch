@@ -1,11 +1,12 @@
 global:
-  scrape_interval: 5s
-  evaluation_interval: 5s
+  scrape_interval: 15s
+  evaluation_interval: 30s
 
 rule_files:
   - ./alerts.yml
   - ./alerts/*.yml
   - /etc/prometheus/alerts.yml
+  - /etc/prometheus/alert_rules.yml
 
 scrape_configs:
   - job_name: prometheus
