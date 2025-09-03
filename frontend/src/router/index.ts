@@ -8,6 +8,7 @@ const routes = [
     component: () => import('@/layouts/BaseFrame.vue'),
     children: [
       { path: '', component: () => import('@/pages/Overview.vue') },
+      { path: 'styleguide', component: () => import('@/pages/Styleguide.vue') },
       { path: 'config', component: () => import('@/pages/ConfigWorkbench.vue') },
       // weitere Seiten wie Data/Datasets/Training/...
     ],

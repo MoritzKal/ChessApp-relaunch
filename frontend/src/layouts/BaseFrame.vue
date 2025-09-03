@@ -1,14 +1,15 @@
 <template>
   <v-app>
-    <v-navigation-drawer class="chs-nav" rail expand-on-hover app>
+    <v-navigation-drawer rail expand-on-hover app>
       <v-list nav density="comfortable">
         <v-list-item to="/" prepend-icon="mdi-view-dashboard" title="Overview" />
         <v-list-item to="/config" prepend-icon="mdi-tune" title="Configuration" />
+        <v-list-item to="/styleguide" prepend-icon="mdi-palette" title="Styleguide"/>
         <v-list-item to="/obs" prepend-icon="mdi-chart-areaspline" title="Observability" />
       </v-list>
     </v-navigation-drawer>
 
-    <v-app-bar flat color="transparent">
+    <v-app-bar>
       <v-container class="d-flex align-center">
         <v-icon class="mr-3" color="primary">mdi-crown</v-icon>
         <span class="text-h6">ChessApp</span>

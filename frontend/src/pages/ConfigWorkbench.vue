@@ -14,10 +14,16 @@
       <v-window-item value="selfplay"><SelfPlayTab/></v-window-item>
       <v-window-item value="export"><ExportTab/></v-window-item>
     </v-window>
+    <v-alert
+      v-if="!plannedEnabled"
+      density="compact"
+      type="info"
+      variant="tonal"
+      class="mt-4"
+    >
+      Backend-Endpunkte für Konfiguration/Workflow sind (noch) nicht aktiv. Buttons sind daher deaktiviert.
+    </v-alert>
   </v-container>
-  <v-alert v-if="!plannedEnabled" density="compact" type="info" variant="tonal" class="mt-4">
-    Backend-Endpunkte für Konfiguration/Workflow sind (noch) nicht aktiv. Buttons sind daher deaktiviert.
-  </v-alert>
 </template>
 <script setup lang="ts">
 import { ref } from 'vue'
