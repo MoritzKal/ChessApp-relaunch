@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -59,6 +60,7 @@ class GamesControllerTest extends com.chessapp.api.testutil.AbstractIntegrationT
         g.setBlackRating(1500);
         g.setPlatform(Platform.CHESS_COM);
         g.setPgn("[Event \"?\"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 1/2-1/2");
+        g.setTags(Map.of());
         gameRepository.save(g);
 
         Position p1 = new Position();
