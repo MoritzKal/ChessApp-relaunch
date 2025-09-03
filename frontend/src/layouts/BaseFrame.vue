@@ -1,6 +1,6 @@
 <template>
    <v-app theme="chsDark">
-    <v-navigation-drawer rail expand-on-hover app>
+    <v-navigation-drawer class="chs-nav" color="surface" rail expand-on-hover app>
       <v-list nav density="comfortable">
         <v-list-item to="/" prepend-icon="mdi-view-dashboard" title="Overview" />
         <v-list-item to="/config" prepend-icon="mdi-tune" title="Configuration" />
@@ -9,7 +9,7 @@
       </v-list>
     </v-navigation-drawer>
 
-    <v-app-bar class="chs-appbar">
+    <v-app-bar app class="chs-appbar" color="surface">
       <v-container class="d-flex align-center">
         <v-icon class="mr-3" color="primary">mdi-crown</v-icon>
         <span class="text-h6">ChessApp</span>

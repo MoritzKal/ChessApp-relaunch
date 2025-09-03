@@ -16,7 +16,7 @@
     <v-row dense class="mt-2">
       <v-col cols="12" md="7">
         <v-card class="chs-card" min-height="280">
-          <v-card-title class="text-subtitle-1" style="color:#EBD6A2">Training Loss</v-card-title>
+          <v-card-title class="text-subtitle-1" style="color:#CBA35C">Training Loss</v-card-title>
           <v-divider class="chs-divider" />
           <div class="pa-4">
             <!-- Chart placeholder; später via vue-echarts/chart.js -->
@@ -27,7 +27,7 @@
 
       <v-col cols="12" md="5">
         <v-card class="chs-card" min-height="280">
-          <v-card-title class="text-subtitle-1" style="color:#EBD6A2">Recent Trainings</v-card-title>
+          <v-card-title class="text-subtitle-1" style="color:#CBA35C">Recent Trainings</v-card-title>
           <v-divider class="chs-divider" />
           <v-table density="comfortable">
             <thead>
@@ -49,7 +49,7 @@
     <v-row dense class="mt-2">
       <v-col cols="12" md="7">
         <v-card class="chs-card" min-height="260">
-          <v-card-title class="text-subtitle-1" style="color:#EBD6A2">Requests/sec</v-card-title>
+          <v-card-title class="text-subtitle-1" style="color:#CBA35C">Requests/sec</v-card-title>
           <v-divider class="chs-divider" />
           <div class="pa-4">
             <div style="height:200px; border:1px dashed rgba(203,163,92,.25); border-radius:8px;"></div>
@@ -59,7 +59,7 @@
 
       <v-col cols="12" md="5">
         <v-card class="chs-card" min-height="260">
-          <v-card-title class="text-subtitle-1" style="color:#EBD6A2">Promo / Mini-Board</v-card-title>
+          <v-card-title class="text-subtitle-1" style="color:#CBA35C">Promo / Mini-Board</v-card-title>
           <v-divider class="chs-divider" />
           <div class="pa-4 d-flex align-center justify-center" style="height:200px;">
             <v-icon size="96" color="primary">mdi-crown</v-icon>
