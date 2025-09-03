@@ -20,11 +20,15 @@ body {
 
 .mono { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
 
-/* Nav */
-.chs-nav {
+/* Nav (Drawer) */
+.chs-nav{
   background: linear-gradient(180deg, #0C1916, #0A1513);
   border-right: 1px solid rgba(203,163,92,0.10);
+  color: var(--chs-brass); /* Nav-Text gold */
 }
+.chs-nav .v-list-item-title,
+.chs-nav .v-icon { color: var(--chs-brass) !important; }
+.chs-nav .v-list-item--active { background: rgba(203,163,92,0.10) !important; }
 
 /* Divider */
 .chs-divider { border-color: rgba(203,163,92,0.18) !important; }
@@ -37,6 +41,7 @@ body {
     0 10px 24px rgba(203,163,92,0.10), /* brass glow */
     0 2px 10px rgba(0,0,0,0.35);
   border: 1px solid rgba(203,163,92,0.15);
+  color: var(--chs-brass); /* Text auf dunklen Flächen gold */
 }
 
 /* KPI helper */
@@ -44,19 +49,23 @@ body {
 .chs-kpi .label { color: rgba(237,237,237,0.75); font-size: 14px; }
 .chs-kpi .value { font-size: 42px; font-weight: 600; letter-spacing: .5px; color: var(--chs-brass); }
 
-/* Section wrapper for page blocks */
+/* Section wrapper */
 .chs-section { padding: 16px; border: 1px solid rgba(203,163,92,0.10); border-radius: 14px; background: #0E1C19; }
 
+/* Buttons – Schriftfarbe weiß (alle Varianten) */
+.v-btn, .v-btn .v-btn__content { color: #FFFFFF !important; }
+.v-btn--variant-outlined { border-color: rgba(203,163,92,0.60) !important; }
 
-/* Vuetify App-Hintergrund transparent halten (sonst weißer Mittelbereich) */
+/* Vuetify App-Hintergrund transparent lassen */
 .v-application { background: transparent !important; }
 
-/* Main Padding global; Seiten entscheiden selbst über Container/Grids */
+/* Main Padding */
 .chs-main { padding: 24px; }
 
-/* AppBar leicht abgedunkelt + feine Brass-Linie */
+/* AppBar – dunkel & integriert */
 .chs-appbar {
   background: rgba(15,31,28,0.85) !important;
   backdrop-filter: blur(2px);
   border-bottom: 1px solid rgba(203,163,92,0.10);
+  color: var(--chs-brass); /* Header-Text gold */
 }
