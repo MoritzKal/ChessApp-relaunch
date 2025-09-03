@@ -31,3 +31,4 @@
 - Actions im Imperativ, pure side-effects
 - Selectors via `computed`
 - Fehler zentral in `notifications`-Store bündeln
+- Fehlerfälle: 401/403 → Snackbar + Link „View Logs“ (Obs-Proxy)
