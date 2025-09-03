@@ -16,19 +16,25 @@ spring:
     baseline-on-migrate: true
     baseline-version: 0
 management:
-  endpoints.web.exposure.include: health,info,prometheus, env, metrics,beans,mappings, threaddump
-  endpoint:
-    env:
-      show-values: ALWAYS
-  endpoint.health.probes.enabled: true
-  metrics.tags:
-    application: api
-    component: api
-    username: ${CHESS_USERNAME:M3NG00S3}
-  prometheus:
-    metrics:
-      export:
-        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  metrics:
+    tags:
+      app: ${app.name:chessapp}
+      component: ${app.component:api}
+      env: ${APP_ENV:local}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        chs_api_request_seconds: true
+      sla:
+        http.server.requests: 100ms,300ms,1s,3s,10s
+      minimum-expected-value:
+        http.server.requests: 1ms
+      maximum-expected-value:
+        http.server.requests: 30s
 logging:
   level:
     root: INFO
@@ -41,9 +47,11 @@ logging:
 app:
   security:
     jwt:
-      secret: ${API_JWT_SECRET:0123456789abcdef0123456789abcdef}
+       secret: ${APP_SECURITY_JWT_SECRET:0123456789abcdef0123456789abcdef}
+      # Decoder liest das Roh-Secret (kein Base64), siehe SecurityConfig.
   cors:
     allowed-origins: ${FRONTEND_ORIGIN:http://localhost:5173}
+    # Hinweis: Die eigentliche JWT-Prüfung erfolgt über SecurityConfig#jwtDecoder (HS256, Roh-Secret).
 chs:
   default-username: ${CHESS_USERNAME:M3NG00S3}
   registry:
