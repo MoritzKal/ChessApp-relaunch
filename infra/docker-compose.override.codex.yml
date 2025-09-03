@@ -1,9 +1,0 @@
-services:
-  api:
-    environment:
-      SPRING_PROFILES_ACTIVE: codex
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_SECRET: dev-secret
-      SELFPLAY_RUNNER_URL: http://selfplay-runner:8011
-      EVAL_RUNNER_URL: http://eval-offline:8012
-    ports:
-      - "8080:8080"

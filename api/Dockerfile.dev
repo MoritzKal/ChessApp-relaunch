@@ -18,5 +18,6 @@ EXPOSE 8080
 ENTRYPOINT ["sh","-lc","exec java \
   -Dlogging.config=classpath:logback-codex.xml \
   -Dspring.security.oauth2.resourceserver.jwt.jws-algorithm=HS256 \
-  -Dspring.security.oauth2.resourceserver.jwt.secret-key=ZGV2LXNlY3JldA== \
   -jar /opt/app/app.jar"]
+
+  
