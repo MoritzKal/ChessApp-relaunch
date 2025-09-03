@@ -1,5 +1,5 @@
 <template>
-  <v-container class="py-6">
+  <v-container class="py-6" fluid>
     <!-- KPI Row -->
     <v-row dense>
       <v-col v-for="k in kpis" :key="k.label" cols="12" sm="6" md="3">

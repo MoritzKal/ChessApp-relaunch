@@ -3,6 +3,7 @@ import { fileURLToPath, URL } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
+import vuetify from 'vite-plugin-vuetify'
 
 export default ({ mode }: { mode: string }) => {
   const env = loadEnv(mode, process.cwd(), '')
@@ -10,6 +11,7 @@ export default ({ mode }: { mode: string }) => {
     plugins: [
       vue(),
       vueDevTools(),
+      vuetify({ autoImport: true }),
     ],
     resolve: {
       alias: {
