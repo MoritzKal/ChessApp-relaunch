@@ -1,4 +1,4 @@
-.PHONY: docs fmt lint links ssot api-metrics
+.PHONY: docs fmt lint links ssot api-metrics docs-frontend
 
 docs: fmt lint links ssot
 
@@ -18,3 +18,8 @@ ssot:
 api-metrics:
 	python3 scripts/extract_endpoints.py > docs/API_ENDPOINTS.auto.md || true
 	python3 scripts/extract_metrics.py > docs/METRICS.auto.md || true
+
+.PHONY: docs-frontend
+docs-frontend:
+	npx markdownlint-cli2 "docs/**/*.md"
+	npx markdown-link-check -q -c scripts/linkcheck.config.json docs/frontend/*.md
