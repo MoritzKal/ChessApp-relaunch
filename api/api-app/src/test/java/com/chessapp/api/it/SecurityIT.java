@@ -66,14 +66,16 @@ class SecurityIT {
 
         String userToken = JwtTestUtils.signHmac256(secret, Map.of(
                 "sub", "user1",
-                "roles", List.of("USER")), Duration.ofMinutes(5));
+                "roles", List.of("USER"),
+                "scope", "api.read"), Duration.ofMinutes(5));
         mockMvc.perform(get("/actuator/prometheus")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + userToken))
                 .andExpect(status().isForbidden());
 
         String monitoringToken = JwtTestUtils.signHmac256(secret, Map.of(
                 "sub", "mon",
-                "roles", List.of("MONITORING")), Duration.ofMinutes(5));
+                "roles", List.of("MONITORING"),
+                "scope", "monitoring"), Duration.ofMinutes(5));
         mockMvc.perform(get("/actuator/prometheus")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + monitoringToken))
                 .andExpect(status().isOk())
