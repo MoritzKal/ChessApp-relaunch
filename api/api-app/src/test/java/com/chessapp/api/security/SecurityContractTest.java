@@ -71,13 +71,16 @@ class SecurityContractTest {
         var encoder = new NimbusJwtEncoder(new com.nimbusds.jose.jwk.source.ImmutableSecret<>(raw));
         var now = Instant.now();
 
+        Instant expiresAt = now.plusSeconds(ttlSeconds);
+        Instant issuedAt = ttlSeconds < 0 ? expiresAt.minusSeconds(1) : now;
+
         var claims = JwtClaimsSet.builder()
                 .subject("dev-user")
                 .issuer("chessapp-dev")
                 .audience(List.of("api"))
                 .claim("scope", scope)
-                .issuedAt(now)
-                .expiresAt(now.plusSeconds(ttlSeconds))
+                .issuedAt(issuedAt)
+                .expiresAt(expiresAt)
                 .build();
 
         var headers = JwsHeader.with(MacAlgorithm.HS256).build();
@@ -88,7 +91,7 @@ class SecurityContractTest {
         return token(scope, 3600, "0123456789abcdef0123456789abcdef");
     }
     private String badSig(String scope) {
-        return token(scope, 3600, "WRONG-SECRET-123");
+        return token(scope, 3600, "ffffffffffffffffffffffffffffffff");
     }
     private String expired(String scope) {
         return token(scope, -60, "0123456789abcdef0123456789abcdef");
