@@ -6,6 +6,8 @@
   --chs-bg: #0B0E0C;
   --chs-on-surface: #EDEDED;
   --chs-outline: #2C3A36;
+  --chs-gap: 16px;
+  --chs-content-max: 100vw; /* bei Bedarf z.B. 1440px setzen */
 }
 
 /* Subtile Holz-Optik + Brass Glow */
@@ -62,10 +64,59 @@ body {
 /* Main Padding */
 .chs-main { padding: 24px; }
 
+/* Content-Container (zentrierbar über --chs-content-max) */
+.chs-container {
+  max-width: var(--chs-content-max);
+  margin-inline: auto;
+  padding-inline: 16px;
+}
+
+/* 12-Spalten Grid (seitenweit konsistent) */
+.chs-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--chs-gap);
+}
+/* Col-Span Utilities */
+.chs-col-span-1  { grid-column: span 1;  }
+.chs-col-span-2  { grid-column: span 2;  }
+.chs-col-span-3  { grid-column: span 3;  }
+.chs-col-span-4  { grid-column: span 4;  }
+.chs-col-span-5  { grid-column: span 5;  }
+.chs-col-span-6  { grid-column: span 6;  }
+.chs-col-span-7  { grid-column: span 7;  }
+.chs-col-span-8  { grid-column: span 8;  }
+.chs-col-span-9  { grid-column: span 9;  }
+.chs-col-span-10 { grid-column: span 10; }
+.chs-col-span-11 { grid-column: span 11; }
+.chs-col-span-12 { grid-column: span 12; }
+
+/* Breakpoints: unter 1200px → 6 Spalten, unter 720px → 1 Spalte */
+@media (max-width: 1200px) {
+  .chs-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  /* sinnvolle Fallbacks: große Kacheln gehen auf volle Breite */
+  .md:chs-col-span-6 { grid-column: span 6; }
+}
+@media (max-width: 720px) {
+  .chs-grid { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+  .sm:chs-col-span-1 { grid-column: span 1; }
+}
+
+/* Aspect-Ratio Helpers (stabile Höhen über Breite) */
+.ar-16x9  { aspect-ratio: 16 / 9;  min-height: 220px; }
+.ar-4x3   { aspect-ratio: 4 / 3;   min-height: 220px; }
+.ar-3x2   { aspect-ratio: 3 / 2;   min-height: 200px; }
+.ar-2x1   { aspect-ratio: 2 / 1;   min-height: 160px; }
+.ar-1x1   { aspect-ratio: 1 / 1;   min-height: 160px; }
+
+/* Karten-Inhalt immer vollflächig ausrichten */
+.chs-card > .v-card-item,
+.chs-card > .v-card-text { height: 100%; }
+
 /* AppBar – dunkel & integriert */
 .chs-appbar {
   background: rgba(15,31,28,0.85) !important;
   backdrop-filter: blur(2px);
   border-bottom: 1px solid rgba(203,163,92,0.10);
-  color: var(--chs-brass); /* Header-Text gold */
+  color: var(--chs-brass) !important; /* Header-Text gold */
 }
