@@ -37,6 +37,12 @@ import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import static org.springframework.security.config.Customizer.withDefaults;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
+import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;
+
 
 @Configuration
 @EnableWebSecurity
@@ -48,12 +54,19 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                .csrf(csrf -> csrf.disable())
+                .csrf(AbstractHttpConfigurer::disable)
                 .cors(withDefaults())
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .securityContext(sc -> sc.requireExplicitSave(true))
+                .requestCache(rc -> rc.disable())
+                .formLogin(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .exceptionHandling(ex -> ex
+                    .authenticationEntryPoint(new BearerTokenAuthenticationEntryPoint())
+                    .accessDeniedHandler(new BearerTokenAccessDeniedHandler()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/health", "/actuator/health").permitAll()
                         .requestMatchers("/v1/auth/token").permitAll()
-                        .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/actuator/prometheus").hasAnyAuthority("ROLE_ADMIN", "ROLE_MONITORING", "SCOPE_monitoring")
                         .requestMatchers("/actuator/**").authenticated()
                         .requestMatchers("/v1/**").authenticated()
@@ -66,9 +79,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    JwtDecoder jwtDecoder(@Value("${APP_SECURITY_JWT_SECRET:}") String secret) {
+    JwtDecoder jwtDecoder(@Value("${app.security.jwt.secret}") String secret) {
         if (secret == null || secret.isBlank()) {
-        throw new IllegalArgumentException("APP_SECURITY_JWT_SECRET is empty");
+        throw new IllegalArgumentException("app.security.jwt.secret is empty");
         }
         SecretKey key = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
         return NimbusJwtDecoder.withSecretKey(key)

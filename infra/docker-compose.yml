@@ -258,7 +258,7 @@ services:
       ML_S3_ENDPOINT: http://minio:9000
       # JWT secrets and direct Spring property
       API_JWT_SECRET: ${API_JWT_SECRET}
-      APP_SECURITY_JWT_SECRET: ${API_JWT_SECRET}
+      APP_SECURITY_JWT_SECRET: ${APP_SECURITY_JWT_SECRET}
     
       # Enable dev token mint endpoint (disable in prod!)
       APP_SECURITY_DEV_TOKEN_ENABLED: "true"
