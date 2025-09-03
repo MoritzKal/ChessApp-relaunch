@@ -1,0 +1,18 @@
+services:
+  # Host-Port Mappings für die lokale Entwicklung
+  db:
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  minio:
+    ports:
+      - "${MINIO_S3_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+
+  api:
+    ports:
+      - "8080:8080"
+    # B1: noch keine JWT-ENV-Overrides hier – folgt in B2
+    environment:
+      APP_SECURITY_JWT_SECRET: ${APP_SECURITY_JWT_SECRET}
+

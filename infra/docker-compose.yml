@@ -41,44 +41,32 @@ services:
 
   minio:
     image: minio/minio:latest
-    container_name: chs_minio
+    command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-    command: server /data --console-address ":${MINIO_CONSOLE_PORT:-9001}"
+    volumes:
+      - minio-data:/data
+    # Kein Healthcheck: Images bringen oft kein wget/curl mit; Readiness übernimmt create-buckets
     ports:
       - "${MINIO_S3_PORT:-9000}:9000"
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
-    volumes:
-      - minio-data:/data
-    networks: [ chs_net ]
-    healthcheck:
-      test: [ "CMD-SHELL", "wget -qO- http://localhost:9000/minio/health/ready || curl -fsS http://localhost:9000/minio/health/ready" ]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 5s
 
   create-buckets:
     image: minio/mc:latest
-    container_name: chs_minio_mc
     depends_on:
       minio:
-        condition: service_healthy
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+        condition: service_started
     entrypoint: >
-      /bin/sh -c "
-      until (/usr/bin/mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} >/dev/null 2>&1); do echo '...waiting for minio'; sleep 2; done &&
-      /usr/bin/mc mb -p local/datasets || true &&
-      /usr/bin/mc mb -p local/models || true &&
-      /usr/bin/mc mb -p local/reports || true &&
-      /usr/bin/mc mb -p local/logs || true &&
-      /usr/bin/mc mb -p local/mlflow || true &&
-      /usr/bin/mc anonymous set public local/mlflow || true &&
-      echo 'MinIO buckets ready'"
-    networks: [ chs_net ]
+      sh -c '
+      set -e;
+      until mc alias set local http://minio:9000 "${MINIO_ROOT_USER}" "${MINIO_ROOT_PASSWORD}" >/dev/null 2>&1; do
+        echo "waiting for minio..."; sleep 2;
+      done;
+      mc mb -p local/chess-datasets || true;
+      mc mb -p local/chess-models || true;
+      echo "buckets ready";
+      '
 
   mlflow:
     build: mlflow
@@ -99,7 +87,8 @@ services:
       - mlflow-data:/mlflow
     depends_on:
       minio:
-        condition: service_healthy
+        condition: service_started
+        required: true
       create-buckets:
         condition: service_completed_successfully
     networks: [chs_net]
@@ -270,16 +259,13 @@ services:
       # JWT secrets and direct Spring property
       API_JWT_SECRET: ${API_JWT_SECRET}
       APP_SECURITY_JWT_SECRET: ${API_JWT_SECRET}
-      SPRING_APPLICATION_JSON: >
-        {"app":{"security":{"jwt":{"secret":"${API_JWT_SECRET}"}}}}
+    
       # Enable dev token mint endpoint (disable in prod!)
       APP_SECURITY_DEV_TOKEN_ENABLED: "true"
 
     depends_on:
       db:
         condition: service_healthy
-      create-buckets:
-        condition: service_completed_successfully
     ports:
       - "8080:8080"
     networks: [ chs_net ]
