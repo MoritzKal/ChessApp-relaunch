@@ -8,6 +8,7 @@ import router from './router'
 import vuetify from './plugins/vuetify'
 import '@mdi/font/css/materialdesignicons.css'
 import './styles/theme.css'
+import '@/styles/chs-grid.css'
 
 const app = createApp(App)
 

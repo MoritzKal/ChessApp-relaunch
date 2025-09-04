@@ -1,79 +1,61 @@
 <template>
   <div class="chs-grid">
-    <!-- KPI Row (kleine Kacheln) -->
-    <div v-for="k in kpis" :key="k.label" class="tile chs-col-span-3 sm:chs-col-span-1 tile-kpi">
-      <v-card class="chs-card">
-        <div class="chs-kpi">
-          <div class="label">{{ k.label }}</div>
-          <div class="value">{{ k.value }}</div>
-        </div>
-      </v-card>
-    </div>
+    <!-- Reihe 1 -->
+    <SmallTile class="is-small" title="Games Imported">
+      <div class="kpi"><span class="kpi-v">1,248</span></div>
+    </SmallTile>
 
-    <!-- Training Loss -->
-    <div class="chs-col-span-7 md:chs-col-span-6 sm:chs-col-span-1">
-      <v-card class="chs-card">
-        <v-card-title class="text-subtitle-1" style="color:#CBA35C">Training Loss</v-card-title>
-        <v-divider class="chs-divider" />
-        <div class="pa-4" style="height:calc(100% - 56px);">
-          <div style="height:100%; opacity:.9; border:1px dashed rgba(203,163,92,.25); border-radius:8px;"></div>
-        </div>
-      </v-card>
-    </div>
+    <SmallTile class="is-small" title="Active Training">
+      <div class="kpi"><span class="kpi-v">1</span></div>
+    </SmallTile>
 
-    <!-- Recent Trainings -->
-    <div class="tile chs-col-span-5 md:chs-col-span-6 sm:chs-col-span-1 tile-md">
-      <v-card class="chs-card">
-        <v-card-title class="text-subtitle-1" style="color:#CBA35C">Recent Trainings</v-card-title>
-        <v-divider class="chs-divider" />
-        <v-table density="comfortable">
-          <thead>
-            <tr><th>Run ID</th><th>Epoch</th><th>Val-Acc</th><th>Status</th></tr>
-          </thead>
-          <tbody>
-            <tr v-for="t in trainings" :key="t.runId">
-              <td>{{ t.runId }}</td>
-              <td>{{ t.epoch }}</td>
-              <td>{{ t.acc }}</td>
-              <td>{{ t.status }}</td>
-            </tr>
-          </tbody>
-        </v-table>
-      </v-card>
-    </div>
+    <SmallTile class="is-small" title="Best Val-Acc">
+      <div class="kpi"><span class="kpi-v">0.41</span></div>
+    </SmallTile>
 
-    <!-- Requests/sec -->
-    <div class="tile chs-col-span-7 md:chs-col-span-6 sm:chs-col-span-1 tile-md">
+    <SmallTile class="is-small" title="Prod Model">
+      <div class="kpi"><span class="kpi-v">v1.2</span></div>
+    </SmallTile>
 
-      <v-card class="chs-card">
-        <v-card-title class="text-subtitle-1" style="color:#CBA35C">Requests/sec</v-card-title>
-        <v-divider class="chs-divider" />
-        <div class="pa-4" style="height:calc(100% - 56px);">
-          <div style="height:100%; border:1px dashed rgba(203,163,92,.25); border-radius:8px;"></div>
-        </div>
-      </v-card>
-    </div>
+    <!-- Reihe 2 -->
+    <LargeTile class="is-large" title="Training Loss">
+      <!-- Chart-Komponente später einhängen -->
+      <div style="height:100%;display:flex;align-items:center;justify-content:center;opacity:.6">
+        Chart Placeholder
+      </div>
+    </LargeTile>
 
-    <!-- Promo / Mini-Board -->
-    <div class="tile chs-col-span-5 md:chs-col-span-6 sm:chs-col-span-1 tile-sq">
-      <v-card class="chs-card d-flex align-center justify-center">
-        <v-icon size="96" color="primary">mdi-crown</v-icon>
-      </v-card>
-    </div>
+    <LargeTile class="is-large" title="Recent Trainings">
+      <div class="list">
+        <div>20240403-1 • Epoch 10 • Val 0.38</div>
+        <div>20240402-2 • Epoch 15 • Val 0.40</div>
+        <div>20240402-1 • Epoch 20 • Val 0.37</div>
+      </div>
+    </LargeTile>
+
+    <!-- Reihe 3 -->
+    <LargeTile class="is-large" title="Requests/sec">
+      <div style="height:100%;display:flex;align-items:center;justify-content:center;opacity:.6">
+        Chart Placeholder
+      </div>
+    </LargeTile>
+
+    <LargeTile class="is-large" title="Board">
+      <div style="height:100%;display:flex;align-items:center;justify-content:center;">
+        <v-icon size="96" class="gold">mdi-chess-queen</v-icon>
+      </div>
+    </LargeTile>
   </div>
 </template>
 
 <script setup lang="ts">
-const kpis = [
-  { label: 'Games Imported', value: '1,248' },
-  { label: 'Active Training', value: '1' },
-  { label: 'Best Val-Acc', value: '0.41' },
-  { label: 'Prod Model', value: 'v1.2' },
-]
-const trainings = [
-  { runId:'20240403-1', epoch:10, acc:0.38, status:'running' },
-  { runId:'20240402-2', epoch:15, acc:0.40, status:'completed' },
-  { runId:'20240402-1', epoch:20, acc:0.37, status:'failed' }
-]
+import SmallTile from '@/components/SmallTile.vue'
+import LargeTile from '@/components/LargeTile.vue'
 </script>
 
+<style scoped>
+.kpi{ display:flex; align-items:center; height:100% }
+.kpi-v{ color: var(--accent, #D4AF37); font-weight:800; font-size: 2rem }
+.list > div{ padding: 6px 0; border-bottom: 1px dotted rgba(212,175,55,.18) }
+.list > div:last-child{ border-bottom:0 }
+</style>
