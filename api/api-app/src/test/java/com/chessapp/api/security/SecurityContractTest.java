@@ -38,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {
-        "app.security.jwt.secret=0123456789abcdef0123456789abcdef",
+        "app.security.jwt.secret=eine-lange-zufällige-zeichenketteeine-lange-zufällige-zeichenkette",
         "management.endpoints.web.exposure.include=health,prometheus",
         // falls vorhanden: Dev-Bypass sicher ausschalten
         "app.security.dev-token.enabled=false",
@@ -88,7 +88,7 @@ class SecurityContractTest {
     }
 
     private String good(String scope) {
-        return token(scope, 3600, "0123456789abcdef0123456789abcdef");
+        return token(scope, 3600, "eine-lange-zufällige-zeichenketteeine-lange-zufällige-zeichenkette");
     }
     private String badSig(String scope) {
         return token(scope, 3600, "ffffffffffffffffffffffffffffffff");
