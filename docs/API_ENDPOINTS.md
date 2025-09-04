@@ -74,6 +74,14 @@ Antwort:
 - `GET /v1/datasets/{id}/quality`
 - `GET /v1/datasets/{id}/ingest/history`
 
+`GET /v1/datasets`
+
+| Parameter | Werte                     | Beschreibung            |
+|-----------|--------------------------|------------------------|
+| limit     | Zahl (1-100, default 20) | Anzahl Elemente         |
+| offset    | Zahl (default 0)         | Offset für Pagination   |
+| q         | String                   | optionaler Namefilter   |
+
 ## Training
 
 - `POST /v1/trainings`
@@ -82,6 +90,32 @@ Antwort:
 - `GET /v1/trainings/{runId}`
 - `GET /v1/training/{runId}` (Alias)
 - `GET /v1/trainings/{runId}/artifacts`
+- `POST /v1/trainings/{runId}/control`
+
+**Beispiele**
+
+`POST /v1/trainings`
+
+```bash
+curl -s -X POST /v1/trainings \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"datasetId":"<UUID>","datasetVersion":"v1","modelId":"<UUID>","epochs":10,"batchSize":64,"learningRate":0.001,"optimizer":"adam","seed":42,"notes":"optional","useGPU":true,"priority":"normal"}'
+```
+
+Antwort 201:
+
+```json
+{"runId":"<UUID>","status":"queued"}
+```
+
+`GET /v1/trainings`
+
+| Parameter | Werte                       | Beschreibung            |
+|-----------|----------------------------|------------------------|
+| status    | active\|finished\|failed    | optionaler Filter       |
+| limit     | Zahl (1-100, default 20)   | Anzahl Elemente         |
+| offset    | Zahl (default 0)           | Offset für Pagination   |
 
 ## Serving/Play
 
@@ -114,6 +148,16 @@ Antwort:
 - `GET /v1/metrics/rps`
 - `GET /v1/metrics/error_rate`
 - `GET /v1/metrics/elo`
+- `GET /v1/metrics/health`
+
+`GET /v1/metrics/throughput`
+
+| Parameter | Werte     | Beschreibung                                 |
+|-----------|-----------|----------------------------------------------|
+| range     | z.B. 24h  | optionaler Zeitraum                          |
+| runId     | UUID      | optional für spezifischen Trainingslauf      |
+
+`GET /v1/metrics/health` → `{ "status":"ok","pingMs":0,"errorRate":0.0 }`
 
 ## Logs
 

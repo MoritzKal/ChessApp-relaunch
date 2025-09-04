@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.Duration;
 import java.util.*;
 
 @Service
@@ -35,11 +34,24 @@ public class TrainingService {
             TrainingRun tr = new TrainingRun();
             tr.setId(runId);
             tr.setDatasetId(req.datasetId());
-            tr.setParams(Optional.ofNullable(req.params()).orElseGet(Map::of));
+            tr.setModelId(req.modelId());
+
+            Map<String, Object> params = new LinkedHashMap<>();
+            params.put("datasetVersion", req.datasetVersion());
+            params.put("epochs", req.epochs());
+            params.put("batchSize", req.batchSize());
+            params.put("learningRate", req.learningRate());
+            params.put("optimizer", req.optimizer());
+            params.put("seed", req.seed());
+            params.put("notes", req.notes());
+            params.put("useGPU", req.useGPU());
+            params.put("priority", req.priority());
+            tr.setParams(params);
+
             tr.setStatus(TrainingStatus.QUEUED);
             repo.save(tr);
 
-            mlClient.postTrain(runId, req.datasetId(), req.params());
+            mlClient.postTrain(runId, req.datasetId(), params);
 
             tr.setStatus(TrainingStatus.RUNNING);
             tr.setStartedAt(Instant.now());
@@ -73,6 +85,7 @@ public class TrainingService {
         out.putIfAbsent("etaSec", null);
         out.putIfAbsent("step", 0);
         out.putIfAbsent("epoch", 0);
+        out.putIfAbsent("progress", 0.0);
         if (ml.get("updatedAt") != null) {
             out.put("updatedAt", ml.get("updatedAt"));
         } else if (tr != null) {
@@ -115,13 +128,11 @@ public class TrainingService {
     }
 
     private TrainingItemDto toDto(TrainingRun tr) {
-        Instant end = tr.getFinishedAt() != null ? tr.getFinishedAt() : Instant.now();
-        long dur = tr.getStartedAt() != null ? Duration.between(tr.getStartedAt(), end).getSeconds() : 0L;
-        Instant upd = tr.getFinishedAt() != null ? tr.getFinishedAt() : end;
+        Instant upd = tr.getFinishedAt() != null ? tr.getFinishedAt() : Instant.now();
         return new TrainingItemDto(
                 tr.getId().toString(),
                 tr.getStatus() != null ? tr.getStatus().name().toLowerCase() : "unknown",
-                dur,
+                0.0,
                 upd.toString()
         );
     }
