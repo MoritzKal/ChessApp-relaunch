@@ -75,3 +75,22 @@ export function datasetExportUrl(id: string, q: { format: 'parquet'|'csv'|'pgn';
   const base = (import.meta as any).env.VITE_API_BASE || '/api'
   return `${base}${ep.datasets.export(id, q)}`
 }
+
+// Chess.com integration
+export interface ChesscomArchivesResponse { months: string[] }
+export async function getChesscomArchives(user: string): Promise<ChesscomArchivesResponse> {
+  return apiGet<ChesscomArchivesResponse>(ep.chesscom.archives(user))
+}
+
+export interface ChesscomArchiveMeta { count: number; timeControlDist?: Record<string, number> }
+export async function getChesscomArchiveMeta(user: string, yyyymm: string): Promise<ChesscomArchiveMeta> {
+  const [year, month] = yyyymm.split('-')
+  return apiGet<ChesscomArchiveMeta>(ep.chesscom.archiveMeta(user, year, month))
+}
+
+export interface ChesscomImportBody { user: string; months: string[]; datasetId?: string; note?: string }
+export interface ChesscomImportResponse { runId: string; status: 'queued'|'running'|'success'|'error' }
+export async function importChesscom(body: ChesscomImportBody): Promise<ChesscomImportResponse> {
+  const res = await api.post(ep.ingest.chesscom(), body)
+  return res.data as ChesscomImportResponse
+}
