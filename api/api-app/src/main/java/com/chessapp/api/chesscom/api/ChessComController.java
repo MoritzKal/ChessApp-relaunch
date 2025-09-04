@@ -11,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -87,9 +86,10 @@ public class ChessComController {
         IngestStartResponse last = null;
         for (String m : months) {
             YearMonth ym = YearMonth.parse(m);
-            byte[] pgn = service.downloadPgn(u, ym);
-            MockMultipartFile file = new MockMultipartFile("file", u + "-" + m + ".pgn", "application/x-chess-pgn", pgn);
-            ResponseEntity<IngestStartResponse> resp = ingestController.start(file, req.datasetId(), req.note(), "v" + m);
+            // Download PGN to enforce external call and validate archive exists; content is not yet consumed by ingest pipeline.
+            // We avoid using spring-test's MockMultipartFile in production code; IngestController currently ignores the file.
+            service.downloadPgn(u, ym);
+            ResponseEntity<IngestStartResponse> resp = ingestController.start(null, req.datasetId(), req.note(), "v" + m);
             last = resp.getBody();
         }
         String runId = last != null ? "ing_" + last.runId().toString() : "ing_unknown";

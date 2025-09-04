@@ -56,15 +56,22 @@ public class IngestController {
 
     @GetMapping("/{runId}")
     @Operation(summary = "Get ingest run status", responses = @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = IngestStatusResponse.class))))
-    public ResponseEntity<IngestStatusResponse> status(@PathVariable UUID runId) {
-        Optional<IngestRunEntity> opt = repository.findById(runId);
+    public ResponseEntity<IngestStatusResponse> status(@PathVariable String runId) {
+        UUID id;
+        try {
+            String cleaned = runId != null && runId.startsWith("ing_") ? runId.substring(4) : runId;
+            id = UUID.fromString(cleaned);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+        Optional<IngestRunEntity> opt = repository.findById(id);
         if (opt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
         IngestRunEntity run = opt.get();
         return ResponseEntity.ok(
                 new IngestStatusResponse(
-                        run.getRunId().toString(),
+                        runId,
                         run.getStatus(),
                         null,
                         null,

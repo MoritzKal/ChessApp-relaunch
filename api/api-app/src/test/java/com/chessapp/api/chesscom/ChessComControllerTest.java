@@ -24,7 +24,7 @@ class ChessComControllerTest {
 
     @Test
     void archives_ok() throws Exception {
-        stubFor(get(urlEqualTo("/pub/player/testuser/games/archives"))
+        stubFor(get(urlPathEqualTo("/pub/player/testuser/games/archives"))
                 .willReturn(okJson("{\"archives\":[\"http://x/pub/player/testuser/games/2024/01\"]}")));
         mvc.perform(get("/v1/chesscom/archives").param("user","testuser").with(TestAuth.jwtUser()))
                 .andExpect(status().isOk())
@@ -33,7 +33,7 @@ class ChessComControllerTest {
 
     @Test
     void archives_404() throws Exception {
-        stubFor(get(urlEqualTo("/pub/player/unknown/games/archives"))
+        stubFor(get(urlPathEqualTo("/pub/player/unknown/games/archives"))
                 .willReturn(aResponse().withStatus(404)));
         mvc.perform(get("/v1/chesscom/archives").param("user","unknown").with(TestAuth.jwtUser()))
                 .andExpect(status().isNotFound());
@@ -41,11 +41,11 @@ class ChessComControllerTest {
 
     @Test
     void meta_ok() throws Exception {
-        stubFor(get(urlEqualTo("/pub/player/testuser/games/2024/01"))
+        stubFor(get(urlPathEqualTo("/pub/player/testuser/games/2024/01"))
                 .willReturn(okJson("{\"games\":[{\"time_class\":\"rapid\"},{\"time_class\":\"blitz\"}]}")));
         mvc.perform(get("/v1/chesscom/archive/meta")
-                .param("user","testuser").param("year","2024").param("month","1")
-                .with(TestAuth.jwtUser()))
+                        .param("user","testuser").param("year","2024").param("month","1")
+                        .with(TestAuth.jwtUser()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.count").value(2))
                 .andExpect(jsonPath("$.timeControlDist.rapid").value(1));
@@ -53,7 +53,7 @@ class ChessComControllerTest {
 
     @Test
     void ingest_ok() throws Exception {
-        stubFor(get(urlEqualTo("/pub/player/testuser/games/2024/01/pgn"))
+        stubFor(get(urlPathEqualTo("/pub/player/testuser/games/2024/01/pgn"))
                 .willReturn(ok("pgn")));
         String body = "{\"user\":\"testuser\",\"months\":[\"2024-01\"],\"datasetId\":null,\"note\":null}";
         mvc.perform(post("/v1/ingest/chesscom").with(TestAuth.jwtUser())

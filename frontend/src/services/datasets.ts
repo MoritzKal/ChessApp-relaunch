@@ -67,7 +67,11 @@ export async function startIngest(file: File, opts?: { datasetId?: string; note?
 export interface IngestRun { runId: string; status: 'running'|'success'|'error'; datasetId?: string; error?: string }
 export async function getIngestRun(runId: string): Promise<IngestRun> {
   const res = await api.get(ep.ingest.get(runId))
-  return res.data as IngestRun
+  const raw = res.data as any
+  const s = String(raw?.status || '').toLowerCase()
+  const map: Record<string, IngestRun['status']> = { pending: 'running', running: 'running', succeeded: 'success', success: 'success', failed: 'error', error: 'error' }
+  const status = map[s] || 'running'
+  return { runId: String(raw?.runId || runId), status, datasetId: raw?.datasetId, error: raw?.message }
 }
 
 // Export helper: returns absolute URL (respecting baseURL)
