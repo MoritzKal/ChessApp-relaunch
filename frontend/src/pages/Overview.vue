@@ -2,7 +2,7 @@
   <div class="chs-grid">
     <!-- KPI Row -->
     <div v-for="k in kpis" :key="k.label" class="chs-col-span-3 sm:chs-col-span-1">
-      <v-card class="chs-card ar-2x1">
+      <v-card class="chs-card">
         <div class="chs-kpi">
           <div class="label">{{ k.label }}</div>
           <div class="value">{{ k.value }}</div>
@@ -12,7 +12,7 @@
 
     <!-- Training Loss -->
     <div class="chs-col-span-7 md:chs-col-span-6 sm:chs-col-span-1">
-      <v-card class="chs-card ar-16x9">
+      <v-card class="chs-card">
         <v-card-title class="text-subtitle-1" style="color:#CBA35C">Training Loss</v-card-title>
         <v-divider class="chs-divider" />
         <div class="pa-4" style="height:100%;">
@@ -23,7 +23,7 @@
 
     <!-- Recent Trainings -->
     <div class="chs-col-span-5 md:chs-col-span-6 sm:chs-col-span-1">
-      <v-card class="chs-card ar-4x3">
+      <v-card class="chs-card">
         <v-card-title class="text-subtitle-1" style="color:#CBA35C">Recent Trainings</v-card-title>
         <v-divider class="chs-divider" />
         <v-table density="comfortable">
@@ -44,7 +44,7 @@
 
     <!-- Requests/sec -->
     <div class="chs-col-span-7 md:chs-col-span-6 sm:chs-col-span-1">
-      <v-card class="chs-card ar-16x9">
+      <v-card class="chs-card">
         <v-card-title class="text-subtitle-1" style="color:#CBA35C">Requests/sec</v-card-title>
         <v-divider class="chs-divider" />
         <div class="pa-4" style="height:100%;">
@@ -55,7 +55,7 @@
 
     <!-- Promo / Mini-Board -->
     <div class="chs-col-span-5 md:chs-col-span-6 sm:chs-col-span-1">
-      <v-card class="chs-card ar-1x1 d-flex align-center justify-center">
+      <v-card class="chs-card d-flex align-center justify-center">
         <v-icon size="96" color="primary">mdi-crown</v-icon>
       </v-card>
     </div>
