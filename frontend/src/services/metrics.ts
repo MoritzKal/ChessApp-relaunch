@@ -74,3 +74,4 @@ export const getMps = (): Promise<ScalarMetric> => getParsed(ep.metrics.mps(), z
 export const getElo = (range: string): Promise<TimeseriesResponse> => getParsed(ep.metrics.elo(range), zTimeseriesResponse)
 export const getThroughput = (runId: string): Promise<ScalarMetric> => getParsed(ep.metrics.throughput(runId), zScalarMetric)
 export const getTrainingMetric = (runId: string, m: string, range?: string): Promise<TimeseriesResponse> => getParsed(ep.metrics.trainingMetric(runId, m, range), zTimeseriesResponse)
+export const getUtilization = (runId: string, range = '24h'): Promise<TimeseriesResponse> => getParsed(ep.metrics.utilization(runId, range), zTimeseriesResponse)

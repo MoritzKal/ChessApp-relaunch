@@ -7,12 +7,12 @@
     <div class="is_small"><InfoMetricTile title="Online Games" icon="mdi-account-group-outline" :value="online" /></div>
 
     <!-- Row 2: Large -->
-    <div class="is_large"><PlaceholderLargeTile title="Requests/sec (24h)" icon="mdi-chart-areaspline" :loading="rpsLoading" :error="rpsError" /></div>
-    <div class="is_large"><PlaceholderLargeTile title="Error Rate (24h)" icon="mdi-alert-circle-outline" :loading="errLoading" :error="errError" /></div>
+    <div class="is_large"><ChartTile title="Requests/sec (24h)" icon="mdi-chart-areaspline" :vm="rpsVm" :loading="rpsLoading" /></div>
+    <div class="is_large"><ChartTile title="Error Rate (24h)" icon="mdi-alert-circle-outline" :vm="errVm" :loading="errLoading" /></div>
 
     <!-- Row 3: Large -->
-    <div class="is_large"><ListLargeTile title="Recent Games" icon="mdi-chess-queen" :items="recentItems" :loading="recentLoading" :error="recentError" /></div>
-    <div class="is_large"><PlaceholderLargeTile title="Engine ELO Trend (30d)" icon="mdi-chart-line" :loading="eloLoading" :error="eloError" /></div>
+    <div class="is_large"><TableTile title="Recent Games" icon="mdi-chess-queen" :vm="recentVm" :loading="recentLoading" /></div>
+    <div class="is_large"><ChartTile title="Engine ELO Trend (30d)" icon="mdi-chart-line" :vm="eloVm" :loading="eloLoading" /></div>
   </DashboardGrid>
 </template>
 
@@ -20,8 +20,8 @@
 import { onMounted, computed } from 'vue'
 import DashboardGrid from '@/layouts/DashboardGrid.vue'
 import InfoMetricTile from '@/components/panels/InfoMetricTile.vue'
-import PlaceholderLargeTile from '@/components/panels/PlaceholderLargeTile.vue'
-import ListLargeTile from '@/components/panels/ListLargeTile.vue'
+import ChartTile from '@/components/renderers/ChartTile.vue'
+import TableTile from '@/components/renderers/TableTile.vue'
 import { useMetricsStore } from '@/stores/metrics'
 import { useGamesStore } from '@/stores/games'
 import { usePolling } from '@/composables/usePolling'
@@ -55,10 +55,23 @@ const errLoading = computed(() => mt.loading.has('error_rate:24h'))
 const errError = computed(() => mt.errors.get('error_rate:24h')?.message || false)
 const eloLoading = computed(() => mt.loading.has('elo:30d'))
 const eloError = computed(() => mt.errors.get('elo:30d')?.message || false)
+const rpsVm = mt.selectSeriesVm('rps:24h')
+const errVm = mt.selectSeriesVm('error_rate:24h')
+const eloVm = mt.selectSeriesVm('elo:30d')
 
 const recentKey = 'recent:50'
 const recentList = computed(() => gm.lists.get(recentKey) || [])
 const recentLoading = computed(() => gm.loading.has(recentKey))
 const recentError = computed(() => gm.errors.get(recentKey)?.message || false)
-const recentItems = computed(() => recentList.value.map(g => `${g.id} • ${g.result} • ${g.timeControl}`))
+const recentVm = computed(() => ({
+  columns: [
+    { key: 'id', label: 'ID' },
+    { key: 'white', label: 'White' },
+    { key: 'black', label: 'Black' },
+    { key: 'result', label: 'Result' },
+    { key: 'mvs', label: 'Moves', align: 'end' },
+    { key: 'endedAt', label: 'Ended' },
+  ],
+  rows: recentList.value.map(g => ({ id: g.id, white: g.white, black: g.black, result: g.result, mvs: g.moves, endedAt: g.endedAt }))
+}))
 </script>

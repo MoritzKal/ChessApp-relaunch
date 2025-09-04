@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { ApiError } from '@/types/common'
 import type { ScalarMetric, TimeseriesResponse, HealthAggregate } from '@/types/metrics'
-import { getHealth, getLoss, getRps, getErrorRate, getLatency, getMps, getElo, getThroughput, getTrainingMetric } from '@/services/metrics'
+import { getHealth, getLoss, getRps, getErrorRate, getLatency, getMps, getElo, getThroughput, getTrainingMetric, getUtilization } from '@/services/metrics'
 import type { SeriesVM } from '@/types/vm'
 
 export interface PollTarget { key: string; intervalMs: number; run: () => Promise<void> }
@@ -65,6 +65,7 @@ export const useMetricsStore = defineStore('metrics', () => {
   const fetchElo = (range: string) => fetchSeries(`elo:${range}`, () => getElo(range))
   const fetchThroughput = (runId: string) => fetchScalar(`throughput:${runId}`, () => getThroughput(runId))
   const fetchTrainingSeries = (runId: string, m: string, range?: string) => fetchSeries(`train:${runId}:${m}:${range ?? ''}`, () => getTrainingMetric(runId, m, range))
+  const fetchUtilization = (runId: string, range = '24h') => fetchSeries(`util:${runId}:${range}`, () => getUtilization(runId, range))
 
   // selectors
   function selectScalar(key: string) { return computed(() => scalars.value.get(key) || null) }
@@ -104,7 +105,7 @@ export const useMetricsStore = defineStore('metrics', () => {
 
   return {
     scalars, series, health, loading, errors,
-    fetchHealth, fetchLoss, fetchRps, fetchErrorRate, fetchLatencyP50, fetchLatencyP95, fetchMps, fetchElo, fetchThroughput, fetchTrainingSeries,
+    fetchHealth, fetchLoss, fetchRps, fetchErrorRate, fetchLatencyP50, fetchLatencyP95, fetchMps, fetchElo, fetchThroughput, fetchTrainingSeries, fetchUtilization,
     selectScalar, selectSeries, selectSeriesVm, selectHealth,
     pollTargets,
   }
