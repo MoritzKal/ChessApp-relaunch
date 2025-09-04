@@ -115,6 +115,15 @@ public class ServingController {
         }
     }
 
+    @PostMapping("/models/promote")
+    public ResponseEntity<Map<String, Object>> modelsPromote(@RequestBody Map<String, String> body) {
+        return ResponseEntity.ok(Map.of(
+                "modelId", body.get("modelId"),
+                "targetStage", body.get("targetStage"),
+                "ok", true
+        ));
+    }
+
     private static String jsonEscape(String s) {
         if (s == null) return "null";
         return '"' + s.replace("\\", "\\\\").replace("\"", "\\\"") + '"';

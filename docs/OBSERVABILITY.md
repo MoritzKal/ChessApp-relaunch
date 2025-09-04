@@ -13,6 +13,7 @@ Scrape-Policy: `/actuator/prometheus` erfordert Monitoring-JWT (Role `MONITORING
 - **chs_predict_latency_p95** (ms) — Ziel <150
 - **chs_predict_error_rate** (%) — Ziel <1
 - **chs_predict_qps** (req/s)
+- **chs_moves_total** → MPS
 - **ml_training_val_acc_top1**
 - **ml_training_throughput** (samples/s)
 
@@ -59,10 +60,13 @@ Siehe Grafana Panel *Ingest* (Prometheus).
 sum(rate(http_server_requests_seconds_count[1m]))                     # RPS
 increase(http_server_requests_seconds_count{status=~"5.."}[5m]) / increase(http_server_requests_seconds_count[5m])  # Error Rate
 histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket[5m]))) * 1000  # Latency
+sum(rate(chs_moves_total[1m]))                                        # MPS
 avg_over_time(chs_training_it_per_sec{run_id="<ID>"}[5m])            # Throughput
 avg_over_time(ml_training_loss{run_id="<ID>"}[5m])                   # Loss
 avg_over_time(ml_training_val_acc{run_id="<ID>"}[5m])                # Val-Acc
 avg_over_time(chs_engine_elo[1h])                                     # ELO
+
+Siehe auch [Play-Sequenz](USER_FLOWS.md) für den Ablauf im Kontext.
 ```
 
 Micrometer: `http_server_requests_seconds_*`
