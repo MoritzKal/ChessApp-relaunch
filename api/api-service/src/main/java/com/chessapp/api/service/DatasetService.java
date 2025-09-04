@@ -102,15 +102,21 @@ public class DatasetService {
     }
 
     @Transactional(readOnly = true)
-    public List<DatasetResponse> list(int limit, int offset, String sort) {
+    public List<DatasetResponse> list(int limit, int offset, String sort, String q) {
         Sort s = Sort.by(Sort.Direction.DESC, "createdAt");
         if ("size".equalsIgnoreCase(sort) || "rows".equalsIgnoreCase(sort)) {
             s = Sort.by(Sort.Direction.DESC, "sizeRows");
         }
-        return datasetRepository.findAll(PageRequest.of(offset / limit, limit, s))
+        // simple name filter stub; real impl would query repository
+        var page = datasetRepository.findAll(PageRequest.of(offset / limit, limit, s))
                 .stream()
                 .map(DatasetMapper::toDto)
                 .toList();
+        if (q == null || q.isBlank()) {
+            return page;
+        }
+        String qLower = q.toLowerCase();
+        return page.stream().filter(d -> d.getName().toLowerCase().contains(qLower)).toList();
     }
 
     @Transactional(readOnly = true)

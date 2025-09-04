@@ -45,4 +45,19 @@ class MetricsControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.series[0].label").value("loss"));
     }
+
+    @Test
+    void health_ok() throws Exception {
+        mvc.perform(get("/v1/metrics/health").with(TestAuth.jwtUser()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ok"));
+    }
+
+    @Test
+    void throughput_ok() throws Exception {
+        when(obs.promRange(any(), any(Long.class), any(Long.class), any())).thenReturn(prom(2.0));
+        mvc.perform(get("/v1/metrics/throughput").with(TestAuth.jwtUser()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.series[0].label").value("throughput_it_per_sec"));
+    }
 }
