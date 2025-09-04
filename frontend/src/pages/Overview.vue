@@ -11,7 +11,7 @@
     </div>
 
     <!-- Training Loss -->
-    <div class="tile chs-col-span-7 md:chs-col-span-6 sm:chs-col-span-1 tile-md">
+    <div class="chs-col-span-7 md:chs-col-span-6 sm:chs-col-span-1">
       <v-card class="chs-card">
         <v-card-title class="text-subtitle-1" style="color:#CBA35C">Training Loss</v-card-title>
         <v-divider class="chs-divider" />
@@ -44,6 +44,7 @@
 
     <!-- Requests/sec -->
     <div class="tile chs-col-span-7 md:chs-col-span-6 sm:chs-col-span-1 tile-md">
+
       <v-card class="chs-card">
         <v-card-title class="text-subtitle-1" style="color:#CBA35C">Requests/sec</v-card-title>
         <v-divider class="chs-divider" />

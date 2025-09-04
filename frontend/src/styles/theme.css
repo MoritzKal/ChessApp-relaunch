@@ -76,8 +76,16 @@ body {
 .chs-grid {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: 1fr 2fr 2fr;
   gap: var(--chs-gap);
+
   grid-auto-rows: var(--chs-row); /* Höhe wird über Row-Spans skaliert */
+
+  height: calc(100svh - 48px);
+}
+
+.chs-grid .chs-card {
+  height: 100% !important;
 }
 /* Col-Span Utilities */
 .chs-col-span-1  { grid-column: span 1;  }
