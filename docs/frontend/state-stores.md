@@ -1,33 +1,22 @@
-# Pinia State Stores – Domänen
+# Frontend State Stores (Pinia)
 
-## auth
-- state: `token`, `user`
-- actions: `login(token)`, `logout()`, `isAuthenticated`
+This document summarizes the domain stores and how pages should consume them. The API and Metrics remain single sources of truth in:
+- API contracts: docs/API_ENDPOINTS.md
+- Observability notes/links: docs/OBSERVABILITY.md
 
-## data
-- actions: `importStart() → POST /v1/ingest`, `importStatus(runId)`
-- selectors: letzte Runs, Status
+Do not copy endpoint specs here; link to the SSOT instead.
 
-## datasets
-- actions: `create(payload)`, `list(limit, offset)`, `get(id)`
+## Stores
 
-## training
-- actions: `start({datasetId, preset, params})`, `get(runId)`, `stream(runId)` (SSE/WebSocket später)
+- datasets: caches dataset entities and summaries; provides selectors and polling declarations (`datasets.count`).
+- training: caches runs and counts by status; dynamic polling for specific `runId` can be declared at page level.
+- metrics: caches scalar and timeseries metrics under stable keys (e.g. `loss:7d`, `train:<runId>:loss:2h`).
+- games: caches lists, details, positions; exposes online count and recent games.
 
-## models
-- actions: `list()`, `load({modelId, artifactUri})`
+## Usage Pattern
 
-## games
-- actions: `list({username,limit,offset,result,color,since})`, `get(id)`, `positions(id)`
+Pages never call services directly. Instead:
+- Import the relevant store(s) and composables `usePolling`/`useSSE`.
+- Trigger one initial load per selector you need and then start polling using the aggregated `pollTargets` from the stores (plus page-specific targets such as a concrete `runId`).
+- Use the memoized selectors for rendering. Handle loading/empty/error via store `loading`/`errors` sets.
 
-## play
-- actions: `predict({fen})`, `newGame()`, `move(uci)`
-
-## observability
-- state: grafanaUrl, dashboardUid (`chs-overview-v1`)
-- actions: `status()`, `fetchPanels()`
-
-## Konventionen
-- Actions im Imperativ, pure side-effects
-- Selectors via `computed`
-- Fehler zentral in `notifications`-Store bündeln

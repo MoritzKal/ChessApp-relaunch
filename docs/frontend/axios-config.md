@@ -17,6 +17,18 @@
 
 ## CORS
 - DEV permissiv; PROD via Reverse Proxy/API-GW härten
+- Wenn die UI per Interceptor `X-Correlation-Id` setzt, muss dieser Header serverseitig erlaubt werden. Beispiel (Spring Security CORS):
+  ```java
+  conf.setAllowedHeaders(List.of(
+      "Authorization",
+      "Content-Type",
+      "X-Requested-With",
+      "X-Debug-User",
+      "X-Correlation-Id"
+  ));
+  conf.setExposedHeaders(List.of("Location", "X-Request-Id"));
+  ```
+  Bei Preflight-Fehlern wie „Request header field x-correlation-id is not allowed by Access-Control-Allow-Headers“ sicherstellen, dass der Header exakt (Groß-/Kleinschreibung egal, aber konsistent) aufgeführt ist und `OPTIONS` als Methode erlaubt ist.
 
 ## Beispiel
 ```ts

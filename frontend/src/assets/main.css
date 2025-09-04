@@ -1,0 +1,17 @@
+@import './base.css';
+
+/* Reset Vite starter layout constraints to allow full-width app. */
+#app {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  font-weight: normal;
+}
+
+/* Keep links unstyled by default; theme.css defines colors. */
+a { text-decoration: none; }
+
+/* Remove demo responsive centering that squeezed our layout. */
+@media (min-width: 1024px) {
+  body { display: block; place-items: normal; }
+}

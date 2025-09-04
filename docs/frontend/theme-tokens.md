@@ -1,26 +1,26 @@
 # Theme Tokens (Vuetify + CSS Vars)
 
-## Farben
-- **Primary:** 600 `#3B82F6` · 500 `#60A5FA` · 700 `#2563EB`
-- **Secondary:** 600 `#8B5CF6`
-- **Surface:** `#0B0F19` (dark) / `#FFFFFF` (light)
-- **Success:** `#10B981` · **Warning:** `#F59E0B` · **Error:** `#EF4444` · **Info:** `#0EA5E9`
-
-> Export als CSS Vars: `--chs-color-primary-600` etc.
+## Farben (Dark Default)
+- `primary` Brass `#CBA35C` · `secondary` Walnut `#8B5E3C`
+- `background` `#0B0E0C` · `surface` `#0F1F1C` · `surface-variant` `#15322D`
+- `on-surface` `#EDEDED` · `outline` `#2C3A36`
+- Status: `info #6BB3FF`, `success #5FBF77`, `warning #F2C14E`, `error #E57373`
 
 ## Typografie
-- Scale: xs 12 · sm 14 · base 16 · lg 18 · xl 20 · 2xl 24 · 3xl 30
-- Weights: 400 / 600
-- Line-Height: 1.2–1.6
+- Scale 12/14/16/20/24/32/40
+- Weights 400/600
 
 ## Spacing
-- 0, 2, 4, 8, 12, 16, 24, 32, 48
+- 4-8-12-16-24-32-48
 
 ## Radius
-- 0, 4, 8, 12, 16
+- 10/14/20 px
 
 ## Elevation
-- 0…5 (Token)
+- warme, weiche Schatten
 
-## Export
-- Vuetify Theme + CSS Vars (`:root { --chs-... }`)
+## Motion
+- 120/200/320 ms
+
+## Holz-Akzent
+- subtil (Gradients/Noise), keine großen Texturen by default

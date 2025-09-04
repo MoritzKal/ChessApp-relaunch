@@ -64,11 +64,15 @@ async def healthz():
 
 # Prometheus
 @app.get("/obs/prom/query", dependencies=[Depends(enforce_key)])
+@app.get("/obs/prom/instant", dependencies=[Depends(enforce_key)])
 @limiter.limit(settings.RATE_LIMIT)
-async def prom_query(request: Request, query: str):
+async def prom_query(request: Request, query: str, time: Optional[str] = None):
     settings = get_settings()
+    params = {"query": query}
+    if time is not None:
+        params["time"] = time
     async with prom_client(settings) as client:
-        status, body, ctype = await forward_get(client, "/api/v1/query", {"query": query})
+        status, body, ctype = await forward_get(client, "/api/v1/query", params)
     # Prefer JSON rendering locally; fallback to raw body
     try:
         data = json.loads(body)
@@ -125,6 +129,7 @@ async def loki_query(
 
 
 @app.get("/obs/loki/range", dependencies=[Depends(enforce_key)])
+@app.get("/obs/loki/query_range", dependencies=[Depends(enforce_key)])
 @limiter.limit(settings.RATE_LIMIT)
 async def loki_range(
     request: Request,

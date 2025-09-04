@@ -47,7 +47,7 @@ logging:
 app:
   security:
     jwt:
-       secret: ${APP_SECURITY_JWT_SECRET:0123456789abcdef0123456789abcdef}
+       secret: ${APP_SECURITY_JWT_SECRET:eine-lange-zufällige-zeichenketteeine-lange-zufällige-zeichenkette}
       # Decoder liest das Roh-Secret (kein Base64), siehe SecurityConfig.
   cors:
     allowed-origins: ${FRONTEND_ORIGIN:http://localhost:5173}

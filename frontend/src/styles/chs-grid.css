@@ -1,0 +1,37 @@
+/* Basis: 12 Spalten – 4 small (3 je), 2 large (6 je) */
+.chs-grid{
+  --cols: 12;
+  --span-small: 3;
+  --span-large: 6;
+  --gap: 20px;
+
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  gap: var(--gap);
+  width: 100%;
+  align-content: start;
+}
+
+/* Mapping von Komponentengröße auf Grid-Span */
+.chs-grid > .is-small { grid-column: span var(--span-small); }
+.chs-grid > .is-large { grid-column: span var(--span-large); }
+
+/* HD  ≤1280: 2 small je Zeile, 1 large je Zeile */
+@media (max-width: 1280px){
+  .chs-grid{ --cols: 6; --span-small: 3; --span-large: 6; --gap:16px; }
+}
+
+/* Full HD 1280–1920: 4 small oder 2 large je Zeile */
+@media (min-width: 1280px) and (max-width: 1920px){
+  .chs-grid{ --cols: 12; --span-small: 3; --span-large: 6; --gap:20px; }
+}
+
+/* 2K ≥2560: mehr Luft, gleiche Anordnung, keine „Briefmarken“-Kacheln */
+@media (min-width: 2560px){
+  .chs-grid{ --cols: 12; --span-small: 3; --span-large: 6; --gap:24px; }
+  .chs-grid .chs-tile{ min-height: calc(1.08 * var(--min-h, 1px)); }
+}
+
+/* Hilfsgrößen, falls du relative Höhen erzwingen willst */
+.is-small .chs-tile{ --min-h: 180px; }
+.is-large .chs-tile{ --min-h: 340px; }

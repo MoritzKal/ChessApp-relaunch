@@ -46,6 +46,27 @@ Siehe Grafana Panel *Ingest* (Prometheus).
 - Ingest: jobs/min, failures
 - Logs: Loki Query `{service=~".+"}` + Filter (`component`, `model_id`)
 
+## Proxy API
+
+- `GET /obs/prom/instant?query=...&time=`
+- `GET /obs/prom/range?query=...&start=&end=&step=`
+- `GET /obs/loki/query?query=`
+- `GET /obs/loki/query_range?query=...&start=&end=`
+
+## PromQL Beispiele
+
+```
+sum(rate(http_server_requests_seconds_count[1m]))                     # RPS
+increase(http_server_requests_seconds_count{status=~"5.."}[5m]) / increase(http_server_requests_seconds_count[5m])  # Error Rate
+histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket[5m]))) * 1000  # Latency
+avg_over_time(chs_training_it_per_sec{run_id="<ID>"}[5m])            # Throughput
+avg_over_time(ml_training_loss{run_id="<ID>"}[5m])                   # Loss
+avg_over_time(ml_training_val_acc{run_id="<ID>"}[5m])                # Val-Acc
+avg_over_time(chs_engine_elo[1h])                                     # ELO
+```
+
+Micrometer: `http_server_requests_seconds_*`
+
 ## Metrics SSOT
 The authoritative metric catalog is stored in `docs/observability/metrics.catalog.v1.yaml` (schema chessapp.metrics/1).
 Consumers (FE dashboards, BA/PL/SRE chats) should read from this file.

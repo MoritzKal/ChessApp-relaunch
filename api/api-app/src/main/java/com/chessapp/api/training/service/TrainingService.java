@@ -4,6 +4,7 @@ import com.chessapp.api.domain.entity.TrainingRun;
 import com.chessapp.api.domain.entity.TrainingStatus;
 import com.chessapp.api.domain.repo.TrainingRunRepository;
 import com.chessapp.api.training.api.TrainingStartRequest;
+import com.chessapp.api.training.api.dto.TrainingItemDto;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.MDC;
@@ -33,11 +34,24 @@ public class TrainingService {
             TrainingRun tr = new TrainingRun();
             tr.setId(runId);
             tr.setDatasetId(req.datasetId());
-            tr.setParams(Optional.ofNullable(req.params()).orElseGet(Map::of));
+            tr.setModelId(req.modelId());
+
+            Map<String, Object> params = new LinkedHashMap<>();
+            params.put("datasetVersion", req.datasetVersion());
+            params.put("epochs", req.epochs());
+            params.put("batchSize", req.batchSize());
+            params.put("learningRate", req.learningRate());
+            params.put("optimizer", req.optimizer());
+            params.put("seed", req.seed());
+            params.put("notes", req.notes());
+            params.put("useGPU", req.useGPU());
+            params.put("priority", req.priority());
+            tr.setParams(params);
+
             tr.setStatus(TrainingStatus.QUEUED);
             repo.save(tr);
 
-            mlClient.postTrain(runId, req.datasetId(), req.params());
+            mlClient.postTrain(runId, req.datasetId(), params);
 
             tr.setStatus(TrainingStatus.RUNNING);
             tr.setStartedAt(Instant.now());
@@ -68,6 +82,58 @@ public class TrainingService {
         if (ml.get("artifactUris") instanceof Map<?,?> a) out.put("artifactUris", a);
         if (ml.get("startedAt") != null) out.put("startedAt", ml.get("startedAt"));
         if (ml.get("finishedAt") != null) out.put("finishedAt", ml.get("finishedAt"));
+        out.putIfAbsent("etaSec", null);
+        out.putIfAbsent("step", 0);
+        out.putIfAbsent("epoch", 0);
+        out.putIfAbsent("progress", 0.0);
+        if (ml.get("updatedAt") != null) {
+            out.put("updatedAt", ml.get("updatedAt"));
+        } else if (tr != null) {
+            Instant upd = tr.getFinishedAt() != null ? tr.getFinishedAt() : Instant.now();
+            out.put("updatedAt", upd.toString());
+        }
+        out.putIfAbsent("updatedAt", Instant.now().toString());
         return out;
+    }
+
+    @Transactional(readOnly = true)
+    public List<TrainingItemDto> list(String status, int limit, int offset) {
+        var page = org.springframework.data.domain.PageRequest.of(offset / limit, limit);
+        List<TrainingRun> runs;
+        if (status != null) {
+            TrainingStatus ts = mapStatus(status);
+            runs = repo.findAllByStatusOrderByStartedAtDesc(ts, page);
+        } else {
+            runs = repo.findAllByOrderByStartedAtDesc(page);
+        }
+        return runs.stream().map(this::toDto).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public long count(String status) {
+        if (status != null) {
+            TrainingStatus ts = mapStatus(status);
+            return repo.countByStatus(ts);
+        }
+        return repo.count();
+    }
+
+    private TrainingStatus mapStatus(String status) {
+        return switch (status) {
+            case "active" -> TrainingStatus.RUNNING;
+            case "finished" -> TrainingStatus.SUCCEEDED;
+            case "failed" -> TrainingStatus.FAILED;
+            default -> TrainingStatus.RUNNING;
+        };
+    }
+
+    private TrainingItemDto toDto(TrainingRun tr) {
+        Instant upd = tr.getFinishedAt() != null ? tr.getFinishedAt() : Instant.now();
+        return new TrainingItemDto(
+                tr.getId().toString(),
+                tr.getStatus() != null ? tr.getStatus().name().toLowerCase() : "unknown",
+                0.0,
+                upd.toString()
+        );
     }
 }
