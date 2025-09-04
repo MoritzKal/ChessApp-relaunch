@@ -121,6 +121,10 @@ Antwort 201:
 ## Serving/Play
 
 - `POST /v1/predict` `{ "fen":"<FEN>","topk":3 }` → `{"move":"e2e4","policy":[...]}`
+- `POST /v1/play/new` → `{ gameId, startedAt }`
+- `POST /v1/play/{gameId}/move` `{ uci }` → `{ ok, fen }`
+- `GET /v1/play/{gameId}` → `{ fen, moves:[{ply,san,uci,side,tMs}] }`
+- `GET /v1/games/online_count` → `{ count }`
 
 ## Models (Registry/Versioning)
 
@@ -129,6 +133,19 @@ Antwort 201:
 - `GET /v1/models/count`
 - `POST /v1/models/load` `{ "name":"policy_tiny","version":"1.2.0","stage":"prod" }`
 - `POST /v1/models/promote` `{ "name":"policy_tiny","from":"staging","to":"prod" }`
+
+## Account
+
+- `POST /auth/login` `{ username,password }` → `{ token }`
+- `GET /v1/users/me`
+- `GET /v1/users/me/prefs`
+- `PUT /v1/users/me/prefs`
+
+## Evaluations
+
+- `POST /v1/evaluations` `{ baselineModelId,candidateModelId,suite }` → `{ evaluationId }`
+- `GET /v1/evaluations` → `{ items:[...] }`
+- `GET /v1/evaluations/{id}` → `{ status, summary, series }`
 
 ## Games
 
