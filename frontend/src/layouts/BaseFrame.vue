@@ -8,7 +8,7 @@
         </v-btn>
         <v-toolbar-title>ChessApp</v-toolbar-title>
         <v-spacer />
-        <v-btn icon variant="text" aria-label="Help"><v-icon>mdi-help-circle-outline</v-icon></v-btn>
+        <v-btn icon variant="text" aria-label="Help" :to="'/help'"><v-icon>mdi-help-circle-outline</v-icon></v-btn>
       </v-app-bar>
     </header>
 
