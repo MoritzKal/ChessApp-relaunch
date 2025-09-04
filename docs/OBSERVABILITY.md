@@ -24,7 +24,7 @@ Scrape-Policy: `/actuator/prometheus` erfordert Monitoring-JWT (Role `MONITORING
 - **chs_predict_cache_misses_total**
 - **chs_model_registry_requests_total**
 - **chs_training_runs_total**
-- **chs_dataset_export_duration_seconds**
+- **chs_dataset_export_duration_seconds** – siehe `/v1/datasets/{id}/export` in [API_ENDPOINTS.md](API_ENDPOINTS.md)
 - **chs_ingest_starts_total**
 - **chs_ingest_success_total**
 - **chs_ingest_failed_total**

@@ -5,5 +5,5 @@ import java.util.UUID;
 /**
  * Response returned when an ingest run is started.
  */
-public record IngestStartResponse(UUID runId) {
+public record IngestStartResponse(UUID runId, String status) {
 }

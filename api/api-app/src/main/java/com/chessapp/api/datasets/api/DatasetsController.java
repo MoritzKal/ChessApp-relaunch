@@ -1,8 +1,10 @@
 package com.chessapp.api.datasets.api;
 
 import com.chessapp.api.datasets.api.dto.*;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +34,8 @@ public class DatasetsController {
     public SampleDto sample(@PathVariable String id,
                              @RequestParam(defaultValue="10") int limit,
                              @RequestParam(required=false) String cursor) {
-        return new SampleDto(List.of(Map.of()), null);
+        String next = cursor == null ? "next" : null;
+        return new SampleDto(List.of(Map.of("id", id)), next);
     }
 
     @GetMapping("/{id}/quality")
@@ -43,5 +46,16 @@ public class DatasetsController {
     @GetMapping("/{id}/ingest/history")
     public IngestHistoryDto history(@PathVariable String id) {
         return new IngestHistoryDto(List.of());
+    }
+
+    @GetMapping("/{id}/export")
+    public ResponseEntity<Void> export(@PathVariable String id,
+                                       @RequestParam String format,
+                                       @RequestParam(required = false) String version) {
+        if (!List.of("parquet", "csv", "pgn").contains(format)) {
+            return ResponseEntity.badRequest().build();
+        }
+        URI uri = URI.create("https://example.com/" + id + "." + format);
+        return ResponseEntity.status(302).location(uri).build();
     }
 }
