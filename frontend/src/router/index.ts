@@ -8,7 +8,10 @@ const routes = [
     children: [
       { path: '', component: () => import('@/pages/Overview.vue') },
       { path: 'training/:runId?', component: () => import('@/pages/TrainingDashboard.vue') },
-      { path: 'datasets/:id', component: () => import('@/pages/DatasetsDashboard.vue') },
+      { path: 'datasets-overview', component: () => import('@/pages/DatasetsDashboard.vue') },
+      { path: 'datasets', component: () => import('@/views/DatasetsIndexView.vue') },
+      { path: 'datasets/import', component: () => import('@/views/DatasetImportView.vue') },
+      { path: 'datasets/:id', component: () => import('@/views/DatasetView.vue') },
       { path: 'play', component: () => import('@/pages/PlayDashboard.vue') },
       { path: 'styleguide', component: () => import('@/pages/Styleguide.vue') },
       { path: 'config', component: () => import('@/pages/ConfigWorkbench.vue') },

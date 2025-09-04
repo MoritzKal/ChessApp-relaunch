@@ -6,7 +6,7 @@ import { zDataset, zDatasetSummary } from '@/types/datasets'
 import type { CountResponse } from '@/types/common'
 import { apiGet } from '@/lib/api'
 
-export async function listDatasets(params?: { limit?: number; offset?: number; sort?: string }): Promise<Dataset[]> {
+export async function listDatasets(params?: { limit?: number; offset?: number; sort?: string; q?: string }): Promise<Dataset[]> {
   const res = await api.get(ep.datasets.list(params))
   return (res.data as any[]).map((d) => zDataset.parse(d))
 }
@@ -51,4 +51,27 @@ export async function getDatasetQuality(id: string): Promise<DatasetQuality> {
 export interface IngestEvent { at: string; user: string; note?: string; version?: string }
 export async function getIngestHistory(id: string): Promise<IngestEvent[]> {
   return apiGet<IngestEvent[]>(ep.datasets.ingestHistory(id))
+}
+
+// Ingest upload
+export interface IngestStartResponse { runId: string; datasetId?: string }
+export async function startIngest(file: File, opts?: { datasetId?: string; note?: string }): Promise<IngestStartResponse> {
+  const fd = new FormData()
+  fd.append('file', file)
+  if (opts?.datasetId) fd.append('datasetId', opts.datasetId)
+  if (opts?.note) fd.append('note', opts.note)
+  const res = await api.post(ep.ingest.start(), fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+  return res.data as IngestStartResponse
+}
+
+export interface IngestRun { runId: string; status: 'running'|'success'|'error'; datasetId?: string; error?: string }
+export async function getIngestRun(runId: string): Promise<IngestRun> {
+  const res = await api.get(ep.ingest.get(runId))
+  return res.data as IngestRun
+}
+
+// Export helper: returns absolute URL (respecting baseURL)
+export function datasetExportUrl(id: string, q: { format: 'parquet'|'csv'|'pgn'; version?: string }): string {
+  const base = (import.meta as any).env.VITE_API_BASE || '/api'
+  return `${base}${ep.datasets.export(id, q)}`
 }

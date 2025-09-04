@@ -25,7 +25,7 @@
             <v-list-subheader class="text-uppercase" inset>Dashboards</v-list-subheader>
             <v-list-item prepend-icon="mdi-home" title="Overview" :to="'/'" />
             <v-list-item prepend-icon="mdi-robot" title="Training" :to="'/training'" />
-            <v-list-item prepend-icon="mdi-database" title="Datasets" :to="'/datasets/sample'" />
+            <v-list-item prepend-icon="mdi-database" title="Datasets" :to="'/datasets-overview'" />
             <v-list-item prepend-icon="mdi-chess-queen" title="Play" :to="'/play'" />
 
             <v-divider class="my-2 chs-divider" />
@@ -38,6 +38,8 @@
 
             <v-list-subheader class="text-uppercase" inset>Configuration</v-list-subheader>
             <v-list-item prepend-icon="mdi-tune" title="Training" :to="'/config/training'" />
+            <v-list-item prepend-icon="mdi-database-plus" title="Datasets" :to="'/datasets'" />
+            <v-list-item prepend-icon="mdi-upload" title="Import Dataset" :to="'/datasets/import'" />
           </v-list>
         </v-navigation-drawer>
       </aside>
