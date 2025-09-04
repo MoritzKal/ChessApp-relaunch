@@ -1,8 +1,8 @@
 <template>
   <div class="chs-grid">
-    <!-- KPI Row -->
-    <div v-for="k in kpis" :key="k.label" class="chs-col-span-3 sm:chs-col-span-1">
-      <v-card class="chs-card ar-2x1">
+    <!-- KPI Row (kleine Kacheln) -->
+    <div v-for="k in kpis" :key="k.label" class="tile chs-col-span-3 sm:chs-col-span-1 tile-kpi">
+      <v-card class="chs-card">
         <div class="chs-kpi">
           <div class="label">{{ k.label }}</div>
           <div class="value">{{ k.value }}</div>
@@ -11,19 +11,19 @@
     </div>
 
     <!-- Training Loss -->
-    <div class="chs-col-span-7 md:chs-col-span-6 sm:chs-col-span-1">
-      <v-card class="chs-card ar-16x9">
+    <div class="tile chs-col-span-7 md:chs-col-span-6 sm:chs-col-span-1 tile-md">
+      <v-card class="chs-card">
         <v-card-title class="text-subtitle-1" style="color:#CBA35C">Training Loss</v-card-title>
         <v-divider class="chs-divider" />
-        <div class="pa-4" style="height:100%;">
+        <div class="pa-4" style="height:calc(100% - 56px);">
           <div style="height:100%; opacity:.9; border:1px dashed rgba(203,163,92,.25); border-radius:8px;"></div>
         </div>
       </v-card>
     </div>
 
     <!-- Recent Trainings -->
-    <div class="chs-col-span-5 md:chs-col-span-6 sm:chs-col-span-1">
-      <v-card class="chs-card ar-4x3">
+    <div class="tile chs-col-span-5 md:chs-col-span-6 sm:chs-col-span-1 tile-md">
+      <v-card class="chs-card">
         <v-card-title class="text-subtitle-1" style="color:#CBA35C">Recent Trainings</v-card-title>
         <v-divider class="chs-divider" />
         <v-table density="comfortable">
@@ -43,19 +43,19 @@
     </div>
 
     <!-- Requests/sec -->
-    <div class="chs-col-span-7 md:chs-col-span-6 sm:chs-col-span-1">
-      <v-card class="chs-card ar-16x9">
+    <div class="tile chs-col-span-7 md:chs-col-span-6 sm:chs-col-span-1 tile-md">
+      <v-card class="chs-card">
         <v-card-title class="text-subtitle-1" style="color:#CBA35C">Requests/sec</v-card-title>
         <v-divider class="chs-divider" />
-        <div class="pa-4" style="height:100%;">
+        <div class="pa-4" style="height:calc(100% - 56px);">
           <div style="height:100%; border:1px dashed rgba(203,163,92,.25); border-radius:8px;"></div>
         </div>
       </v-card>
     </div>
 
     <!-- Promo / Mini-Board -->
-    <div class="chs-col-span-5 md:chs-col-span-6 sm:chs-col-span-1">
-      <v-card class="chs-card ar-1x1 d-flex align-center justify-center">
+    <div class="tile chs-col-span-5 md:chs-col-span-6 sm:chs-col-span-1 tile-sq">
+      <v-card class="chs-card d-flex align-center justify-center">
         <v-icon size="96" color="primary">mdi-crown</v-icon>
       </v-card>
     </div>
