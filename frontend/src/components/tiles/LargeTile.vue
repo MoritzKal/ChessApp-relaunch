@@ -42,15 +42,31 @@ const tileStyle = computed(() => ({
 </script>
 
 <style scoped>
-/* Basis-Styling kommt identisch wie SmallTile */
+/* Basis-Styling – analog SmallTile, mit sanftem Messing-Schimmer */
 .chs_tile{
-  background: var(--panel, #0E2A24);
+  position: relative;
+  background: linear-gradient(180deg, var(--panel, #0E2A24), #0c1a18);
   color: var(--text, #F6F1D1);
   border-radius: var(--radius, 14px);
-  border: 2px solid var(--accent, #D4AF37);
-  box-shadow: var(--shadow, 0 4px 14px rgba(0,0,0,.35));
+  border: 1px solid rgba(212,175,55,.35);
+  box-shadow:
+    0 10px 24px rgba(203,163,92,0.10),
+    0 2px 10px rgba(0,0,0,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.04),
+    inset 0 -1px 0 rgba(0,0,0,0.25);
   display: flex; flex-direction: column; overflow: hidden;
 }
+.chs_tile::before{
+  content:"";
+  position:absolute; inset:0; border-radius: inherit; padding:1px;
+  background: linear-gradient(120deg, rgba(203,163,92,.15), rgba(203,163,92,.55), rgba(203,163,92,.15));
+  background-size: 200% 200%;
+  animation: brassShimmer 10s linear infinite;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  pointer-events: none;
+}
+@keyframes brassShimmer{ to { background-position: 200% 0; } }
 .chs_tile__header{
   color: var(--muted, #C6B07A);
   font-weight: 600; padding: 12px 14px 10px;

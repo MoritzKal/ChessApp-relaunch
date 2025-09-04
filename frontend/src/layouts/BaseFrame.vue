@@ -67,6 +67,6 @@
   border-right: 1px solid rgba(212,175,55,.18);
 }
 .chs_drawer{ background:#0F241F !important; color: var(--text, #F6F1D1) !important; }
-.chs_main{ padding: 20px; min-width: 0; } /* verhindert Zusammenschieben */
+.chs_main{ padding: 20px; min-width: 0; width: 100%; } /* verhindert Zusammenschieben und nutzt volle Breite */
 .v-toolbar-title{ font-weight:700; letter-spacing:.4px; color: var(--text,#F6F1D1) }
 </style>

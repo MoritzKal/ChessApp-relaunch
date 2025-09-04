@@ -1,5 +1,9 @@
 <template>
-  <v-container>
+  <ConfigPage>
+    <template #header>
+      <h2 class="mono" style="font-weight:600">Configuration Workbench</h2>
+    </template>
+
     <v-tabs v-model="tab" class="mb-4">
       <v-tab value="model">Model Setup</v-tab>
       <v-tab value="datasets">Datasets</v-tab>
@@ -23,7 +27,7 @@
     >
       Backend-Endpunkte für Konfiguration/Workflow sind (noch) nicht aktiv. Buttons sind daher deaktiviert.
     </v-alert>
-  </v-container>
+  </ConfigPage>
 </template>
 <script setup lang="ts">
 import { ref } from 'vue'
@@ -33,6 +37,7 @@ import WorkflowTab from '@/sections/config/WorkflowTab.vue'
 import SelfPlayTab from '@/sections/config/SelfPlayTab.vue'
 import ExportTab from '@/sections/config/ExportTab.vue'
 import { usePlanned } from '@/composables/usePlanned'
+import ConfigPage from '@/layouts/ConfigPage.vue'
 const tab = ref('model')
 const { plannedEnabled } = usePlanned()
 </script>
