@@ -20,12 +20,20 @@
           class="chs_drawer"
         >
           <v-list nav density="comfortable">
-            <v-list-item prepend-icon="mdi-view-dashboard" title="Overview" :to="'/'" />
-            <v-list-item prepend-icon="mdi-database" title="Data" :to="'/data'" />
-            <v-list-item prepend-icon="mdi-robot" title="Training" :to="'/training'" />
+            <v-list-group value="dashboards" prepend-icon="mdi-view-dashboard">
+              <template #activator="{ props }">
+                <v-list-item v-bind="props" title="Dashboards" />
+              </template>
+              <v-list-item prepend-icon="mdi-home" title="Overview" :to="'/'" />
+              <v-list-item prepend-icon="mdi-robot" title="Training" :to="'/training'" />
+              <v-list-item prepend-icon="mdi-database" title="Datasets" :to="'/datasets/sample'" />
+              <v-list-item prepend-icon="mdi-chess-queen" title="Play" :to="'/play'" />
+            </v-list-group>
+
+            <v-divider class="my-2 chs-divider" />
+
             <v-list-item prepend-icon="mdi-cube" title="Models" :to="'/models'" />
             <v-list-item prepend-icon="mdi-clipboard-pulse" title="Evaluation" :to="'/evaluation'" />
-            <v-list-item prepend-icon="mdi-chess-queen" title="Play" :to="'/play'" />
             <v-list-item prepend-icon="mdi-chart-areaspline" title="Observability" :to="'/observability'" />
           </v-list>
         </v-navigation-drawer>

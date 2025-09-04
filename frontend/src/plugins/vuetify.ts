@@ -13,12 +13,11 @@ export default createVuetify({
         colors: {
           background: '#0E2A24',
           surface: '#13362E',
-          primary: '#D4AF37',   // Gold
-          secondary: '#C6B07A', // Blassgold
+          primary: '#F0D26B',   // brighter gold
+          secondary: '#F7E1A1', // soft highlight
           onSurface: '#F6F1D1'
         }
       }
     }
   }
 })
-

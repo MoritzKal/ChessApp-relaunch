@@ -7,6 +7,9 @@ const routes = [
     path: '/',
     children: [
       { path: '', component: () => import('@/pages/Overview.vue') },
+      { path: 'training/:runId?', component: () => import('@/pages/TrainingDashboard.vue') },
+      { path: 'datasets/:id', component: () => import('@/pages/DatasetsDashboard.vue') },
+      { path: 'play', component: () => import('@/pages/PlayDashboard.vue') },
       { path: 'styleguide', component: () => import('@/pages/Styleguide.vue') },
       { path: 'config', component: () => import('@/pages/ConfigWorkbench.vue') },
       // weitere Seiten wie Data/Datasets/Training/...
@@ -24,4 +27,3 @@ router.beforeEach((to) => {
 })
 
 export default router
-

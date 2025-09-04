@@ -59,7 +59,7 @@ const tileStyle = computed(() => ({
 .chs_tile::before{
   content:"";
   position:absolute; inset:0; border-radius: inherit; padding:1px;
-  background: linear-gradient(120deg, rgba(203,163,92,.15), rgba(203,163,92,.55), rgba(203,163,92,.15));
+  background: linear-gradient(120deg, rgba(240,210,107,.20), rgba(240,210,107,.80), rgba(240,210,107,.20));
   background-size: 200% 200%;
   animation: brassShimmer 10s linear infinite;
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);

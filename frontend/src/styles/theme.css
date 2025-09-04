@@ -1,6 +1,6 @@
 :root {
-  --chs-brass: #CBA35C;
-  --chs-brass-rgb: 203,163,92;
+  --chs-brass: #F0D26B; /* brighter brass */
+  --chs-brass-rgb: 240,210,107;
   --chs-walnut: #8B5E3C;
   --chs-surface: #0F1F1C;
   --chs-surface-variant: #15322D;
