@@ -156,6 +156,29 @@ Antwort 201:
 - `GET /v1/games/online_count`
 - `POST /v1/games/demo`
 
+## Chess.com Import
+
+- `GET /v1/chesscom/archives?user={username}` → `{ "months": ["2024-01", ...] }`
+- `GET /v1/chesscom/archive/meta?user={u}&year=YYYY&month=MM` → `{ "count": 10, "timeControlDist": { "rapid": 5, "blitz": 5 } }`
+- `POST /v1/ingest/chesscom`
+
+Beispiel:
+
+```json
+{
+  "user": "magnuscarlsen",
+  "months": ["2024-01"],
+  "datasetId": "<UUID>",
+  "note": "optional"
+}
+```
+
+Antwort 201:
+
+```json
+{ "runId": "ing_<uuid>", "status": "queued" }
+```
+
 ## Metrics
 
 - `GET /v1/metrics/throughput`
