@@ -59,12 +59,15 @@ public class MetricsController {
         RangeParams rp = RangeHelper.mapRange(range);
         List<Series> out = new ArrayList<>();
         for (String metric : m.split(",")) {
-            String q;
-            String label;
+            String q = null;
+            String label = null;
             switch (metric.trim()) {
                 case "loss" -> { q = "avg_over_time(ml_training_loss{run_id=\""+runId+"\"}[5m])"; label = "loss"; }
                 case "val_acc" -> { q = "avg_over_time(ml_training_val_acc{run_id=\""+runId+"\"}[5m])"; label = "val_acc"; }
-                default -> continue;
+                default -> { /* unrecognized metric: skip */ }
+            }
+            if (q == null || label == null) {
+                continue;
             }
             out.add(toSeries(client.promRange(q, rp.start(), rp.end(), rp.step()), label));
         }

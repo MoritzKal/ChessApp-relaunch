@@ -12,6 +12,7 @@ const routes = [
       { path: 'play', component: () => import('@/pages/PlayDashboard.vue') },
       { path: 'styleguide', component: () => import('@/pages/Styleguide.vue') },
       { path: 'config', component: () => import('@/pages/ConfigWorkbench.vue') },
+      { path: 'config/training', component: () => import('@/views/TrainingConfigView.vue') },
       // weitere Seiten wie Data/Datasets/Training/...
     ],
     meta: { requiresAuth: true }

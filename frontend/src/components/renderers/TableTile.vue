@@ -12,6 +12,9 @@
             <slot name="cta"></slot>
           </div>
         </template>
+        <template #item.actions="{ item }">
+          <slot name="item-actions" :item="item" />
+        </template>
       </v-data-table>
     </div>
   </LargeTile>
