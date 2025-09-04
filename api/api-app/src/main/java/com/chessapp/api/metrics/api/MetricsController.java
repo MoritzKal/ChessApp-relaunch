@@ -59,7 +59,7 @@ public class MetricsController {
         RangeParams rp = RangeHelper.mapRange(range);
         String q;
         if (runId != null) {
-            q = "avg_over_time(chs_training_it_per_sec{run_id=\\"" + runId + "\\"}[5m])";
+            q = "avg_over_time(chs_training_it_per_sec{run_id=\"" + runId + "\"}[5m])";
         } else {
             q = "sum(avg_over_time(chs_training_it_per_sec[5m]))";
         }
