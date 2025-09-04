@@ -73,6 +73,13 @@ public class TrainingService {
         out.putIfAbsent("etaSec", null);
         out.putIfAbsent("step", 0);
         out.putIfAbsent("epoch", 0);
+        if (ml.get("updatedAt") != null) {
+            out.put("updatedAt", ml.get("updatedAt"));
+        } else if (tr != null) {
+            Instant upd = tr.getFinishedAt() != null ? tr.getFinishedAt() : Instant.now();
+            out.put("updatedAt", upd.toString());
+        }
+        out.putIfAbsent("updatedAt", Instant.now().toString());
         return out;
     }
 

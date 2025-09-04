@@ -67,6 +67,12 @@ Antwort:
 - `GET /v1/datasets`
 - `GET /v1/datasets/{id}`
 - `GET /v1/datasets/count`
+- `GET /v1/datasets/{id}/summary`
+- `GET /v1/datasets/{id}/versions`
+- `GET /v1/datasets/{id}/schema`
+- `GET /v1/datasets/{id}/sample`
+- `GET /v1/datasets/{id}/quality`
+- `GET /v1/datasets/{id}/ingest/history`
 
 ## Training
 
@@ -74,6 +80,8 @@ Antwort:
 - `GET /v1/trainings`
 - `GET /v1/trainings/count`
 - `GET /v1/trainings/{runId}`
+- `GET /v1/training/{runId}` (Alias)
+- `GET /v1/trainings/{runId}/artifacts`
 
 ## Serving/Play
 
@@ -95,6 +103,21 @@ Antwort:
 - `GET /v1/games/recent`
 - `GET /v1/games/online_count`
 - `POST /v1/games/demo`
+
+## Metrics
+
+- `GET /v1/metrics/throughput`
+- `GET /v1/metrics/training/{runId}`
+- `GET /v1/metrics/utilization`
+- `GET /v1/metrics/latency`
+- `GET /v1/metrics/mps`
+- `GET /v1/metrics/rps`
+- `GET /v1/metrics/error_rate`
+- `GET /v1/metrics/elo`
+
+## Logs
+
+- `GET /v1/logs/training/{runId}`
 
 ## Observability/Links
 

@@ -121,4 +121,11 @@ grep -Eq "${HIST_PATTERN}" "$BODY" \
 rm -f "$BODY"
 ok "chs_* metrics present"
 
+hr; echo "[7] metrics & logs endpoints"
+curl -sf -H "Authorization: Bearer ${JWT_READ}" "${BASE_URL}/v1/metrics/rps?range=24h" | jq '.series' >/dev/null || fail "metrics rps"
+curl -sf -H "Authorization: Bearer ${JWT_READ}" "${BASE_URL}/v1/metrics/training/abc?m=loss,val_acc&range=24h" | jq '.series' >/dev/null || fail "metrics training"
+curl -sf -H "Authorization: Bearer ${JWT_READ}" "${BASE_URL}/v1/logs/training/abc" | jq '.items' >/dev/null || fail "logs training"
+curl -sf -H "Authorization: Bearer ${JWT_READ}" "${BASE_URL}/v1/datasets/abc/summary" | jq '.id' >/dev/null || fail "dataset summary"
+curl -sf -H "Authorization: Bearer ${JWT_READ}" "${BASE_URL}/v1/games/recent?limit=50" | jq '.[0]' >/dev/null || fail "games recent"
+
 hr; ok "E2E API CONTRACTS PASSED"
