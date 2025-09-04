@@ -1,4 +1,5 @@
 import axios, { AxiosError, type AxiosRequestConfig } from 'axios'
+import { incApiCall, incApiError, reqStart, reqEnd } from '@/lib/obs'
 import type { ApiError } from '@/types/common'
 
 const baseURL = (import.meta as any).env.VITE_API_BASE || '/api'
@@ -19,6 +20,7 @@ api.interceptors.request.use((cfg) => {
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ;(cfg.headers as any)['X-Correlation-Id'] = crypto.randomUUID()
+  reqStart(); incApiCall();
   return cfg
 })
 
@@ -50,7 +52,8 @@ function normalizeError(err: AxiosError): ApiError {
 }
 
 // response: retry on eligible errors, then normalize
-api.interceptors.response.use(r => r, async (error: AxiosError) => {
+api.interceptors.response.use(r => { reqEnd(); return r }, async (error: AxiosError) => {
+  reqEnd()
   const cfg = (error.config || {}) as AxiosRequestConfig & { __retryCount?: number }
   cfg.__retryCount = cfg.__retryCount ?? 0
   if (cfg.__retryCount < MAX_RETRIES && shouldRetry(error)) {
@@ -60,6 +63,7 @@ api.interceptors.response.use(r => r, async (error: AxiosError) => {
     return api.request(cfg)
   }
   const norm = normalizeError(error)
+  incApiError(norm)
   // broadcast for global snackbars if any consumer wants it
   window.dispatchEvent(new CustomEvent('chs:error', { detail: norm }))
   return Promise.reject(norm)
