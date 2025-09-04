@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { ApiError } from '@/types/common'
 import type { ScalarMetric, TimeseriesResponse, HealthAggregate } from '@/types/metrics'
 import { getHealth, getLoss, getRps, getErrorRate, getLatency, getMps, getElo, getThroughput, getTrainingMetric } from '@/services/metrics'
+import type { SeriesVM } from '@/types/vm'
 
 export interface PollTarget { key: string; intervalMs: number; run: () => Promise<void> }
 
@@ -30,7 +31,11 @@ export const useMetricsStore = defineStore('metrics', () => {
   }
 
   async function fetchSeries(key: string, run: () => Promise<TimeseriesResponse>) {
-    try { setLoading(key, true); setError(key, null); series.value.set(key, await run()) }
+    try {
+      setLoading(key, true); setError(key, null)
+      const resp = await run()
+      series.value.set(key, prune(resp))
+    }
     catch (e: any) { setError(key, e) }
     finally { setLoading(key, false) }
   }
@@ -51,6 +56,21 @@ export const useMetricsStore = defineStore('metrics', () => {
   function selectSeries(key: string) { return computed(() => series.value.get(key) || null) }
   const selectHealth = computed(() => health.value)
 
+  // VM mapper for charts
+  function selectSeriesVm(key: string, label?: string) {
+    return computed<SeriesVM | null>(() => {
+      const s = series.value.get(key)
+      if (!s) return null
+      return {
+        range: s.range,
+        series: s.series.map((ss) => ({
+          label: label || ss.metric,
+          data: ss.points.map(p => ({ x: new Date(p.ts).getTime(), y: p.value }))
+        }))
+      }
+    })
+  }
+
   // declared poll targets (no timers)
   const pollTargets = computed<PollTarget[]>(() => ([
     { key: 'metrics.health', intervalMs: 5000, run: fetchHealth },
@@ -60,8 +80,24 @@ export const useMetricsStore = defineStore('metrics', () => {
   return {
     scalars, series, health, loading, errors,
     fetchHealth, fetchLoss, fetchRps, fetchErrorRate, fetchLatencyP50, fetchLatencyP95, fetchMps, fetchElo, fetchThroughput, fetchTrainingSeries,
-    selectScalar, selectSeries, selectHealth,
+    selectScalar, selectSeries, selectSeriesVm, selectHealth,
     pollTargets,
   }
 })
 
+// Reduce memory pressure by thinning very dense series
+const MAX_POINTS = 2000
+function prune(resp: TimeseriesResponse): TimeseriesResponse {
+  const thin = <T>(arr: T[], limit: number) => {
+    if (!arr) return arr
+    if (arr.length <= limit) return arr
+    const step = Math.ceil(arr.length / limit)
+    const res: T[] = []
+    for (let i = 0; i < arr.length; i += step) res.push(arr[i])
+    return res
+  }
+  return {
+    range: resp.range,
+    series: resp.series.map(s => ({ ...s, points: thin(s.points, MAX_POINTS) }))
+  }
+}

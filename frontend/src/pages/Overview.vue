@@ -7,12 +7,12 @@
     <div class="is_small"><InfoMetricTile title="System Health" icon="mdi-stethoscope" :value="healthText" /></div>
 
     <!-- Row 2: Large (Loss 7d, Requests/sec 7d) with loading/error states -->
-    <div class="is_large"><PlaceholderLargeTile title="Loss (7d)" icon="mdi-chart-line" :loading="lossLoading" :error="lossError" /></div>
-    <div class="is_large"><PlaceholderLargeTile title="Requests/sec (7d)" icon="mdi-chart-areaspline" :loading="rpsLoading" :error="rpsError" /></div>
+    <div class="is_large"><ChartTile title="Loss (7d)" icon="mdi-chart-line" :vm="lossVm" :loading="lossLoading" /></div>
+    <div class="is_large"><ChartTile title="Requests/sec (7d)" icon="mdi-chart-areaspline" :vm="rpsVm" :loading="rpsLoading" /></div>
 
-    <!-- Row 3: Large (Recent Trainings, Top Datasets) → simple list placeholder -->
-    <div class="is_large"><ListLargeTile title="Recent Trainings" icon="mdi-history" :items="recentTrainingItems" :loading="recentLoading" :error="recentError" /></div>
-    <div class="is_large"><ListLargeTile title="Top Datasets (by size)" icon="mdi-table" :items="topDatasetItems" :loading="topDsLoading" :error="topDsError" /></div>
+    <!-- Row 3: Large (Recent Trainings, Top Datasets) → tables -->
+    <div class="is_large"><TableTile title="Recent Trainings" icon="mdi-history" :vm="recentRunsVm" :loading="recentLoading" /></div>
+    <div class="is_large"><TableTile title="Top Datasets (by size)" icon="mdi-table" :vm="topDatasetsVm" :loading="topDsLoading" /></div>
   </DashboardGrid>
 </template>
 
@@ -22,6 +22,8 @@ import DashboardGrid from '@/layouts/DashboardGrid.vue'
 import InfoMetricTile from '@/components/panels/InfoMetricTile.vue'
 import PlaceholderLargeTile from '@/components/panels/PlaceholderLargeTile.vue'
 import ListLargeTile from '@/components/panels/ListLargeTile.vue'
+import ChartTile from '@/components/renderers/ChartTile.vue'
+import TableTile from '@/components/renderers/TableTile.vue'
 import { useDatasetsStore } from '@/stores/datasets'
 import { useTrainingStore } from '@/stores/training'
 import { useMetricsStore } from '@/stores/metrics'
@@ -44,7 +46,12 @@ onMounted(async () => {
     ds.fetchTop('size', 20),
   ])
   // Start declared polling targets
-  startMany([ ...ds.pollTargets.value, ...tr.pollTargets.value, ...mt.pollTargets.value ])
+  const polls = [
+    ...(((ds.pollTargets as unknown) as any).value || []),
+    ...(((tr.pollTargets as unknown) as any).value || []),
+    ...(((mt.pollTargets as unknown) as any).value || []),
+  ]
+  startMany(polls)
 })
 
 // KPI selectors
@@ -59,20 +66,22 @@ const lossLoading = computed(() => mt.loading.has(lossKey))
 const rpsLoading = computed(() => mt.loading.has(rpsKey))
 const lossError = computed(() => mt.errors.get(lossKey)?.message || false)
 const rpsError = computed(() => mt.errors.get(rpsKey)?.message || false)
+const lossVm = mt.selectSeriesVm(lossKey)
+const rpsVm = mt.selectSeriesVm(rpsKey)
 
 // Recent trainings list
 const recentKey = 'l:20|o:0'
 const recentList = tr.selectRuns(20,0)
 const recentLoading = computed(() => tr.loading.has(recentKey))
 const recentError = computed(() => tr.errors.get(recentKey)?.message || false)
-const recentTrainingItems = computed(() => recentList.value.map(r => `${r.runId} • ${r.status}`))
+const recentRunsVm = tr.selectRunsTableVm(20,0)
 
 // Top datasets list by size
 const topKey = 'l:20|o:0|s:size'
 const topList = ds.selectTop('size', 20)
 const topDsLoading = computed(() => ds.loading.has(topKey))
 const topDsError = computed(() => ds.errors.get(topKey)?.message || false)
-const topDatasetItems = computed(() => topList.value.map(d => `${d.name} • ${Intl.NumberFormat('de-DE').format(d.sizeRows)} rows`))
+const topDatasetsVm = ds.selectTopTableVm('size', 20)
 </script>
 
 <style scoped>

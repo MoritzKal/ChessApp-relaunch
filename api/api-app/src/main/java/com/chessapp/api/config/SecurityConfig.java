@@ -109,7 +109,13 @@ public class SecurityConfig {
         var conf = new CorsConfiguration();
         conf.setAllowedOrigins(Arrays.stream(originsCsv.split(",")).map(String::trim).toList());
         conf.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        conf.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "X-Debug-User"));
+        conf.setAllowedHeaders(List.of(
+            "Authorization",
+            "Content-Type",
+            "X-Requested-With",
+            "X-Debug-User",
+            "X-Correlation-Id"
+        ));
         conf.setExposedHeaders(List.of("Location", "X-Request-Id"));
         conf.setAllowCredentials(true);
         conf.setMaxAge(3600L);

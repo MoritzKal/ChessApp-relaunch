@@ -59,8 +59,17 @@ const tpKey = computed(() => `throughput:${runId.value}`)
 const throughputText = computed(() => mt.scalars.get(tpKey.value || '')?.value ?? '—')
 const loss2hKey = computed(() => `train:${runId.value}:loss:2h`)
 const val2hKey = computed(() => `train:${runId.value}:val_acc:2h`)
-const loss2hText = computed(() => mt.series.get(loss2hKey.value || '')?.series?.at(0)?.points?.at(-1)?.value ?? '—')
-const valAcc2hText = computed(() => mt.series.get(val2hKey.value || '')?.series?.at(0)?.points?.at(-1)?.value ?? '—')
+function lastPointVal(key: string | undefined) {
+  if (!key) return '—'
+  const s = mt.series.get(key)
+  if (!s || !s.series.length) return '—'
+  const first = s.series[0]
+  const pts = first.points
+  if (!pts || !pts.length) return '—'
+  return pts[pts.length - 1].value
+}
+const loss2hText = computed(() => lastPointVal(loss2hKey.value))
+const valAcc2hText = computed(() => lastPointVal(val2hKey.value))
 
 const comboLoading = computed(() => mt.loading.has(`train:${runId.value}:loss:24h`) || mt.loading.has(`train:${runId.value}:val_acc:24h`))
 const comboError = computed(() => mt.errors.get(`train:${runId.value}:loss:24h`)?.message || mt.errors.get(`train:${runId.value}:val_acc:24h`)?.message || false)

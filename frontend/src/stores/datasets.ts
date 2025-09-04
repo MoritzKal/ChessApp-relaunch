@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { ApiError } from '@/types/common'
 import type { Dataset, DatasetSummary } from '@/types/datasets'
 import { countDatasets, getDataset, getDatasetSummary, listDatasets, getDatasetVersions } from '@/services/datasets'
+import type { TableVM } from '@/types/vm'
 
 export interface PollTarget { key: string; intervalMs: number; run: () => Promise<void> }
 
@@ -78,6 +79,19 @@ export const useDatasetsStore = defineStore('datasets', () => {
   }
   function selectTop(sort: 'size' | 'rows', limit = 20) { return selectList(limit, 0, sort) }
 
+  function selectTopTableVm(sort: 'size' | 'rows', limit = 20) {
+    const list = selectTop(sort, limit)
+    return computed<TableVM>(() => ({
+      columns: [
+        { key: 'name', label: 'Name' },
+        { key: 'version', label: 'Version' },
+        { key: 'rows', label: 'Rows', align: 'end' },
+        { key: 'createdAt', label: 'Created' },
+      ],
+      rows: list.value.map(d => ({ name: d.name, version: d.version, rows: d.sizeRows, createdAt: d.createdAt }))
+    }))
+  }
+
   // declare poll targets (no timers here)
   const pollTargets = computed<PollTarget[]>(() => ([
     { key: 'datasets.count', intervalMs: 5000, run: fetchCount },
@@ -89,7 +103,7 @@ export const useDatasetsStore = defineStore('datasets', () => {
     // actions
     fetchCount, fetchDataset, fetchSummary, fetchVersions, fetchList, fetchTop, batchFetch,
     // selectors
-    selectDataset, selectSummary, selectVersions, selectList, selectTop,
+    selectDataset, selectSummary, selectVersions, selectList, selectTop, selectTopTableVm,
     // polling declaration
     pollTargets,
   }

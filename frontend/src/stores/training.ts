@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { ApiError } from '@/types/common'
 import type { TrainingRun } from '@/types/training'
 import { getTraining, listTrainingRuns, countTraining } from '@/services/training'
+import type { TableVM } from '@/types/vm'
 
 export interface PollTarget { key: string; intervalMs: number; run: () => Promise<void> }
 
@@ -45,6 +46,24 @@ export const useTrainingStore = defineStore('training', () => {
     return computed(() => runsList.value.get(key) || [])
   }
 
+  function selectRunsTableVm(limit = 20, offset = 0) {
+    const rowsRef = selectRuns(limit, offset)
+    return computed<TableVM>(() => ({
+      columns: [
+        { key: 'runId', label: 'Run ID' },
+        { key: 'status', label: 'Status' },
+        { key: 'duration', label: 'Duration' },
+        { key: 'updated', label: 'Updated' },
+      ],
+      rows: rowsRef.value.map(r => ({
+        runId: r.runId,
+        status: r.status,
+        duration: r.finishedAt && r.startedAt ? `${Math.max(0, (new Date(r.finishedAt).getTime() - new Date(r.startedAt).getTime())/1000).toFixed(0)}s` : '—',
+        updated: r.finishedAt || r.startedAt
+      }))
+    }))
+  }
+
   const pollTargets = computed<PollTarget[]>(() => ([
     { key: 'training.count.active', intervalMs: 5000, run: () => fetchCount('active') },
     { key: 'training.count.total', intervalMs: 10000, run: () => fetchCount('total') },
@@ -53,7 +72,7 @@ export const useTrainingStore = defineStore('training', () => {
   return {
     byRunId, runsList, countsByStatus, loading, errors,
     fetchRun, fetchRuns, fetchCount,
-    selectRun, selectRuns,
+    selectRun, selectRuns, selectRunsTableVm,
     pollTargets,
   }
 })
