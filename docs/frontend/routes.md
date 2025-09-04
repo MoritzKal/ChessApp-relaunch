@@ -3,7 +3,7 @@
 /                → Overview (Dashboard/Status)
 /data            → Data (Import, Games, Positions)
 /datasets        → Datasets (Builder, Versions)
-/training        → Training (Runs, Live-Metrics)
+/trainings        → Training (Runs, Live-Metrics)
 /models          → Models (Registry, Promote/Load)
 /evaluation      → Evaluation (A/B)
 /play            → Play (Board, Clock, Strength)
