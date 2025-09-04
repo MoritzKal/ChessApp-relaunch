@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.PageRequest;
 
 import com.chessapp.api.domain.entity.Game;
 import com.chessapp.api.domain.entity.GameResult;
@@ -60,6 +61,15 @@ public class GameService {
     public List<PositionDto> listPositions(UUID gameId) {
         List<Position> positions = positionRepository.findByGameIdOrderByPlyAsc(gameId);
         return positions.stream().map(GameMapper::toPositionDto).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<GameSummaryDto> listRecent(int limit) {
+        return gameRepository.findAllByOrderByEndTimeDesc(PageRequest.of(0, limit))
+                .getContent()
+                .stream()
+                .map(GameMapper::toSummary)
+                .toList();
     }
 
     @Transactional

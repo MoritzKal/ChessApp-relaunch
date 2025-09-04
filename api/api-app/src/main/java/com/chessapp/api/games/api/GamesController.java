@@ -5,14 +5,18 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.chessapp.api.domain.entity.Color;
 import com.chessapp.api.domain.entity.GameResult;
+import com.chessapp.api.games.api.dto.OnlineCountDto;
 import com.chessapp.api.service.GameService;
 import com.chessapp.api.service.dto.GameDetailDto;
 import com.chessapp.api.service.dto.GameSummaryDto;
@@ -61,5 +65,22 @@ public class GamesController {
     @Operation(summary = "List positions for a game")
     public List<PositionDto> positions(@PathVariable UUID id) {
         return gameService.listPositions(id);
+    }
+
+    @GetMapping("/recent")
+    public List<GameSummaryDto> recent(@RequestParam(defaultValue = "50") int limit) {
+        if (limit < 1) limit = 1;
+        if (limit > 100) limit = 100;
+        return gameService.listRecent(limit);
+    }
+
+    @GetMapping("/online_count")
+    public OnlineCountDto online() {
+        return new OnlineCountDto(0);
+    }
+
+    @PostMapping("/demo")
+    public ResponseEntity<java.util.Map<String, Object>> demo(@RequestBody java.util.Map<String, String> body) {
+        return ResponseEntity.accepted().body(java.util.Map.of("queued", true));
     }
 }

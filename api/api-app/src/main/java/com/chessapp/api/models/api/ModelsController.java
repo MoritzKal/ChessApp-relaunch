@@ -1,5 +1,6 @@
 package com.chessapp.api.models.api;
 
+import com.chessapp.api.common.dto.CountDto;
 import com.chessapp.api.models.api.dto.ModelSummary;
 import com.chessapp.api.models.api.dto.ModelVersionSummary;
 import com.chessapp.api.models.service.ModelRegistryService;
@@ -16,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -52,6 +54,14 @@ public class ModelsController {
                 .increment();
         MDC.clear();
         return ResponseEntity.ok(out);
+    }
+
+    @Operation(summary = "Count models")
+    @GetMapping("/models/count")
+    public ResponseEntity<CountDto> countModels(
+            @RequestParam(value = "status", required = false) String status) {
+        long c = service.countActiveModels();
+        return ResponseEntity.ok(new CountDto(c));
     }
 
     @Operation(summary = "List versions for a given model id")

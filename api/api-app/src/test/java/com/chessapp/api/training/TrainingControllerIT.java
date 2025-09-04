@@ -21,8 +21,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import com.chessapp.api.domain.entity.TrainingRun;
+import com.chessapp.api.domain.entity.TrainingStatus;
 import com.chessapp.api.domain.repo.TrainingRunRepository;
 import java.util.Optional;
+import java.time.Instant;
+import java.util.ArrayList;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -62,6 +65,7 @@ class TrainingControllerIT extends AbstractIntegrationTest {
             return tr;
         });
         when(repo.findById(any())).thenAnswer(invocation -> Optional.ofNullable(store.get(invocation.getArgument(0))));
+        when(repo.findAllByOrderByStartedAtDesc(any())).thenReturn(new ArrayList<>());
     }
 
     @Test
@@ -89,5 +93,23 @@ class TrainingControllerIT extends AbstractIntegrationTest {
         org.assertj.core.api.Assertions.assertThat(metrics).isNotNull();
         org.assertj.core.api.Assertions.assertThat(metrics.containsKey("loss")).isTrue();
         org.assertj.core.api.Assertions.assertThat(metrics.containsKey("val_acc")).isTrue();
+    }
+
+    @Test
+    void list_ok() throws Exception {
+        var runs = new ArrayList<TrainingRun>();
+        for (int i = 0; i < 3; i++) {
+            TrainingRun tr = new TrainingRun();
+            tr.setId(UUID.randomUUID());
+            tr.setStatus(TrainingStatus.RUNNING);
+            tr.setStartedAt(Instant.now());
+            runs.add(tr);
+        }
+        when(repo.findAllByOrderByStartedAtDesc(any())).thenReturn(runs);
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/v1/trainings")
+                        .with(TestAuth.jwtUser())
+                        .param("limit", "20"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.items.length()").value(3));
     }
 }

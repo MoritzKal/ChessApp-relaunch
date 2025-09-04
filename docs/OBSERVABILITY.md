@@ -46,6 +46,13 @@ Siehe Grafana Panel *Ingest* (Prometheus).
 - Ingest: jobs/min, failures
 - Logs: Loki Query `{service=~".+"}` + Filter (`component`, `model_id`)
 
+## Proxy API
+
+- `GET /obs/prom/instant?query=...&time=`
+- `GET /obs/prom/range?query=...&start=&end=&step=`
+- `GET /obs/loki/query?query=`
+- `GET /obs/loki/query_range?query=...&start=&end=`
+
 ## Metrics SSOT
 The authoritative metric catalog is stored in `docs/observability/metrics.catalog.v1.yaml` (schema chessapp.metrics/1).
 Consumers (FE dashboards, BA/PL/SRE chats) should read from this file.

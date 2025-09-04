@@ -60,6 +60,11 @@ public class ModelRegistryService {
         throw new ModelNotFoundException(modelId);
     }
 
+    public long countActiveModels() {
+        Registry reg = get();
+        return reg.models.stream().filter(m -> m.versions != null && !m.versions.isEmpty()).count();
+    }
+
     private Registry get() {
         return cached != null ? cached : tryLoad();
     }

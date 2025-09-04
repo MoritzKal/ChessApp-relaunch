@@ -66,10 +66,13 @@ Antwort:
 - `POST /v1/datasets`
 - `GET /v1/datasets`
 - `GET /v1/datasets/{id}`
+- `GET /v1/datasets/count`
 
 ## Training
 
 - `POST /v1/trainings`
+- `GET /v1/trainings`
+- `GET /v1/trainings/count`
 - `GET /v1/trainings/{runId}`
 
 ## Serving/Play
@@ -80,6 +83,7 @@ Antwort:
 
 - `GET /v1/models` → name, version, stage (staging/prod)
 - `GET /v1/models/{id}/versions`
+- `GET /v1/models/count`
 - `POST /v1/models/load` `{ "name":"policy_tiny","version":"1.2.0","stage":"prod" }`
 - `POST /v1/models/promote` `{ "name":"policy_tiny","from":"staging","to":"prod" }`
 
@@ -88,8 +92,13 @@ Antwort:
 - `GET /v1/games`
 - `GET /v1/games/{id}`
 - `GET /v1/games/{id}/positions`
+- `GET /v1/games/recent`
+- `GET /v1/games/online_count`
+- `POST /v1/games/demo`
 
 ## Observability/Links
 
 - `GET /actuator/prometheus` (Scrape)
+- `GET /obs/prom/instant`, `GET /obs/prom/range`
+- `GET /obs/loki/query`, `GET /obs/loki/query_range`
 - Logs/Traces via Grafana/Loki (siehe [OBSERVABILITY](./OBSERVABILITY.md); Dashboard UID `chs-overview-v1`)
