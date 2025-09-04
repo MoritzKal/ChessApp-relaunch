@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -101,11 +102,20 @@ public class DatasetService {
     }
 
     @Transactional(readOnly = true)
-    public List<DatasetResponse> list(int limit, int offset) {
-        return datasetRepository.findAll(PageRequest.of(offset / limit, limit))
+    public List<DatasetResponse> list(int limit, int offset, String sort) {
+        Sort s = Sort.by(Sort.Direction.DESC, "createdAt");
+        if ("size".equalsIgnoreCase(sort) || "rows".equalsIgnoreCase(sort)) {
+            s = Sort.by(Sort.Direction.DESC, "sizeRows");
+        }
+        return datasetRepository.findAll(PageRequest.of(offset / limit, limit, s))
                 .stream()
                 .map(DatasetMapper::toDto)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public long count() {
+        return datasetRepository.count();
     }
 
     @Transactional(readOnly = true)

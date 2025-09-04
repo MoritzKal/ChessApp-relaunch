@@ -4,6 +4,7 @@ import com.chessapp.api.domain.entity.TrainingRun;
 import com.chessapp.api.domain.entity.TrainingStatus;
 import com.chessapp.api.domain.repo.TrainingRunRepository;
 import com.chessapp.api.training.api.TrainingStartRequest;
+import com.chessapp.api.training.api.dto.TrainingItemDto;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.MDC;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.Duration;
 import java.util.*;
 
 @Service
@@ -68,6 +70,52 @@ public class TrainingService {
         if (ml.get("artifactUris") instanceof Map<?,?> a) out.put("artifactUris", a);
         if (ml.get("startedAt") != null) out.put("startedAt", ml.get("startedAt"));
         if (ml.get("finishedAt") != null) out.put("finishedAt", ml.get("finishedAt"));
+        out.putIfAbsent("etaSec", null);
+        out.putIfAbsent("step", 0);
+        out.putIfAbsent("epoch", 0);
         return out;
+    }
+
+    @Transactional(readOnly = true)
+    public List<TrainingItemDto> list(String status, int limit, int offset) {
+        var page = org.springframework.data.domain.PageRequest.of(offset / limit, limit);
+        List<TrainingRun> runs;
+        if (status != null) {
+            TrainingStatus ts = mapStatus(status);
+            runs = repo.findAllByStatusOrderByStartedAtDesc(ts, page);
+        } else {
+            runs = repo.findAllByOrderByStartedAtDesc(page);
+        }
+        return runs.stream().map(this::toDto).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public long count(String status) {
+        if (status != null) {
+            TrainingStatus ts = mapStatus(status);
+            return repo.countByStatus(ts);
+        }
+        return repo.count();
+    }
+
+    private TrainingStatus mapStatus(String status) {
+        return switch (status) {
+            case "active" -> TrainingStatus.RUNNING;
+            case "finished" -> TrainingStatus.SUCCEEDED;
+            case "failed" -> TrainingStatus.FAILED;
+            default -> TrainingStatus.RUNNING;
+        };
+    }
+
+    private TrainingItemDto toDto(TrainingRun tr) {
+        Instant end = tr.getFinishedAt() != null ? tr.getFinishedAt() : Instant.now();
+        long dur = tr.getStartedAt() != null ? Duration.between(tr.getStartedAt(), end).getSeconds() : 0L;
+        Instant upd = tr.getFinishedAt() != null ? tr.getFinishedAt() : end;
+        return new TrainingItemDto(
+                tr.getId().toString(),
+                tr.getStatus() != null ? tr.getStatus().name().toLowerCase() : "unknown",
+                dur,
+                upd.toString()
+        );
     }
 }
