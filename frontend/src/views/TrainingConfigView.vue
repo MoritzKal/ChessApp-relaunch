@@ -11,7 +11,7 @@
       <InfoMetricTile title="Models active" icon="mdi-cube" :endpoint="ep.models.count({ status: 'active' })" value-key="count" :formatter="fmtZeroAsDash" />
     </div>
     <div class="is_small">
-      <InfoMetricTile title="System Health" icon="mdi-stethoscope" :endpoint="ep.health()" value-key="'status'" :formatter="(v:any) => String(v||'TODO').toUpperCase()" />
+      <InfoMetricTile title="System Health" icon="mdi-stethoscope" :endpoint="ep.health()" value-key="status" :formatter="(v:any) => String(v||'TODO').toUpperCase()" />
     </div>
 
     <!-- Row 2: Large -->
@@ -257,4 +257,3 @@ const formVm = ref<TableVM>({ columns: [], rows: [] })
 .spacer { flex: 1 }
 .actions { display:flex; gap:4px; justify-content:flex-end }
 </style>
-

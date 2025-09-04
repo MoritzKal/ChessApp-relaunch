@@ -12,7 +12,7 @@
     </div>
     <div class="is_large">
       <TableTile title="Samples" icon="mdi-image-multiple-outline" :vm="sampleVm" :loading="sampleLoading">
-        <template #cta>
+        <template #tools>
           <v-btn v-if="nextCursor" size="small" @click="loadMoreSamples">Load more</v-btn>
         </template>
       </TableTile>
@@ -39,9 +39,11 @@ import type { TableVM } from '@/types/vm'
 const route = useRoute()
 const id = computed(() => route.params.id as string || 'sample')
 const ds = useDatasetsStore()
-const { startMany } = usePolling()
+const { startMany, stop } = usePolling()
 
 async function loadAll(){
+  // stop previous timers when switching datasets
+  stop()
   await Promise.all([ ds.fetchSummary(id.value), ds.fetchVersions(id.value), loadSchema(), loadSamples(true), loadQuality(), loadIngest() ])
   startMany([
     { key: `ds.summary:${id.value}`, intervalMs: 6000, run: () => ds.fetchSummary(id.value) },
@@ -140,7 +142,15 @@ async function loadIngest(){
   ingestLoading.value = true
   try {
     const rows = await getIngestHistory(id.value)
-    ingestVm.value = { ...ingestVm.value, rows }
+    ingestVm.value = {
+      ...ingestVm.value,
+      rows: rows.map(r => ({
+        at: r.at,
+        user: r.user,
+        note: r.note,
+        version: r.version
+      }))
+    }
   } finally { ingestLoading.value = false }
 }
 

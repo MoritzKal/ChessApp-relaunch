@@ -3,7 +3,9 @@
     <!-- Head (voller oberer Rand) -->
     <header class="chs_head">
       <v-app-bar flat :height="64">
-        <v-btn icon class="gold" aria-label="Crown"><v-icon>mdi-crown</v-icon></v-btn>
+        <v-btn icon class="gold" aria-label="Home" :to="'/'" title="Home">
+          <v-icon>mdi-crown</v-icon>
+        </v-btn>
         <v-toolbar-title>ChessApp</v-toolbar-title>
         <v-spacer />
         <v-btn icon variant="text" aria-label="Help"><v-icon>mdi-help-circle-outline</v-icon></v-btn>
@@ -20,21 +22,22 @@
           class="chs_drawer"
         >
           <v-list nav density="comfortable">
-            <v-list-group value="dashboards" prepend-icon="mdi-view-dashboard">
-              <template #activator="{ props }">
-                <v-list-item v-bind="props" title="Dashboards" />
-              </template>
-              <v-list-item prepend-icon="mdi-home" title="Overview" :to="'/'" />
-              <v-list-item prepend-icon="mdi-robot" title="Training" :to="'/training'" />
-              <v-list-item prepend-icon="mdi-database" title="Datasets" :to="'/datasets/sample'" />
-              <v-list-item prepend-icon="mdi-chess-queen" title="Play" :to="'/play'" />
-            </v-list-group>
+            <v-list-subheader class="text-uppercase" inset>Dashboards</v-list-subheader>
+            <v-list-item prepend-icon="mdi-home" title="Overview" :to="'/'" />
+            <v-list-item prepend-icon="mdi-robot" title="Training" :to="'/training'" />
+            <v-list-item prepend-icon="mdi-database" title="Datasets" :to="'/datasets/sample'" />
+            <v-list-item prepend-icon="mdi-chess-queen" title="Play" :to="'/play'" />
 
             <v-divider class="my-2 chs-divider" />
 
             <v-list-item prepend-icon="mdi-cube" title="Models" :to="'/models'" />
             <v-list-item prepend-icon="mdi-clipboard-pulse" title="Evaluation" :to="'/evaluation'" />
             <v-list-item prepend-icon="mdi-chart-areaspline" title="Observability" :to="'/observability'" />
+
+            <v-divider class="my-2 chs-divider" />
+
+            <v-list-subheader class="text-uppercase" inset>Configuration</v-list-subheader>
+            <v-list-item prepend-icon="mdi-tune" title="Training" :to="'/config/training'" />
           </v-list>
         </v-navigation-drawer>
       </aside>

@@ -3,6 +3,7 @@
     <div class="tbl_wrap">
       <div class="tools">
         <v-btn size="small" variant="text" @click="copyCsv" prepend-icon="mdi-content-copy">CSV</v-btn>
+        <slot name="tools"></slot>
       </div>
       <div v-if="loading" class="sk"/>
       <v-data-table v-else :headers="headers" :items="rows" density="comfortable" :items-per-page="pageSize" class="chs-card">
