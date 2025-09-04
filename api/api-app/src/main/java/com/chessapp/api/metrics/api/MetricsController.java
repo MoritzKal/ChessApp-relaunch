@@ -43,11 +43,26 @@ public class MetricsController {
         return 0.0;
     }
 
+    @GetMapping("/health")
+    public Map<String, Object> health() {
+        // simple stubbed health metrics
+        return Map.of(
+                "status", "ok",
+                "pingMs", 0,
+                "errorRate", 0.0
+        );
+    }
+
     @GetMapping("/throughput")
-    public SeriesResponse throughput(@RequestParam String runId,
-                                     @RequestParam(defaultValue = "2h") String range) {
+    public SeriesResponse throughput(@RequestParam(required = false) String runId,
+                                     @RequestParam(defaultValue = "24h") String range) {
         RangeParams rp = RangeHelper.mapRange(range);
-        String q = "avg_over_time(chs_training_it_per_sec{run_id=\"" + runId + "\"}[5m])";
+        String q;
+        if (runId != null) {
+            q = "avg_over_time(chs_training_it_per_sec{run_id=\\"" + runId + "\\"}[5m])";
+        } else {
+            q = "sum(avg_over_time(chs_training_it_per_sec[5m]))";
+        }
         Series s = toSeries(client.promRange(q, rp.start(), rp.end(), rp.step()), "throughput_it_per_sec");
         return new SeriesResponse(List.of(s));
     }

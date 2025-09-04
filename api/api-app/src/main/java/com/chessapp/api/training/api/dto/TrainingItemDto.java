@@ -1,3 +1,6 @@
 package com.chessapp.api.training.api.dto;
 
-public record TrainingItemDto(String runId, String status, long durationSec, String updatedAt) {}
+/**
+ * Summary of a training run returned in list endpoints.
+ */
+public record TrainingItemDto(String runId, String status, double progress, String updatedAt) {}

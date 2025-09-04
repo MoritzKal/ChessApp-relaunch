@@ -39,10 +39,11 @@ public class DatasetController {
     @GetMapping
     public List<DatasetResponse> list(@RequestParam(defaultValue = "20") int limit,
                                       @RequestParam(defaultValue = "0") int offset,
-                                      @RequestParam(required = false) String sort) {
+                                      @RequestParam(required = false) String sort,
+                                      @RequestParam(required = false) String q) {
         if (limit < 1) limit = 1;
         if (limit > 100) limit = 100;
-        return datasetService.list(limit, offset, sort);
+        return datasetService.list(limit, offset, sort, q);
     }
 
     @GetMapping("/count")

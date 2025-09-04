@@ -4,8 +4,13 @@ import com.chessapp.api.common.dto.CountDto;
 import com.chessapp.api.training.api.dto.ArtifactListDto;
 import com.chessapp.api.training.api.dto.TrainingListDto;
 import com.chessapp.api.training.service.TrainingService;
+import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -14,13 +19,17 @@ import java.util.UUID;
 @RequestMapping("/v1/trainings")
 public class TrainingController {
 
+    private static final Logger log = LoggerFactory.getLogger(TrainingController.class);
+
     private final TrainingService service;
     public TrainingController(TrainingService service) { this.service = service; }
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> start(@RequestBody TrainingStartRequest req) {
+    public ResponseEntity<Map<String, Object>> start(@Valid @RequestBody TrainingStartRequest req) {
         UUID runId = service.startTraining(req);
-        return ResponseEntity.accepted().body(Map.of("runId", runId.toString()));
+        log.info("audit.training.start run_id={} dataset_id={} model_id={}", runId, req.datasetId(), req.modelId());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(Map.of("runId", runId.toString(), "status", "queued"));
     }
 
     @GetMapping
@@ -50,6 +59,11 @@ public class TrainingController {
     @PostMapping("/{runId}/control")
     public ResponseEntity<Map<String, Object>> control(@PathVariable UUID runId,
                                                        @RequestBody Map<String, String> body) {
+        String action = body.get("action");
+        if (!"pause".equals(action) && !"stop".equals(action)) {
+            return ResponseEntity.badRequest().build();
+        }
+        log.info("audit.training.control run_id={} action={}", runId, action);
         return ResponseEntity.accepted().body(Map.of("queued", true));
     }
 }
