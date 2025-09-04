@@ -5,7 +5,7 @@ import type { Dataset, DatasetSummary } from '@/types/datasets'
 import { zDataset, zDatasetSummary } from '@/types/datasets'
 import type { CountResponse } from '@/types/common'
 
-export async function listDatasets(params?: { limit?: number; offset?: number }): Promise<Dataset[]> {
+export async function listDatasets(params?: { limit?: number; offset?: number; sort?: string }): Promise<Dataset[]> {
   const res = await api.get(ep.datasets.list(params))
   return (res.data as any[]).map((d) => zDataset.parse(d))
 }
@@ -27,4 +27,3 @@ export async function getDatasetVersions(id: string): Promise<any[]> {
   const res = await api.get(ep.datasets.versions(id))
   return res.data as any[]
 }
-

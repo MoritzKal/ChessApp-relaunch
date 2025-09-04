@@ -10,13 +10,13 @@ export const useDatasetsStore = defineStore('datasets', () => {
   const byId = ref(new Map<string, Dataset>())
   const summaryById = ref(new Map<string, DatasetSummary>())
   const versionsById = ref(new Map<string, any[]>())
-  const listCache = ref(new Map<string, Dataset[]>()) // key: `limit:offset`
+  const listCache = ref(new Map<string, Dataset[]>()) // key: `limit:offset:sort`
   const counts = ref<number | null>(null)
 
   const loading = ref(new Set<string>())
   const errors = ref(new Map<string, ApiError>())
 
-  const keyList = (limit?: number, offset?: number) => `l:${limit ?? 50}|o:${offset ?? 0}`
+  const keyList = (limit?: number, offset?: number, sort?: string) => `l:${limit ?? 50}|o:${offset ?? 0}|s:${sort ?? ''}`
 
   function setLoading(k: string, v: boolean) { v ? loading.value.add(k) : loading.value.delete(k) }
   function setError(k: string, e?: ApiError | null) { if (e) errors.value.set(k, e); else errors.value.delete(k) }
@@ -49,11 +49,15 @@ export const useDatasetsStore = defineStore('datasets', () => {
     finally { setLoading(k, false) }
   }
 
-  async function fetchList(limit?: number, offset?: number) {
-    const key = keyList(limit, offset)
-    try { setLoading(key, true); setError(key, null); listCache.value.set(key, await listDatasets({ limit, offset })) }
+  async function fetchList(limit?: number, offset?: number, sort?: string) {
+    const key = keyList(limit, offset, sort)
+    try { setLoading(key, true); setError(key, null); listCache.value.set(key, await listDatasets({ limit, offset, sort })) }
     catch (e: any) { setError(key, e) }
     finally { setLoading(key, false) }
+  }
+
+  async function fetchTop(sort: 'size' | 'rows', limit = 20) {
+    return fetchList(limit, 0, sort)
   }
 
   async function batchFetch(ids: string[], opts?: { summary?: boolean; versions?: boolean }) {
@@ -68,10 +72,11 @@ export const useDatasetsStore = defineStore('datasets', () => {
   function selectDataset(id: string) { return computed(() => byId.value.get(id) || null) }
   function selectSummary(id: string) { return computed(() => summaryById.value.get(id) || null) }
   function selectVersions(id: string) { return computed(() => versionsById.value.get(id) || []) }
-  function selectList(limit?: number, offset?: number) {
-    const key = keyList(limit, offset)
+  function selectList(limit?: number, offset?: number, sort?: string) {
+    const key = keyList(limit, offset, sort)
     return computed(() => listCache.value.get(key) || [])
   }
+  function selectTop(sort: 'size' | 'rows', limit = 20) { return selectList(limit, 0, sort) }
 
   // declare poll targets (no timers here)
   const pollTargets = computed<PollTarget[]>(() => ([
@@ -82,11 +87,10 @@ export const useDatasetsStore = defineStore('datasets', () => {
     // state
     byId, summaryById, versionsById, listCache, counts, loading, errors,
     // actions
-    fetchCount, fetchDataset, fetchSummary, fetchVersions, fetchList, batchFetch,
+    fetchCount, fetchDataset, fetchSummary, fetchVersions, fetchList, fetchTop, batchFetch,
     // selectors
-    selectDataset, selectSummary, selectVersions, selectList,
+    selectDataset, selectSummary, selectVersions, selectList, selectTop,
     // polling declaration
     pollTargets,
   }
 })
-

@@ -9,7 +9,7 @@ export interface PollTarget { key: string; intervalMs: number; run: () => Promis
 export const useTrainingStore = defineStore('training', () => {
   const byRunId = ref(new Map<string, TrainingRun>())
   const runsList = ref(new Map<string, TrainingRun[]>()) // key: `limit:offset`
-  const counts = ref<number | null>(null)
+  const countsByStatus = ref(new Map<string, number>())
 
   const loading = ref(new Set<string>())
   const errors = ref(new Map<string, ApiError>())
@@ -34,7 +34,7 @@ export const useTrainingStore = defineStore('training', () => {
 
   async function fetchCount(status?: string) {
     const k = `count:${status ?? 'all'}`
-    try { setLoading(k, true); setError(k, null); counts.value = await countTraining({ status }) }
+    try { setLoading(k, true); setError(k, null); countsByStatus.value.set(status ?? 'all', await countTraining({ status })) }
     catch (e: any) { setError(k, e) }
     finally { setLoading(k, false) }
   }
@@ -46,14 +46,14 @@ export const useTrainingStore = defineStore('training', () => {
   }
 
   const pollTargets = computed<PollTarget[]>(() => ([
-    { key: 'training.count', intervalMs: 5000, run: () => fetchCount('active') },
+    { key: 'training.count.active', intervalMs: 5000, run: () => fetchCount('active') },
+    { key: 'training.count.total', intervalMs: 10000, run: () => fetchCount('total') },
   ]))
 
   return {
-    byRunId, runsList, counts, loading, errors,
+    byRunId, runsList, countsByStatus, loading, errors,
     fetchRun, fetchRuns, fetchCount,
     selectRun, selectRuns,
     pollTargets,
   }
 })
-
