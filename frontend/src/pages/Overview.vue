@@ -28,13 +28,16 @@ import { useDatasetsStore } from '@/stores/datasets'
 import { useTrainingStore } from '@/stores/training'
 import { useMetricsStore } from '@/stores/metrics'
 import { usePolling } from '@/composables/usePolling'
+import { useAuthStore } from '@/stores/auth'
 
 const ds = useDatasetsStore()
 const tr = useTrainingStore()
 const mt = useMetricsStore()
 const { startMany, stop } = usePolling()
+const auth = useAuthStore()
 
 onMounted(async () => {
+  if (!auth.isAuthed) return
   // Initial load for KPIs
   await Promise.all([
     ds.fetchCount(),

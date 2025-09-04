@@ -10,9 +10,9 @@ export default ({ mode }: { mode: string }) => {
   return defineConfig({
     plugins: [
       vue(),
-      vueDevTools(),
+      env.VITE_ENABLE_DEVTOOLS === 'true' ? vueDevTools() : undefined,
       vuetify({ autoImport: true }),
-    ],
+    ].filter(Boolean) as any,
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url))

@@ -13,8 +13,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '@/plugins/axios'
 import { useAuthStore } from '@/stores/auth'
+import axios from 'axios'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -23,20 +23,26 @@ const password = ref('')
 const remember = ref(true)
 
 async function login() {
-  const devToken = import.meta.env.VITE_DEV_STATIC_TOKEN
   try {
-    if (devToken) auth.setToken(devToken)
-    else {
-      const { data } = await api.post('/v1/auth/login', {
-        username: username.value,
-        password: password.value
-      })
-      auth.setToken(data.accessToken)
+    // Try open /v1/auth/token (dev convenience)
+    const base = (import.meta as any).env.VITE_API_BASE || '/api'
+    const { data } = await axios.get(base + '/v1/auth/token', {
+      params: { user: username.value || 'user1', roles: 'USER', scope: 'api.read', ttl: 3600 }
+    })
+    const token = (data as any)?.token
+    if (token && token.split('.').length === 3) {
+      auth.setToken(token)
+      router.push('/');
+      return
     }
+  } catch {}
+  // Fallback to env dev token if it looks like a JWT
+  const devToken = (import.meta as any).env.VITE_DEV_STATIC_TOKEN
+  if (devToken && String(devToken).split('.').length === 3) {
+    auth.setToken(devToken)
     router.push('/')
-  } catch (e) {
-    /* Snackbar via interceptor */
+    return
   }
+  alert('Login failed. Please configure a valid dev token or auth endpoint.')
 }
 </script>
-

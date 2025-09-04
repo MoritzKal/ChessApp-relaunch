@@ -18,6 +18,10 @@ export function useSSE(featureFlag = (import.meta as any).env.VITE_ENABLE_SSE ==
 
   function disconnect() { if (es) { es.close(); es = null } }
 
-  return { connect, disconnect, get connected() { return !!es } }
-}
+  // helpers to ensure cleanup on route leave/unmount
+  function attachLifecycle(onCleanup: (fn: () => void) => void) {
+    onCleanup(() => disconnect())
+  }
 
+  return { connect, disconnect, attachLifecycle, get connected() { return !!es } }
+}

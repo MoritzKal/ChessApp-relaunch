@@ -10,6 +10,7 @@ export interface PollTarget { key: string; intervalMs: number; run: () => Promis
 export const useMetricsStore = defineStore('metrics', () => {
   const scalars = ref(new Map<string, ScalarMetric>())
   const series = ref(new Map<string, TimeseriesResponse>())
+  const seriesOrder = ref<string[]>([]) // LRU for eviction
   const health = ref<HealthAggregate | null>(null)
   const loading = ref(new Set<string>())
   const errors = ref(new Map<string, ApiError>())
@@ -30,11 +31,25 @@ export const useMetricsStore = defineStore('metrics', () => {
     finally { setLoading(key, false) }
   }
 
+  function evictIfNeeded() {
+    while (seriesOrder.value.length > MAX_SERIES_KEYS) {
+      const oldKey = seriesOrder.value.shift()!
+      series.value.delete(oldKey)
+      errors.value.delete(oldKey)
+      loading.value.delete(oldKey)
+    }
+  }
+
   async function fetchSeries(key: string, run: () => Promise<TimeseriesResponse>) {
     try {
       setLoading(key, true); setError(key, null)
       const resp = await run()
       series.value.set(key, prune(resp))
+      // maintain LRU order and evict if needed
+      const idx = seriesOrder.value.indexOf(key)
+      if (idx !== -1) seriesOrder.value.splice(idx, 1)
+      seriesOrder.value.push(key)
+      evictIfNeeded()
     }
     catch (e: any) { setError(key, e) }
     finally { setLoading(key, false) }
@@ -57,16 +72,26 @@ export const useMetricsStore = defineStore('metrics', () => {
   const selectHealth = computed(() => health.value)
 
   // VM mapper for charts
-  function selectSeriesVm(key: string, label?: string) {
+  function selectSeriesVm(key: string, label?: string, targetPoints = 1200) {
+    const thin = (arr: { ts: string; value: number }[]) => {
+      if (!arr || arr.length <= targetPoints) return arr
+      const step = Math.ceil(arr.length / targetPoints)
+      const res: { ts: string; value: number }[] = []
+      for (let i = 0; i < arr.length; i += step) res.push(arr[i])
+      return res
+    }
     return computed<SeriesVM | null>(() => {
       const s = series.value.get(key)
       if (!s) return null
       return {
         range: s.range,
-        series: s.series.map((ss) => ({
-          label: label || ss.metric,
-          data: ss.points.map(p => ({ x: new Date(p.ts).getTime(), y: p.value }))
-        }))
+        series: s.series.map((ss) => {
+          const pts = thin(ss.points)
+          return {
+            label: label || ss.metric,
+            data: pts.map(p => ({ x: new Date(p.ts).getTime(), y: p.value }))
+          }
+        })
       }
     })
   }
@@ -86,7 +111,8 @@ export const useMetricsStore = defineStore('metrics', () => {
 })
 
 // Reduce memory pressure by thinning very dense series
-const MAX_POINTS = 2000
+const MAX_POINTS = 10000
+const MAX_SERIES_KEYS = 16
 function prune(resp: TimeseriesResponse): TimeseriesResponse {
   const thin = <T>(arr: T[], limit: number) => {
     if (!arr) return arr
@@ -100,4 +126,9 @@ function prune(resp: TimeseriesResponse): TimeseriesResponse {
     range: resp.range,
     series: resp.series.map(s => ({ ...s, points: thin(s.points, MAX_POINTS) }))
   }
+}
+
+function evictSeries() {
+  // @ts-ignore - access inside store module scope
+  const s = (useMetricsStore as any)?.stores?.metrics // not available; fallback to global vars captured
 }
