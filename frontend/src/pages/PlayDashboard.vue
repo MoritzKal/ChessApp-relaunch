@@ -20,5 +20,5 @@
 import DashboardGrid from '@/layouts/DashboardGrid.vue'
 import InfoMetricTile from '@/components/panels/InfoMetricTile.vue'
 import PlaceholderLargeTile from '@/components/panels/PlaceholderLargeTile.vue'
+import { Endpoints as ep } from '@/lib/endpoints'
 </script>
-

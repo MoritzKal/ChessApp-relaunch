@@ -22,13 +22,14 @@ import { useRoute } from 'vue-router'
 import DashboardGrid from '@/layouts/DashboardGrid.vue'
 import InfoMetricTile from '@/components/panels/InfoMetricTile.vue'
 import PlaceholderLargeTile from '@/components/panels/PlaceholderLargeTile.vue'
+import { Endpoints as ep } from '@/lib/endpoints'
 
 const route = useRoute()
 const id = computed(() => route.params.id as string || 'sample')
 
-const summaryEp = computed(() => `/v1/datasets/${id.value}/summary`)
+const summaryEp = computed(() => ep.datasets.summary(id.value))
 const rowsEp = summaryEp
-const versionsEp = computed(() => `/v1/datasets/${id.value}/versions`)
+const versionsEp = computed(() => ep.datasets.versions(id.value))
 
 function fmtBytes(v: number){
   if (!v && v !== 0) return '—'
@@ -38,4 +39,3 @@ function fmtBytes(v: number){
   return `${n.toFixed(1)} ${units[idx]}`
 }
 </script>
-

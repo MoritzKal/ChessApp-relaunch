@@ -22,13 +22,13 @@ import { useRoute } from 'vue-router'
 import DashboardGrid from '@/layouts/DashboardGrid.vue'
 import InfoMetricTile from '@/components/panels/InfoMetricTile.vue'
 import PlaceholderLargeTile from '@/components/panels/PlaceholderLargeTile.vue'
+import { Endpoints as ep } from '@/lib/endpoints'
 
 const route = useRoute()
 const runId = computed(() => route.params.runId as string | undefined)
 
 const statusText = computed(() => runId.value ? `Run ${runId.value}` : 'Pick a Run')
-const tpEndpoint = computed(() => runId.value ? `/v1/metrics/throughput?runId=${runId.value}` : undefined)
-const loss2hEndpoint = computed(() => runId.value ? `/v1/metrics/training/${runId.value}?m=loss&range=2h` : undefined)
-const valAcc2hEndpoint = computed(() => runId.value ? `/v1/metrics/training/${runId.value}?m=val_acc&range=2h` : undefined)
+const tpEndpoint = computed(() => runId.value ? ep.metrics.throughput(runId.value) : undefined)
+const loss2hEndpoint = computed(() => runId.value ? ep.metrics.trainingMetric(runId.value, 'loss', '2h') : undefined)
+const valAcc2hEndpoint = computed(() => runId.value ? ep.metrics.trainingMetric(runId.value, 'val_acc', '2h') : undefined)
 </script>
-

@@ -1,10 +1,10 @@
 <template>
   <DashboardGrid>
     <!-- Row 1: KPIs (Datasets, Trainings, Active Models, System Health) -->
-    <div class="is_small"><InfoMetricTile title="Datasets" icon="mdi-database-import" endpoint="/v1/datasets/count" /></div>
-    <div class="is_small"><InfoMetricTile title="Trainings" icon="mdi-robot" endpoint="/v1/training/count?status=active,total" /></div>
-    <div class="is_small"><InfoMetricTile title="Active Models" icon="mdi-cube" endpoint="/v1/models/count?status=active" /></div>
-    <div class="is_small"><InfoMetricTile title="System Health" icon="mdi-stethoscope" endpoint="/v1/metrics/health" /></div>
+    <div class="is_small"><InfoMetricTile title="Datasets" icon="mdi-database-import" :endpoint="ep.datasets.count()" /></div>
+    <div class="is_small"><InfoMetricTile title="Trainings" icon="mdi-robot" :endpoint="ep.training.count({ status: 'active,total' })" /></div>
+    <div class="is_small"><InfoMetricTile title="Active Models" icon="mdi-cube" :endpoint="ep.models.count({ status: 'active' })" /></div>
+    <div class="is_small"><InfoMetricTile title="System Health" icon="mdi-stethoscope" :endpoint="ep.metrics.health()" /></div>
 
     <!-- Row 2: Large (Loss 7d, Requests/sec 7d) -->
     <div class="is_large"><PlaceholderLargeTile title="Loss (7d)" icon="mdi-chart-line" /></div>
@@ -20,6 +20,7 @@
 import DashboardGrid from '@/layouts/DashboardGrid.vue'
 import InfoMetricTile from '@/components/panels/InfoMetricTile.vue'
 import PlaceholderLargeTile from '@/components/panels/PlaceholderLargeTile.vue'
+import { Endpoints as ep } from '@/lib/endpoints'
 </script>
 
 <style scoped>
