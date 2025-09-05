@@ -1,4 +1,4 @@
-package com.chessapp.api.config;
+﻿package com.chessapp.api.config;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -66,7 +66,8 @@ public class SecurityConfig {
                     .accessDeniedHandler(new BearerTokenAccessDeniedHandler()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/health", "/actuator/health").permitAll()
-                        .requestMatchers("/v1/auth/token").permitAll()
+                        .requestMatchers("/v1/auth/token").permitAll()                        .requestMatchers("/auth/login").permitAll()
+                        .requestMatchers("/v1/admin/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/actuator/prometheus").hasAnyAuthority("ROLE_ADMIN", "ROLE_MONITORING", "SCOPE_monitoring")
                         .requestMatchers("/actuator/**").authenticated()
                         .requestMatchers("/v1/**").authenticated()
@@ -124,3 +125,4 @@ public class SecurityConfig {
         return src;
     }
 }
+

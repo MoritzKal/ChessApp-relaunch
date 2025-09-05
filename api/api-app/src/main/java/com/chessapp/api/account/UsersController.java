@@ -1,4 +1,4 @@
-package com.chessapp.api.account;
+﻿package com.chessapp.api.account;
 
 import com.chessapp.api.account.dto.UserDto;
 import com.chessapp.api.account.dto.UserPrefsDto;
@@ -23,7 +23,13 @@ public class UsersController {
     @GetMapping("/me")
     public UserDto me(Authentication auth) {
         String username = auth.getName();
-        return new UserDto("user-" + username.hashCode(), username, Instant.EPOCH, List.of("USER"));
+        List<String> roles = auth.getAuthorities().stream()
+                .map(a -> a.getAuthority())
+                .filter(s -> s != null && s.startsWith("ROLE_"))
+                .map(s -> s.substring(5))
+                .distinct()
+                .toList();
+        return new UserDto("user-" + username.hashCode(), username, Instant.EPOCH, roles);
     }
 
     @GetMapping("/me/prefs")

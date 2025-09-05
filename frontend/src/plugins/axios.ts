@@ -1,4 +1,4 @@
-import axios, { AxiosError, type AxiosRequestConfig } from 'axios'
+﻿import axios, { AxiosError, type AxiosRequestConfig } from 'axios'
 import { incApiCall, incApiError, reqStart, reqEnd } from '@/lib/obs'
 import type { ApiError } from '@/types/common'
 
@@ -16,7 +16,7 @@ function isJwt(tok?: string | null) {
 }
 function isAuthTokenPath(url?: string) {
   if (!url) return false
-  return url.includes('/v1/auth/token')
+  return url.includes('/v1/auth/token') || url.includes('/auth/login')
 }
 
 // request: add Authorization and correlation id
@@ -119,3 +119,4 @@ api.interceptors.response.use(r => { reqEnd(); return r }, async (error: AxiosEr
 })
 
 export default api
+

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <DashboardGrid>
     <!-- Row 1: KPIs -->
     <div class="is_small">
@@ -18,7 +18,7 @@
     <div class="is_large">
       <TableTile title="Start Training" icon="mdi-rocket-launch" :vm="formVm" :loading="false">
         <template #cta>
-          <div class="form_wrap">
+          <ConfigPanel>
             <v-alert v-if="formError" type="error" density="comfortable" class="mb-2">{{ formError }}</v-alert>
             <v-form v-model="formValid" @submit.prevent="onSubmit">
               <div class="row">
@@ -64,8 +64,7 @@
                 <v-btn :loading="submitting" :disabled="!formValid || submitting" color="primary" type="submit" prepend-icon="mdi-rocket">Start</v-btn>
               </div>
             </v-form>
-          </div>
-        </template>
+          <template #footer>\r\n              <div class="row" style="justify-content:flex-end">\r\n                <v-btn :loading="submitting" :disabled="!formValid || submitting" color="primary" type="submit" prepend-icon="mdi-rocket">Start</v-btn>\r\n              </div>\r\n            </template>\r\n          </ConfigPanel>\r\n        </template>
       </TableTile>
     </div>
     <div class="is_large">
@@ -78,8 +77,7 @@
             <RouterLink :to="`/training/${item.runId}`"><v-btn size="x-small" variant="text" icon="mdi-open-in-new" :title="`Open ${item.runId}`" /></RouterLink>
             <v-btn size="x-small" variant="text" icon="mdi-pause" :title="'Pause'" @click="() => onControl(item.runId, 'pause')" />
             <v-btn size="x-small" variant="text" icon="mdi-stop" :title="'Stop'" @click="() => onControl(item.runId, 'stop')" />
-          </div>
-        </template>
+          <template #footer>\r\n              <div class="row" style="justify-content:flex-end">\r\n                <v-btn :loading="submitting" :disabled="!formValid || submitting" color="primary" type="submit" prepend-icon="mdi-rocket">Start</v-btn>\r\n              </div>\r\n            </template>\r\n          </ConfigPanel>\r\n        </template>
       </TableTile>
     </div>
 
@@ -99,7 +97,7 @@ import { onMounted, ref, watch, computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import DashboardGrid from '@/layouts/DashboardGrid.vue'
 import InfoMetricTile from '@/components/panels/InfoMetricTile.vue'
-import TableTile from '@/components/renderers/TableTile.vue'
+import TableTile from '@/components/renderers/TableTile.vue'\nimport ConfigPanel from '@/components/ConfigPanel.vue'
 import ChartTile from '@/components/renderers/ChartTile.vue'
 import { Endpoints as ep } from '@/lib/endpoints'
 import { listDatasets, getDatasetVersions } from '@/services/datasets'
@@ -111,7 +109,7 @@ import { usePolling } from '@/composables/usePolling'
 
 const fmtZeroAsDash = (v: any) => {
   const n = Number(v) || 0
-  return n === 0 ? '—' : String(n)
+  return n === 0 ? 'â€”' : String(n)
 }
 
 // --- Form state ---
@@ -209,7 +207,7 @@ async function loadActive(){
     activeRows.value = rows.map(r => ({
       runId: r.runId,
       status: r.status,
-      progress: '—',
+      progress: 'â€”',
       updatedAt: (r.finishedAt || r.startedAt)
     }))
   } finally { activeLoading.value = false }
@@ -257,3 +255,4 @@ const formVm = ref<TableVM>({ columns: [], rows: [] })
 .spacer { flex: 1 }
 .actions { display:flex; gap:4px; justify-content:flex-end }
 </style>
+

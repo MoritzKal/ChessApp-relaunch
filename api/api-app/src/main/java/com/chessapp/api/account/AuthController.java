@@ -1,4 +1,4 @@
-package com.chessapp.api.account;
+﻿package com.chessapp.api.account;
 
 import java.time.Instant;
 import java.util.Base64;
@@ -20,20 +20,31 @@ import javax.crypto.spec.SecretKeySpec;
 public class AuthController {
 
     private final String jwtSecret;
+    private final AppUserRepository users;
 
-    public AuthController(@Value("${app.security.jwt.secret}") String jwtSecret) {
+    public AuthController(@Value("${app.security.jwt.secret}") String jwtSecret, AppUserRepository users) {
         this.jwtSecret = jwtSecret;
+        this.users = users;
     }
 
     @PostMapping("/login")
     public Map<String, String> login(@RequestBody Map<String, String> body) {
-        String user = body.getOrDefault("username", "user1");
+        String username = body.getOrDefault("username", "");
+        String password = body.getOrDefault("password", "");
+
+        var opt = users.findByUsername(username);
+        var encoder = new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
+        if (opt.isEmpty() || !encoder.matches(password, opt.get().getPasswordHash())) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.UNAUTHORIZED, "Invalid credentials");
+        }
+        var u = opt.get();
+
         long now = Instant.now().getEpochSecond();
         long exp = now + 3600;
         String headerJson = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
         String payloadJson = toJson(Map.of(
-                "preferred_username", user,
-                "roles", List.of("USER"),
+                "preferred_username", u.getUsername(),
+                "roles", u.getRoles(),
                 "scope", "api",
                 "iat", now,
                 "exp", exp
@@ -70,7 +81,7 @@ public class AuthController {
                 sb.append('"').append(escape(s)).append('"');
             } else if (v instanceof Number || v instanceof Boolean) {
                 sb.append(String.valueOf(v));
-            } else if (v instanceof List<?> list) {
+            } else if (v instanceof java.util.List<?> list) {
                 sb.append('[');
                 for (int i = 0; i < list.size(); i++) {
                     if (i > 0) sb.append(',');

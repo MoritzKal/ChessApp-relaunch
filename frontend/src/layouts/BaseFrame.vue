@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="chs_app_shell">
     <!-- Head (voller oberer Rand) -->
     <header class="chs_head">
@@ -8,6 +8,7 @@
         </v-btn>
         <v-toolbar-title>ChessApp</v-toolbar-title>
         <v-spacer />
+        <v-btn v-if="isAdmin" icon variant="text" aria-label="Debug Console" @click="showDebug = true"><v-icon>mdi-console</v-icon></v-btn>
         <v-btn icon variant="text" aria-label="Chess Popout" @click="showChessPopout = true"><v-icon>mdi-open-in-new</v-icon></v-btn>
         <v-btn icon variant="text" aria-label="Help" :to="'/help'"><v-icon>mdi-help-circle-outline</v-icon></v-btn>
         <v-btn icon variant="text" aria-label="Account" :to="'/account'"><v-icon>mdi-account-circle-outline</v-icon></v-btn>
@@ -53,13 +54,19 @@
       </main>
     </div>
     <ChessPopoutDialog v-model="showChessPopout" />
+    <DebugConsole v-if="isAdmin" v-model="showDebug" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import ChessPopoutDialog from '@/components/ChessPopoutDialog.vue'
-const showChessPopout = ref(false)
+import ChessPopoutDialog from '@/components/ChessPopoutDialog.vue';
+import DebugConsole from '@/components/DebugConsole.vue';
+import { useAuthStore } from '@/stores/auth';
+const showChessPopout = ref(false);
+const showDebug = ref(false);
+const auth = useAuthStore();
+const isAdmin = auth.isAdmin
 </script>
 
 <style scoped>
@@ -90,3 +97,4 @@ const showChessPopout = ref(false)
 .chs_main{ padding: 20px; min-width: 0; width: 100%; } /* verhindert Zusammenschieben und nutzt volle Breite */
 .v-toolbar-title{ font-weight:700; letter-spacing:.4px; color: var(--text,#F6F1D1) }
 </style>
+
