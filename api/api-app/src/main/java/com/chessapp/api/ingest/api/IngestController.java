@@ -45,9 +45,9 @@ public class IngestController {
             @RequestPart("file") MultipartFile file,
             @RequestPart(value = "datasetId", required = false) String datasetId,
             @RequestPart(value = "note", required = false) String note,
-            @RequestPart(value = "tags", required = false) String tags
+            @RequestPart(value = "version", required = false) String version
     ) {
-        UUID runId = ingestService.start();
+        UUID runId = ingestService.start(datasetId, version);
         log.info("ingest run {} started", runId);
         URI location = URI.create("/v1/ingest/" + runId);
         return ResponseEntity.created(location)
@@ -73,9 +73,10 @@ public class IngestController {
                 new IngestStatusResponse(
                         runId,
                         run.getStatus(),
-                        null,
-                        null,
-                        run.getReportUri()
+                        run.getDatasetId(),
+                        run.getVersion() != null ? java.util.List.of(run.getVersion()) : java.util.List.of(),
+                        run.getReportUri(),
+                        run.getFilesWritten()
                 )
         );
     }
