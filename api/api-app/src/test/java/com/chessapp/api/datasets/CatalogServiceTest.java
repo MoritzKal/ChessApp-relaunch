@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import software.amazon.awssdk.services.s3.S3Client;
 
 import com.chessapp.api.codex.CodexApplication;
 import com.chessapp.api.datasets.service.DatasetCatalogService;
@@ -24,12 +26,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties = {"logging.config=classpath:logback-spring.xml"},
         classes = CodexApplication.class)
 @AutoConfigureMockMvc
-class DatasetCatalogServiceTest extends AbstractIntegrationTest {
+class CatalogServiceTest extends AbstractIntegrationTest {
 
     @Autowired DatasetCatalogService catalog;
     @Autowired DatasetRepository datasetRepo;
     @Autowired DatasetVersionRepository versionRepo;
     @Autowired MockMvc mvc;
+    @MockBean S3Client s3;
 
     @Test
     void register_parallel() throws Exception {

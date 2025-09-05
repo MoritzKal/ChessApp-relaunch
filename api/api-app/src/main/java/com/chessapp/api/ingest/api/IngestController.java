@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,7 +26,7 @@ import java.util.UUID;
  * REST controller for ingest runs.
  */
 @RestController
-@RequestMapping({"/v1/ingest", "/v1/data/import"})
+@RequestMapping("/v1/ingest")
 @Tag(name = "Ingest", description = "Start and monitor ingest runs")
 public class IngestController {
 
@@ -50,7 +51,8 @@ public class IngestController {
         UUID runId = ingestService.start(datasetId, version);
         log.info("ingest run {} started", runId);
         URI location = URI.create("/v1/ingest/" + runId);
-        return ResponseEntity.created(location)
+        return ResponseEntity.accepted()
+                .header(HttpHeaders.LOCATION, location.toString())
                 .body(new IngestStartResponse(runId, "queued"));
     }
 

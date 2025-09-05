@@ -12,10 +12,10 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.YearMonth;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,9 +37,11 @@ public class IngestService {
     private final Timer durationFailed;
     private final AtomicInteger activeGauge;
     private final IngestService self;
+    private final com.chessapp.api.chesscom.service.ChessComIngestService chessComIngestService;
 
     public IngestService(IngestRunRepository repository, MeterRegistry meterRegistry,
-                         @Lazy IngestService self) {
+                         @Lazy IngestService self,
+                         com.chessapp.api.chesscom.service.ChessComIngestService chessComIngestService) {
         this.repository = repository;
         this.meterRegistry = meterRegistry;
         this.starts = meterRegistry.counter("chs_ingest_starts_total");
@@ -57,6 +59,7 @@ public class IngestService {
             .register(meterRegistry);
         this.activeGauge = meterRegistry.gauge("chs_ingest_active", new AtomicInteger());
         this.self = self;
+        this.chessComIngestService = chessComIngestService;
     }
 
     /** Resolve current username from SecurityContext, fallback to CHESS_USERNAME env or "system". */
@@ -125,10 +128,13 @@ public class IngestService {
         starts.increment();
 
         MDC.put("run_id", runId.toString());
+        if (datasetId != null) MDC.put("dataset_id", datasetId);
+        MDC.put("username", run.getUsername());
+        MDC.put("component", "ingest-start");
         try {
             self.execute(runId);                // trigger async
         } finally {
-            MDC.remove("run_id");
+            MDC.clear();
         }
         return runId;
     }
@@ -140,12 +146,25 @@ public class IngestService {
     public void execute(UUID runId) {
         activeGauge.incrementAndGet();
         Timer.Sample sample = Timer.start(meterRegistry);
+        IngestRunEntity run = repository.findById(runId).orElseThrow();
+        MDC.put("run_id", runId.toString());
+        if (run.getDatasetId() != null) MDC.put("dataset_id", run.getDatasetId());
+        if (run.getUsername() != null) MDC.put("username", run.getUsername());
+        MDC.put("component", "ingest-execute");
         try {
             update(runId, "RUNNING", null);
             log.info("ingest run {} running", runId);
 
-            // simulate work
-            Thread.sleep(1000);
+            if (run.getDatasetId() != null && run.getUsername() != null
+                    && run.getVersions() != null && !run.getVersions().isEmpty()) {
+                List<YearMonth> months = run.getVersions().stream()
+                        .map(v -> YearMonth.parse(v.substring(1)))
+                        .toList();
+                chessComIngestService.ingest(runId, run.getDatasetId(), run.getUsername(), months);
+            } else {
+                // simulate work when no dataset context
+                Thread.sleep(1000);
+            }
 
             String report = "s3://reports/ingest/" + runId + "/report.json";
             update(runId, "SUCCEEDED", report);
@@ -158,6 +177,7 @@ public class IngestService {
             sample.stop(durationFailed);
             log.error("ingest run {} failed: {}", runId, e.getMessage());
         } finally {
+            MDC.clear();
             activeGauge.decrementAndGet();
         }
     }
