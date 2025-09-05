@@ -5,8 +5,7 @@ import com.chessapp.api.chesscom.api.dto.ArchivesDto;
 import com.chessapp.api.chesscom.api.dto.ChessComIngestRequest;
 import com.chessapp.api.chesscom.api.dto.ChessComIngestResponse;
 import com.chessapp.api.chesscom.service.ChessComService;
-import com.chessapp.api.ingest.api.IngestController;
-import com.chessapp.api.ingest.api.dto.IngestStartResponse;
+import com.chessapp.api.ingest.service.IngestService;
 import com.chessapp.api.data.ingest.IngestRunRepository;
 import com.chessapp.api.datasets.service.DatasetCatalogService;
 import org.slf4j.Logger;
@@ -27,15 +26,15 @@ public class ChessComController {
     private static final Logger log = LoggerFactory.getLogger(ChessComController.class);
 
     private final ChessComService service;
-    private final IngestController ingestController;
+    private final IngestService ingestService;
     private final DatasetCatalogService datasetCatalog;
     private final IngestRunRepository ingestRunRepository;
 
-    public ChessComController(ChessComService service, IngestController ingestController,
+    public ChessComController(ChessComService service, IngestService ingestService,
                               DatasetCatalogService datasetCatalog,
                               IngestRunRepository ingestRunRepository) {
         this.service = service;
-        this.ingestController = ingestController;
+        this.ingestService = ingestService;
         this.datasetCatalog = datasetCatalog;
         this.ingestRunRepository = ingestRunRepository;
     }
@@ -97,18 +96,9 @@ public class ChessComController {
             YearMonth.parse(m); // validate format only
             datasetCatalog.addVersion(dsId, "v" + m, 0L, 0L);
         }
-        ResponseEntity<IngestStartResponse> resp = ingestController.start(null, dsId, req.note(), null);
-        IngestStartResponse start = resp.getBody();
         var versions = months.stream().map(m -> "v" + m).toList();
-        if (start != null) {
-            var run = ingestRunRepository.findById(start.runId()).orElse(null);
-            if (run != null) {
-                run.setDatasetId(dsId);
-                run.setVersions(versions);
-                ingestRunRepository.save(run);
-            }
-        }
-        String runId = start != null ? "ing_" + start.runId().toString() : "ing_unknown";
+        java.util.UUID rid = ingestService.startWithContext(dsId, versions);
+        String runId = "ing_" + rid;
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ChessComIngestResponse(runId, "queued"));
     }

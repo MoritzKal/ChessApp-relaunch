@@ -140,6 +140,40 @@ public class IngestService {
     }
 
     /**
+     * Start a new ingest run with dataset + versions context already populated to avoid race conditions.
+     */
+    public UUID startWithContext(String datasetId, java.util.List<String> versions) {
+        UUID runId = UUID.randomUUID();
+
+        IngestRunEntity run = new IngestRunEntity();
+        run.setRunId(runId);
+        run.setUsername(currentUsername());
+        // We keep from/to month defaults for NOT NULL constraints but they are not used here
+        int defaultMonth = defaultMonthValue();
+        run.setFromMonth(defaultMonth);
+        run.setToMonth(defaultMonth);
+        run.setStatus("PENDING");
+        run.setStartedAt(java.time.Instant.now());
+        run.setDatasetId(datasetId);
+        run.setVersions(versions != null ? versions : java.util.List.of());
+        run.setFilesWritten(0L);
+        repository.save(run);
+
+        starts.increment();
+
+        MDC.put("run_id", runId.toString());
+        if (datasetId != null) MDC.put("dataset_id", datasetId);
+        MDC.put("username", run.getUsername());
+        MDC.put("component", "ingest-start");
+        try {
+            self.execute(runId);
+        } finally {
+            MDC.clear();
+        }
+        return runId;
+    }
+
+    /**
      * Asynchronous execution of an ingest run.
      */
     @Async("ingestExecutor")
