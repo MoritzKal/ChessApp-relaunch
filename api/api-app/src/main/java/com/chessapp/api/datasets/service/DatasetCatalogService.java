@@ -1,6 +1,7 @@
 package com.chessapp.api.datasets.service;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -41,6 +42,8 @@ public class DatasetCatalogService {
         d.setVersion("v0");
         d.setSizeRows(0L);
         d.setSizeBytes(0L);
+        d.setFilter(Map.of());
+        d.setSplit(Map.of());
         d.setCreatedAt(Instant.now());
         d.setUpdatedAt(Instant.now());
         datasetRepository.save(d);

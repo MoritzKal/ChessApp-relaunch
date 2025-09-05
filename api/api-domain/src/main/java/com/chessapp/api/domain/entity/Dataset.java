@@ -5,10 +5,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.hibernate.annotations.Type;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import com.vladmihalcea.hibernate.type.json.JsonType;
 
 @Entity
@@ -45,6 +42,30 @@ public class Dataset {
 
     @Column(name = "updated_at")
     private Instant updatedAt;
+
+    @PrePersist
+    public void prePersist() {
+        if (id == null) id = UUID.randomUUID();
+        if (createdAt == null) createdAt = Instant.now();
+        if (updatedAt == null) updatedAt = createdAt;
+        if (filter == null) filter = Map.of();
+        if (split == null) split = Map.of();
+        if (version == null) version = "v0";
+        if (sizeRows == null) sizeRows = 0L;
+        if (sizeBytes == null) sizeBytes = 0L;
+        if (name != null) name = name.trim();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        if (updatedAt == null) updatedAt = Instant.now();
+        if (filter == null) filter = Map.of();
+        if (split == null) split = Map.of();
+        if (version == null) version = "v0";
+        if (sizeRows == null) sizeRows = 0L;
+        if (sizeBytes == null) sizeBytes = 0L;
+        if (name != null) name = name.trim();
+    }
 
     // getters and setters
     public UUID getId() { return id; }
