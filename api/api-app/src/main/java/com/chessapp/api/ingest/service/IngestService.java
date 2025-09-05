@@ -114,6 +114,11 @@ public class IngestService {
         run.setStartedAt(Instant.now());
         run.setDatasetId(datasetId);
         run.setVersion(version);
+        if (version != null) {
+            run.setVersions(java.util.List.of(version));
+        } else {
+            run.setVersions(java.util.List.of());
+        }
         run.setFilesWritten(0L);
         repository.save(run);
 

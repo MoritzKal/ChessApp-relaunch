@@ -142,6 +142,15 @@ public class DatasetController {
             var v = d.getVersion();
             var item = new VersionItemDto(v != null ? v : "v1", d.getCreatedAt().toString());
             return ResponseEntity.ok(new VersionsDto(1, item.version(), List.of(item)));
+        } catch (IllegalArgumentException ex) {
+            try {
+                DatasetResponse d = datasetService.getByName(id);
+                var v = d.getVersion();
+                var item = new VersionItemDto(v != null ? v : "v1", d.getCreatedAt().toString());
+                return ResponseEntity.ok(new VersionsDto(1, item.version(), List.of(item)));
+            } catch (Exception e) {
+                return ResponseEntity.notFound().build();
+            }
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
         }

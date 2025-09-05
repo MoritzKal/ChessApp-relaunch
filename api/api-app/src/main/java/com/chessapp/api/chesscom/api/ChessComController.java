@@ -7,6 +7,8 @@ import com.chessapp.api.chesscom.api.dto.ChessComIngestResponse;
 import com.chessapp.api.chesscom.service.ChessComService;
 import com.chessapp.api.ingest.api.IngestController;
 import com.chessapp.api.ingest.api.dto.IngestStartResponse;
+import com.chessapp.api.data.ingest.IngestRunRepository;
+import com.chessapp.api.datasets.service.DatasetCatalogService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -26,10 +28,16 @@ public class ChessComController {
 
     private final ChessComService service;
     private final IngestController ingestController;
+    private final DatasetCatalogService datasetCatalog;
+    private final IngestRunRepository ingestRunRepository;
 
-    public ChessComController(ChessComService service, IngestController ingestController) {
+    public ChessComController(ChessComService service, IngestController ingestController,
+                              DatasetCatalogService datasetCatalog,
+                              IngestRunRepository ingestRunRepository) {
         this.service = service;
         this.ingestController = ingestController;
+        this.datasetCatalog = datasetCatalog;
+        this.ingestRunRepository = ingestRunRepository;
     }
 
     private static String validateUser(String user) {
@@ -81,15 +89,26 @@ public class ChessComController {
         if (months == null || months.isEmpty()) {
             throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST, "months required");
         }
+        String dsId = req.datasetId() != null ? req.datasetId() : "chesscom_" + u;
+        datasetCatalog.registerIfAbsent(dsId, dsId);
         String requester = SecurityContextHolder.getContext().getAuthentication().getName();
-        log.info("chesscom ingest requester={}, user={}, months={}, datasetId={}", requester, u, months, req.datasetId());
-        IngestStartResponse last = null;
+        log.info("chesscom ingest requester={}, user={}, months={}, datasetId={}", requester, u, months, dsId);
         for (String m : months) {
             YearMonth.parse(m); // validate format only
-            ResponseEntity<IngestStartResponse> resp = ingestController.start(null, req.datasetId(), req.note(), "v" + m);
-            last = resp.getBody();
+            datasetCatalog.addVersion(dsId, "v" + m, 0L, 0L);
         }
-        String runId = last != null ? "ing_" + last.runId().toString() : "ing_unknown";
+        ResponseEntity<IngestStartResponse> resp = ingestController.start(null, dsId, req.note(), null);
+        IngestStartResponse start = resp.getBody();
+        var versions = months.stream().map(m -> "v" + m).toList();
+        if (start != null) {
+            var run = ingestRunRepository.findById(start.runId()).orElse(null);
+            if (run != null) {
+                run.setDatasetId(dsId);
+                run.setVersions(versions);
+                ingestRunRepository.save(run);
+            }
+        }
+        String runId = start != null ? "ing_" + start.runId().toString() : "ing_unknown";
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ChessComIngestResponse(runId, "queued"));
     }
