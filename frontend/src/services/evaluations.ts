@@ -10,11 +10,13 @@ export async function createEvaluation(body: EvalCreate): Promise<{ evaluationId
 
 export async function listEvaluations(limit = 20): Promise<any[]> {
   const r = await api.get(ep.evaluations.list({ limit }))
-  return (r.data as any[]) || []
+  const data = (r.data as any) || {}
+  // Backend returns { items: [...] }
+  const items: any[] = Array.isArray(data.items) ? data.items : Array.isArray(data) ? data : []
+  return items
 }
 
 export async function getEvaluation(id: string): Promise<any> {
   const r = await api.get(ep.evaluations.get(id))
   return r.data as any
 }
-

@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
@@ -36,9 +37,14 @@ public class ChessComService {
         Retry retrySpec = Retry.max(2)
                 .filter(t -> t instanceof WebClientResponseException ex && ex.getStatusCode().is5xxServerError());
 
+        ExchangeStrategies strategies = ExchangeStrategies.builder()
+                .codecs(cfg -> cfg.defaultCodecs().maxInMemorySize(10 * 1024 * 1024)) // allow large PGN responses
+                .build();
+
         this.web = WebClient.builder()
                 .baseUrl(baseUrl)
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
+                .exchangeStrategies(strategies)
                 .filter((request, next) -> next.exchange(request).retryWhen(retrySpec))
                 .build();
     }

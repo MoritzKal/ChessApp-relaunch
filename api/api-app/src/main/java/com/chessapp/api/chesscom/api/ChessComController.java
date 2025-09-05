@@ -85,10 +85,7 @@ public class ChessComController {
         log.info("chesscom ingest requester={}, user={}, months={}, datasetId={}", requester, u, months, req.datasetId());
         IngestStartResponse last = null;
         for (String m : months) {
-            YearMonth ym = YearMonth.parse(m);
-            // Download PGN to enforce external call and validate archive exists; content is not yet consumed by ingest pipeline.
-            // We avoid using spring-test's MockMultipartFile in production code; IngestController currently ignores the file.
-            service.downloadPgn(u, ym);
+            YearMonth.parse(m); // validate format only
             ResponseEntity<IngestStartResponse> resp = ingestController.start(null, req.datasetId(), req.note(), "v" + m);
             last = resp.getBody();
         }

@@ -6,9 +6,21 @@ import { zDataset, zDatasetSummary } from '@/types/datasets'
 import type { CountResponse } from '@/types/common'
 import { apiGet } from '@/lib/api'
 
-export async function listDatasets(params?: { limit?: number; offset?: number; sort?: string; q?: string }): Promise<Dataset[]> {
+// List endpoint returns DatasetListDto: { items: DatasetListItemDto[], nextOffset?: number }
+// We normalize items for the table view to include sizeRows, sizeBytes, versions, updatedAt.
+export async function listDatasets(params?: { limit?: number; offset?: number; sort?: string; q?: string }): Promise<any[]> {
   const res = await api.get(ep.datasets.list(params))
-  return (res.data as any[]).map((d) => zDataset.parse(d))
+  const data = (res.data as any) || {}
+  const items: any[] = Array.isArray(data.items) ? data.items : Array.isArray(data) ? data : []
+  return items.map((it: any) => ({
+    id: it.id,
+    name: it.name,
+    sizeRows: it.rows ?? it.sizeRows ?? 0,
+    sizeBytes: it.sizeBytes ?? 0,
+    versions: it.versions ?? { count: 0, latest: undefined },
+    updatedAt: it.updatedAt,
+    createdAt: it.createdAt ?? it.updatedAt,
+  }))
 }
 
 export async function getDataset(id: string): Promise<Dataset> {

@@ -1,11 +1,13 @@
 <template>
   <v-container class="d-flex align-center justify-center" style="min-height:70vh;">
     <v-card width="420" class="pa-6 chs-card">
-      <v-card-title>Sign in</v-card-title>
-      <v-text-field v-model="username" label="Username" />
-      <v-text-field v-model="password" label="Password" type="password" />
-      <v-switch v-model="remember" label="Remember me" />
-      <v-btn class="mt-2" color="primary" block @click="login">Login</v-btn>
+      <v-card-title>Anmelden</v-card-title>
+      <v-form @submit.prevent="login">
+        <v-text-field v-model="username" label="Username" autofocus @keyup.enter="login" />
+        <v-text-field v-model="password" label="Password" type="password" @keyup.enter="login" />
+        <v-switch v-model="remember" label="Remember me" />
+        <v-btn class="mt-2" color="primary" block type="submit">Anmelden</v-btn>
+      </v-form>
     </v-card>
   </v-container>
 </template>

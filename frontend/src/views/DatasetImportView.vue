@@ -33,14 +33,14 @@
                     <div class="label">Status:</div>
                     <div class="val">{{ status }}</div>
                   </div>
-                  <div class="sk" v-if="status==='running'" />
+                  <BarProgressLoader v-if="status==='running'" :indeterminate="true" :active="true" text="Import läuft…" />
                   <div v-else-if="status==='success'" class="success">
                     <div>Import abgeschlossen.</div>
                     <div v-if="datasetId">
                       <RouterLink :to="`/datasets/${datasetId}`"><v-btn size="small" color="primary" prepend-icon="mdi-database">Zum Datensatz</v-btn></RouterLink>
                     </div>
                     <div v-else>
-                      Der Datensatz ist unter /datasets sichtbar.
+                      <RouterLink to="/datasets"><v-btn size="small" variant="tonal" prepend-icon="mdi-database">Zu Datasets</v-btn></RouterLink>
                     </div>
                   </div>
                   <div v-else-if="status==='error'" class="err">Fehler beim Import.</div>
@@ -109,9 +109,11 @@ import { ref, computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import DashboardGrid from '@/layouts/DashboardGrid.vue'
 import TableTile from '@/components/renderers/TableTile.vue'
+import BarProgressLoader from '@/components/BarProgressLoader.vue'
 import type { TableVM } from '@/types/vm'
 import { startIngest, getIngestRun, getChesscomArchives, importChesscom as svcImportChesscom } from '@/services/datasets'
 import { usePolling } from '@/composables/usePolling'
+import { useUiStore } from '@/stores/ui'
 
 const formVm = ref<TableVM>({ columns: [], rows: [] })
 const datasetName = ref('')
@@ -131,6 +133,8 @@ const { start, stop } = usePolling({ autoPauseOnHidden: false })
 const req = (v: any) => !!v || 'Required'
 const reqFile = (_: any) => !!file.value || 'Required'
 
+const ui = useUiStore()
+
 async function onSubmit(){
   error.value = null
   submitting.value = true
@@ -140,15 +144,21 @@ async function onSubmit(){
     runId.value = resp.runId
     datasetId.value = resp.datasetId || null
     status.value = 'running'
+    ui.notify(`Import gestartet (runId: ${resp.runId})`, 'info')
     // poll
     start({ key: `ingest:${resp.runId}`, intervalMs: 1500, run: async () => {
       const r = await getIngestRun(resp.runId)
       status.value = r.status
       if (r.datasetId) datasetId.value = r.datasetId
-      if (r.status !== 'running') stop(`ingest:${resp.runId}`)
+      if (r.status !== 'running') {
+        stop(`ingest:${resp.runId}`)
+        if (r.status === 'success') ui.notify('Import abgeschlossen', 'success')
+        else if (r.status === 'error') ui.notify('Import fehlgeschlagen', 'error')
+      }
     } })
   } catch (e: any) {
     error.value = e?.message || 'Upload fehlgeschlagen'
+    ui.notify(error.value, 'error')
   } finally { submitting.value = false }
 }
 
@@ -206,6 +216,7 @@ async function startChessImport(){
     const resp = await svcImportChesscom(body)
     ingRunId.value = resp.runId
     ingStatus.value = 'running'
+    ui.notify(`Chess.com Import gestartet (runId: ${resp.runId})`, 'info')
     // poll here directly to avoid store dependency
     const done = await (async () => {
       // simple loop
@@ -218,8 +229,11 @@ async function startChessImport(){
     })()
     ingStatus.value = done.status as any
     if (done.datasetId) ingDatasetId.value = done.datasetId
+    if (done.status === 'success') ui.notify('Chess.com Import abgeschlossen', 'success')
+    else if (done.status === 'error') ui.notify('Chess.com Import fehlgeschlagen', 'error')
   } catch (e: any) {
     chessError.value = e?.message || 'Fehler beim Import'
+    ui.notify(chessError.value, 'error')
   } finally { importing.value = false }
 }
 </script>
