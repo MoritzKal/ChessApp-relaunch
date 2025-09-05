@@ -30,6 +30,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import software.amazon.awssdk.services.s3.S3Client;
 
 /**
  * Integration tests for ingest endpoint.
@@ -42,6 +44,8 @@ class IngestIT extends AbstractIntegrationTest {
 
     @Autowired
     MockMvc mvc;
+
+    @MockBean S3Client s3;
 
     @Value("${app.security.jwt.secret}")
     String secret;
