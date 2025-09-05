@@ -97,7 +97,7 @@ public class IngestService {
      *
      * @return run identifier
      */
-    public UUID start() {
+    public UUID start(String datasetId, String version) {
         UUID runId = UUID.randomUUID();
 
         // Resolve required NOT NULLs
@@ -112,6 +112,14 @@ public class IngestService {
         run.setToMonth(toMonth);                // likely NOT NULL as well (safe to set)
         run.setStatus("PENDING");
         run.setStartedAt(Instant.now());
+        run.setDatasetId(datasetId);
+        run.setVersion(version);
+        if (version != null) {
+            run.setVersions(java.util.List.of(version));
+        } else {
+            run.setVersions(java.util.List.of());
+        }
+        run.setFilesWritten(0L);
         repository.save(run);
 
         starts.increment();

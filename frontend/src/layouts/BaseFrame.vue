@@ -8,7 +8,9 @@
         </v-btn>
         <v-toolbar-title>ChessApp</v-toolbar-title>
         <v-spacer />
-        <v-btn icon variant="text" aria-label="Help"><v-icon>mdi-help-circle-outline</v-icon></v-btn>
+        <v-btn icon variant="text" aria-label="Chess Popout" @click="showChessPopout = true"><v-icon>mdi-open-in-new</v-icon></v-btn>
+        <v-btn icon variant="text" aria-label="Help" :to="'/help'"><v-icon>mdi-help-circle-outline</v-icon></v-btn>
+        <v-btn icon variant="text" aria-label="Account" :to="'/account'"><v-icon>mdi-account-circle-outline</v-icon></v-btn>
       </v-app-bar>
     </header>
 
@@ -25,7 +27,7 @@
             <v-list-subheader class="text-uppercase" inset>Dashboards</v-list-subheader>
             <v-list-item prepend-icon="mdi-home" title="Overview" :to="'/'" />
             <v-list-item prepend-icon="mdi-robot" title="Training" :to="'/training'" />
-            <v-list-item prepend-icon="mdi-database" title="Datasets" :to="'/datasets/sample'" />
+            <v-list-item prepend-icon="mdi-database" title="Datasets" :to="'/datasets-overview'" />
             <v-list-item prepend-icon="mdi-chess-queen" title="Play" :to="'/play'" />
 
             <v-divider class="my-2 chs-divider" />
@@ -34,10 +36,14 @@
             <v-list-item prepend-icon="mdi-clipboard-pulse" title="Evaluation" :to="'/evaluation'" />
             <v-list-item prepend-icon="mdi-chart-areaspline" title="Observability" :to="'/observability'" />
 
+            <v-list-item prepend-icon="mdi-help-circle-outline" title="Help" :to="'/help'" />
+
             <v-divider class="my-2 chs-divider" />
 
             <v-list-subheader class="text-uppercase" inset>Configuration</v-list-subheader>
             <v-list-item prepend-icon="mdi-tune" title="Training" :to="'/config/training'" />
+            <v-list-item prepend-icon="mdi-database-plus" title="Datasets" :to="'/datasets'" />
+            <v-list-item prepend-icon="mdi-upload" title="Import Dataset" :to="'/datasets/import'" />
           </v-list>
         </v-navigation-drawer>
       </aside>
@@ -46,11 +52,14 @@
         <router-view />
       </main>
     </div>
+    <ChessPopoutDialog v-model="showChessPopout" />
   </div>
 </template>
 
 <script setup lang="ts">
-// Layout-only
+import { ref } from 'vue'
+import ChessPopoutDialog from '@/components/ChessPopoutDialog.vue'
+const showChessPopout = ref(false)
 </script>
 
 <style scoped>

@@ -19,6 +19,7 @@ import com.chessapp.api.domain.entity.Dataset;
 import com.chessapp.api.domain.repo.DatasetRepository;
 import com.chessapp.api.service.dto.DatasetCreateRequest;
 import com.chessapp.api.service.dto.DatasetResponse;
+import jakarta.persistence.EntityNotFoundException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.micrometer.core.instrument.Counter;
@@ -128,6 +129,13 @@ public class DatasetService {
     public DatasetResponse get(UUID id) {
         return datasetRepository.findById(id)
                 .map(DatasetMapper::toDto)
-                .orElseThrow();
+                .orElseThrow(EntityNotFoundException::new);
+    }
+
+    @Transactional(readOnly = true)
+    public DatasetResponse getByName(String name) {
+        return datasetRepository.findByNameIgnoreCase(name)
+                .map(DatasetMapper::toDto)
+                .orElseThrow(EntityNotFoundException::new);
     }
 }

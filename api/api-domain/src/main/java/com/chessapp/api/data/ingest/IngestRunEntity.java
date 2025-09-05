@@ -2,7 +2,11 @@ package com.chessapp.api.data.ingest;
 
 import jakarta.persistence.*;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
+
+import org.hibernate.annotations.Type;
+import com.vladmihalcea.hibernate.type.json.JsonType;
 
 /**
  * Entity representing a single ingest run.
@@ -20,6 +24,19 @@ public class IngestRunEntity {
 
     @Column(name = "status", nullable = false)
     private String status;
+
+    @Column(name = "dataset_id")
+    private String datasetId;
+
+    @Column(name = "version")
+    private String version;
+
+    @Type(JsonType.class)
+    @Column(name = "versions", columnDefinition = "jsonb")
+    private List<String> versions;
+
+    @Column(name = "files_written")
+    private Long filesWritten;
 
     @Column(name = "report_uri")
     private String reportUri;
@@ -73,6 +90,18 @@ public class IngestRunEntity {
     public void setReportUri(String reportUri) {
         this.reportUri = reportUri;
     }
+
+    public String getDatasetId() { return datasetId; }
+    public void setDatasetId(String datasetId) { this.datasetId = datasetId; }
+
+    public String getVersion() { return version; }
+    public void setVersion(String version) { this.version = version; }
+
+    public List<String> getVersions() { return versions; }
+    public void setVersions(List<String> versions) { this.versions = versions; }
+
+    public Long getFilesWritten() { return filesWritten; }
+    public void setFilesWritten(Long filesWritten) { this.filesWritten = filesWritten; }
 
     public Instant getStartedAt() { return startedAt; }
 

@@ -25,7 +25,7 @@ class IngestControllerIT {
   @Test
   void start_then_poll_succeeds() throws Exception {
     var post = mvc.perform(post("/v1/ingest").with(TestAuth.jwtAdmin()))
-        .andExpect(status().isAccepted())
+        .andExpect(status().isCreated())
         .andExpect(header().exists("Location"))
         .andReturn();
 

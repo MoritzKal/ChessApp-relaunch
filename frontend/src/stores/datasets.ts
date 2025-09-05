@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { ApiError } from '@/types/common'
 import type { Dataset, DatasetSummary } from '@/types/datasets'
-import { countDatasets, getDataset, getDatasetSummary, listDatasets, getDatasetVersions } from '@/services/datasets'
+import { countDatasets, getDataset, getDatasetSummary, listDatasets, getDatasetVersions, getChesscomArchives, importChesscom as svcImportChesscom, getIngestRun } from '@/services/datasets'
 import type { TableVM } from '@/types/vm'
 
 export interface PollTarget { key: string; intervalMs: number; run: () => Promise<void> }
@@ -69,6 +69,42 @@ export const useDatasetsStore = defineStore('datasets', () => {
     }))
   }
 
+  // Chess.com archives cache per user
+  const chesscomMonths = ref(new Map<string, string[]>())
+  async function fetchChesscomArchives(user: string) {
+    const norm = (user || '').trim().toLowerCase()
+    const k = `chesscom.archives:${norm}`
+    try {
+      setLoading(k, true); setError(k, null)
+      const resp = await getChesscomArchives(norm)
+      chesscomMonths.value.set(norm, resp.months || [])
+    } catch (e: any) {
+      setError(k, e)
+      throw e
+    } finally { setLoading(k, false) }
+  }
+
+  async function importChesscom(p: { user: string; months: string[]; datasetId?: string; note?: string }) {
+    const body = { user: (p.user||'').trim().toLowerCase(), months: p.months, datasetId: p.datasetId, note: p.note }
+    const k = `ingest.chesscom:${body.user}`
+    try {
+      setLoading(k, true); setError(k, null)
+      return await svcImportChesscom(body)
+    } catch (e: any) { setError(k, e); throw e } finally { setLoading(k, false) }
+  }
+
+  async function pollIngest(runId: string, opts?: { intervalMs?: number }) {
+    const iv = opts?.intervalMs ?? 1000
+    // simple polling loop that resolves when run not running
+    // caller handles success redirect
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const r = await getIngestRun(runId)
+      if (r.status !== 'running') return r
+      await new Promise((res) => setTimeout(res, iv))
+    }
+  }
+
   // selectors (memoized via computed closures)
   function selectDataset(id: string) { return computed(() => byId.value.get(id) || null) }
   function selectSummary(id: string) { return computed(() => summaryById.value.get(id) || null) }
@@ -102,9 +138,11 @@ export const useDatasetsStore = defineStore('datasets', () => {
     byId, summaryById, versionsById, listCache, counts, loading, errors,
     // actions
     fetchCount, fetchDataset, fetchSummary, fetchVersions, fetchList, fetchTop, batchFetch,
+    fetchChesscomArchives, importChesscom, pollIngest,
     // selectors
     selectDataset, selectSummary, selectVersions, selectList, selectTop, selectTopTableVm,
     // polling declaration
     pollTargets,
+    chesscomMonths,
   }
 })
