@@ -41,6 +41,7 @@ services:
 
   minio:
     image: minio/minio:latest
+    container_name: chs_minio
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
@@ -51,9 +52,9 @@ services:
     ports:
       - "${MINIO_S3_PORT:-9000}:9000"
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
-
   create-buckets:
     image: minio/mc:latest
+    container_name: chs_create_buckets
     depends_on:
       minio:
         condition: service_started
@@ -181,6 +182,7 @@ services:
       context: ../ml
       dockerfile: Dockerfile
     working_dir: /app
+    container_name: chs_ml
     environment:
       MLFLOW_TRACKING_URI: http://mlflow:5000
       ML_S3_ENDPOINT: http://minio:9000
