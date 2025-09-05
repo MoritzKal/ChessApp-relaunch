@@ -7,6 +7,7 @@ public record IngestStatusResponse(
         String runId,
         String status,
         String datasetId,
-        String version,
-        String message
+        java.util.List<String> versions,
+        String reportUri,
+        Long filesWritten
 ) {}

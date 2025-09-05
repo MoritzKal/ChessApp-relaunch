@@ -67,9 +67,21 @@ public class DatasetController {
     }
 
     @GetMapping("/{id}")
-    public DatasetDetailDto get(@PathVariable UUID id) {
-        DatasetResponse d = datasetService.get(id);
-        return new DatasetDetailDto(
+    public ResponseEntity<DatasetDetailDto> get(@PathVariable String id) {
+        DatasetResponse d;
+        try {
+            UUID uuid = UUID.fromString(id);
+            d = datasetService.get(uuid);
+        } catch (IllegalArgumentException e) {
+            try {
+                d = datasetService.getByName(id);
+            } catch (Exception ex) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        return ResponseEntity.ok(new DatasetDetailDto(
                 d.getId().toString(),
                 d.getName(),
                 d.getSizeRows() != null ? d.getSizeRows() : 0L,
@@ -77,7 +89,25 @@ public class DatasetController {
                 0,
                 d.getCreatedAt().toString(),
                 null
-        );
+        ));
+    }
+
+    @GetMapping("/byName/{name}")
+    public ResponseEntity<DatasetDetailDto> getByName(@PathVariable String name) {
+        try {
+            DatasetResponse d = datasetService.getByName(name);
+            return ResponseEntity.ok(new DatasetDetailDto(
+                    d.getId().toString(),
+                    d.getName(),
+                    d.getSizeRows() != null ? d.getSizeRows() : 0L,
+                    0L,
+                    0,
+                    d.getCreatedAt().toString(),
+                    null
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 
     // --- Integrated detail endpoints previously in DatasetsController (delegate/minimal implementations) ---
