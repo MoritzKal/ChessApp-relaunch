@@ -74,7 +74,7 @@ public class IngestController {
                         runId,
                         run.getStatus(),
                         run.getDatasetId(),
-                        run.getVersion() != null ? java.util.List.of(run.getVersion()) : java.util.List.of(),
+                        run.getVersions() != null ? run.getVersions() : java.util.List.of(),
                         run.getReportUri(),
                         run.getFilesWritten()
                 )

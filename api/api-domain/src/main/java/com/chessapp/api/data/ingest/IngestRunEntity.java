@@ -2,7 +2,11 @@ package com.chessapp.api.data.ingest;
 
 import jakarta.persistence.*;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
+
+import org.hibernate.annotations.Type;
+import com.vladmihalcea.hibernate.type.json.JsonType;
 
 /**
  * Entity representing a single ingest run.
@@ -26,6 +30,10 @@ public class IngestRunEntity {
 
     @Column(name = "version")
     private String version;
+
+    @Type(JsonType.class)
+    @Column(name = "versions", columnDefinition = "jsonb")
+    private List<String> versions;
 
     @Column(name = "files_written")
     private Long filesWritten;
@@ -88,6 +96,9 @@ public class IngestRunEntity {
 
     public String getVersion() { return version; }
     public void setVersion(String version) { this.version = version; }
+
+    public List<String> getVersions() { return versions; }
+    public void setVersions(List<String> versions) { this.versions = versions; }
 
     public Long getFilesWritten() { return filesWritten; }
     public void setFilesWritten(Long filesWritten) { this.filesWritten = filesWritten; }

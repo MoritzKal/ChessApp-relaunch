@@ -134,7 +134,7 @@ public class DatasetService {
 
     @Transactional(readOnly = true)
     public DatasetResponse getByName(String name) {
-        return datasetRepository.findByName(name)
+        return datasetRepository.findByNameIgnoreCase(name)
                 .map(DatasetMapper::toDto)
                 .orElseThrow(EntityNotFoundException::new);
     }

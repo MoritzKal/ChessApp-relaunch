@@ -34,11 +34,17 @@ public class Dataset {
     @Column(name = "size_rows")
     private Long sizeRows;
 
+    @Column(name = "size_bytes")
+    private Long sizeBytes;
+
     @Column(name = "location_uri")
     private String locationUri;
 
     @Column(name = "created_at")
     private Instant createdAt;
+
+    @Column(name = "updated_at")
+    private Instant updatedAt;
 
     // getters and setters
     public UUID getId() { return id; }
@@ -53,8 +59,12 @@ public class Dataset {
     public void setSplit(Map<String, Object> split) { this.split = split; }
     public Long getSizeRows() { return sizeRows; }
     public void setSizeRows(Long sizeRows) { this.sizeRows = sizeRows; }
+    public Long getSizeBytes() { return sizeBytes; }
+    public void setSizeBytes(Long sizeBytes) { this.sizeBytes = sizeBytes; }
     public String getLocationUri() { return locationUri; }
     public void setLocationUri(String locationUri) { this.locationUri = locationUri; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+    public Instant getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }

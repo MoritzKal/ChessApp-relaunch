@@ -51,4 +51,12 @@ class DatasetsControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(header().string("Location", notNullValue()));
     }
+
+    @Test
+    void get_not_found() throws Exception {
+        org.mockito.Mockito.when(service.getByName("does_not_exist"))
+                .thenThrow(new jakarta.persistence.EntityNotFoundException());
+        mvc.perform(get("/v1/datasets/does_not_exist").with(TestAuth.jwtUser()))
+                .andExpect(status().isNotFound());
+    }
 }
