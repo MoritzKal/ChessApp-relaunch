@@ -21,6 +21,15 @@ public class IngestRunEntity {
     @Column(name = "status", nullable = false)
     private String status;
 
+    @Column(name = "dataset_id")
+    private String datasetId;
+
+    @Column(name = "version")
+    private String version;
+
+    @Column(name = "files_written")
+    private Long filesWritten;
+
     @Column(name = "report_uri")
     private String reportUri;
 
@@ -73,6 +82,15 @@ public class IngestRunEntity {
     public void setReportUri(String reportUri) {
         this.reportUri = reportUri;
     }
+
+    public String getDatasetId() { return datasetId; }
+    public void setDatasetId(String datasetId) { this.datasetId = datasetId; }
+
+    public String getVersion() { return version; }
+    public void setVersion(String version) { this.version = version; }
+
+    public Long getFilesWritten() { return filesWritten; }
+    public void setFilesWritten(Long filesWritten) { this.filesWritten = filesWritten; }
 
     public Instant getStartedAt() { return startedAt; }
 
