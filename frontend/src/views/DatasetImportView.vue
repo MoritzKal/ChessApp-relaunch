@@ -1,7 +1,7 @@
 <template>
   <DashboardGrid>
     <div class="is_large">
-      <TableTile title="Dataset Import" icon="mdi-upload" :vm="formVm" :loading="false">
+      <TableTile title="Dataset Import" icon="mdi-upload" style="height: 80vh;" :vm="formVm" :loading="false">
         <template #cta>
           <div class="form_wrap">
             <v-tabs v-model="tab" density="comfortable">

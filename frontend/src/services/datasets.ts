@@ -38,7 +38,8 @@ export async function getDatasetSummary(id: string): Promise<DatasetSummary> {
 
 export async function getDatasetVersions(id: string): Promise<any[]> {
   const res = await api.get(ep.datasets.versions(id))
-  return res.data as any[]
+  const data = (res.data as any) || {}
+  return Array.isArray(data.items) ? data.items : Array.isArray(data) ? data : []
 }
 
 // Schema & Stats
