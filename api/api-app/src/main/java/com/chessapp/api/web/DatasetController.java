@@ -1,5 +1,6 @@
 package com.chessapp.api.web;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -18,6 +19,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.chessapp.api.common.dto.CountDto;
 import com.chessapp.api.datasets.api.dto.*;
+import com.chessapp.api.domain.entity.Dataset;
+import com.chessapp.api.domain.entity.DatasetVersion;
+import com.chessapp.api.domain.repo.DatasetRepository;
+import com.chessapp.api.domain.repo.DatasetVersionRepository;
 import com.chessapp.api.service.DatasetService;
 import com.chessapp.api.service.dto.DatasetCreateRequest;
 import com.chessapp.api.service.dto.DatasetResponse;
@@ -29,9 +34,15 @@ import jakarta.validation.Valid;
 public class DatasetController {
 
     private final DatasetService datasetService;
+    private final DatasetRepository datasetRepository;
+    private final DatasetVersionRepository versionRepository;
 
-    public DatasetController(DatasetService datasetService) {
+    public DatasetController(DatasetService datasetService,
+                             DatasetRepository datasetRepository,
+                             DatasetVersionRepository versionRepository) {
         this.datasetService = datasetService;
+        this.datasetRepository = datasetRepository;
+        this.versionRepository = versionRepository;
     }
 
     @PostMapping
@@ -116,18 +127,40 @@ public class DatasetController {
     public ResponseEntity<SummaryDto> summary(@PathVariable String id) {
         // Allow special demo id "sample"
         if ("sample".equalsIgnoreCase(id)) {
-            return ResponseEntity.ok(new SummaryDto("sample", 0L, 0L, 0));
+            return ResponseEntity.ok(new SummaryDto("sample", 0L, 0L, 0, List.of(), null));
         }
+        // Resolve dataset by UUID or name
+        Dataset dataset = null;
         try {
-            UUID uuid = UUID.fromString(id);
-            DatasetResponse d = datasetService.get(uuid);
-            long rows = d.getSizeRows() != null ? d.getSizeRows() : 0L;
-            long sizeBytes = 0L; // not tracked yet
-            int classes = 0; // no class breakdown available yet
-            return ResponseEntity.ok(new SummaryDto(uuid.toString(), rows, sizeBytes, classes));
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
+            dataset = datasetRepository.findById(UUID.fromString(id)).orElse(null);
+        } catch (IllegalArgumentException ignored) {
+            dataset = datasetRepository.findByNameIgnoreCase(id).orElse(null);
         }
+        if (dataset == null) {
+            // Fallback to service-based lookup to preserve existing behavior in tests
+            try {
+                var d = datasetService.get(UUID.fromString(id));
+                long rows = d.getSizeRows() != null ? d.getSizeRows() : 0L;
+                String v = d.getVersion() != null ? d.getVersion() : null;
+                String updatedAt = d.getCreatedAt() != null ? d.getCreatedAt().toString() : null;
+                return ResponseEntity.ok(new SummaryDto(d.getId().toString(), rows, 0L, 0,
+                        v != null ? List.of(v) : List.of(), updatedAt));
+            } catch (Exception e) {
+                return ResponseEntity.notFound().build();
+            }
+        }
+        List<DatasetVersion> versions = versionRepository.findAllByDatasetIdOrderByVersionDesc(dataset.getId());
+        long rows = versions.stream().map(v -> v.getRows() == null ? 0L : v.getRows()).reduce(0L, Long::sum);
+        long sizeBytes = versions.stream().map(v -> v.getSizeBytes() == null ? 0L : v.getSizeBytes()).reduce(0L, Long::sum);
+        String updatedAt = versions.stream()
+                .map(v -> v.getUpdatedAt() != null ? v.getUpdatedAt() : v.getCreatedAt())
+                .filter(java.util.Objects::nonNull)
+                .max(java.time.Instant::compareTo)
+                .map(java.time.Instant::toString)
+                .orElse(dataset.getUpdatedAt() != null ? dataset.getUpdatedAt().toString() : null);
+        List<String> versionList = versions.stream().map(DatasetVersion::getVersion).toList();
+        return ResponseEntity.ok(new SummaryDto(
+                dataset.getId().toString(), rows, sizeBytes, 0, versionList, updatedAt));
     }
 
     @GetMapping("/{id}/versions")
@@ -136,24 +169,27 @@ public class DatasetController {
             var item = new VersionItemDto("v1", java.time.Instant.now().toString());
             return ResponseEntity.ok(new VersionsDto(1, item.version(), List.of(item)));
         }
+        Dataset dataset = null;
         try {
-            UUID uuid = UUID.fromString(id);
-            DatasetResponse d = datasetService.get(uuid);
-            var v = d.getVersion();
-            var item = new VersionItemDto(v != null ? v : "v1", d.getCreatedAt().toString());
-            return ResponseEntity.ok(new VersionsDto(1, item.version(), List.of(item)));
-        } catch (IllegalArgumentException ex) {
-            try {
-                DatasetResponse d = datasetService.getByName(id);
-                var v = d.getVersion();
-                var item = new VersionItemDto(v != null ? v : "v1", d.getCreatedAt().toString());
-                return ResponseEntity.ok(new VersionsDto(1, item.version(), List.of(item)));
-            } catch (Exception e) {
-                return ResponseEntity.notFound().build();
-            }
-        } catch (Exception e) {
+            dataset = datasetRepository.findById(UUID.fromString(id)).orElse(null);
+        } catch (IllegalArgumentException ignored) {
+            dataset = datasetRepository.findByNameIgnoreCase(id).orElse(null);
+        }
+        if (dataset == null) {
             return ResponseEntity.notFound().build();
         }
+        List<DatasetVersion> versions = versionRepository.findAllByDatasetIdOrderByVersionDesc(dataset.getId());
+        if (versions.isEmpty()) {
+            return ResponseEntity.ok(new VersionsDto(0, null, List.of()));
+        }
+        // Ensure latest = highest YYYY-MM (DESC by version string)
+        versions.sort(Comparator.comparing(DatasetVersion::getVersion).reversed());
+        String latest = versions.get(0).getVersion();
+        List<VersionItemDto> items = versions.stream()
+                .map(v -> new VersionItemDto(v.getVersion(),
+                        (v.getCreatedAt() != null ? v.getCreatedAt() : v.getUpdatedAt()).toString()))
+                .toList();
+        return ResponseEntity.ok(new VersionsDto(items.size(), latest, items));
     }
 
     @GetMapping("/{id}/schema")

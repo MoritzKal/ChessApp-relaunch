@@ -1,4 +1,4 @@
-﻿package com.chessapp.api.account;
+package com.chessapp.api.account;
 
 import com.chessapp.api.account.dto.UserDto;
 import com.chessapp.api.account.dto.UserPrefsDto;

@@ -21,7 +21,7 @@ public class MinioStorageService {
     private final Counter writes;
 
     public MinioStorageService(S3Client s3,
-                               @Value("${chess.storage.bucket:chess}") String bucket,
+                               @Value("${chess.storage.bucket:datasets}") String bucket,
                                MeterRegistry meterRegistry) {
         this.s3 = s3;
         this.bucket = bucket;
@@ -33,6 +33,19 @@ public class MinioStorageService {
         PutObjectRequest req = PutObjectRequest.builder()
                 .bucket(bucket)
                 .key(key)
+                .contentType("application/octet-stream")
+                .build();
+        s3.putObject(req, RequestBody.fromBytes(data));
+        writes.increment();
+    }
+
+    /** Write to an explicit bucket and content type (e.g., PGN). */
+    public void write(String bucket, String key, byte[] data, String contentType) {
+        log.info("write bucket={} key={} size={}B contentType={}", bucket, key, data.length, contentType);
+        PutObjectRequest req = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .contentType(contentType)
                 .build();
         s3.putObject(req, RequestBody.fromBytes(data));
         writes.increment();

@@ -32,4 +32,17 @@ class DownloaderTest {
         assertThat(data).isEqualTo("pgn".getBytes());
         assertThat(meterRegistry.counter("chs_ingest_download_total").count()).isEqualTo(1.0);
     }
+
+    @Test
+    void downloadMonth_counts_games() {
+        YearMonth ym = YearMonth.of(2024, 1);
+        String pgn = """
+                [Event \"Game1\"]\n[Site \"-\"]\n\n1. e4 e5 1/2-1/2\n\n[Event \"Game2\"]\n[Site \"-\"]\n\n1. d4 d5 1-0\n""";
+        when(service.downloadPgn("alice", ym)).thenReturn(pgn.getBytes());
+        var dl = downloader.downloadMonth("alice", ym);
+        assertThat(dl.bytes()).isNotEmpty();
+        assertThat(dl.games()).isGreaterThan(0);
+        assertThat(meterRegistry.counter("chs_ingest_games_total").count()).isGreaterThan(0.0);
+        assertThat(meterRegistry.counter("chs_ingest_bytes_total").count()).isGreaterThan(0.0);
+    }
 }

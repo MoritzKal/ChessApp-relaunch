@@ -1,4 +1,4 @@
-﻿package com.chessapp.api.account;
+package com.chessapp.api.account;
 
 import java.time.Instant;
 import java.util.Base64;

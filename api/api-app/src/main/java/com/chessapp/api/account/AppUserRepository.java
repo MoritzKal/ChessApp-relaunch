@@ -1,4 +1,4 @@
-﻿package com.chessapp.api.account;
+package com.chessapp.api.account;
 
 import com.chessapp.api.domain.entity.AppUser;
 import org.springframework.data.jpa.repository.JpaRepository;

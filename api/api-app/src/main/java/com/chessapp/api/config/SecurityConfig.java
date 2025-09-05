@@ -1,4 +1,4 @@
-﻿package com.chessapp.api.config;
+package com.chessapp.api.config;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
