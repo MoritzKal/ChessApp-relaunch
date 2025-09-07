@@ -268,7 +268,7 @@ const models = ref<{ value: string; label: string }[]>([])
 const modelItems = computed(() => models.value)
 
 function modelLabel(m: any) {
-  const name = m?.name ?? m?.id ?? 'model'
+  const name = m?.displayName ?? m?.name ?? m?.modelId ?? m?.id ?? 'model'
   const ver  = m?.version ?? m?.latestVersion
   const stg  = m?.stage
   return [name, ver && `v${ver}`, stg && `(${stg})`].filter(Boolean).join(' ')
@@ -296,7 +296,7 @@ async function loadModels () {
   try {
     const list = await listModels().catch(() => [] as any[])
     models.value = (list || []).map((m: any) => ({
-      value: m?.id ?? (m?.name ? `${m.name}${m?.version ? `:${m.version}` : ''}` : ''),
+      value: m?.modelId ?? m?.id ?? (m?.name ? `${m.name}${m?.version ? `:${m.version}` : ''}` : ''),
       label: modelLabel(m)
     }))
   } finally { modelsLoading.value = false }

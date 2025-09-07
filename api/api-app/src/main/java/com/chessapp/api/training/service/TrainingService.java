@@ -35,7 +35,8 @@ public class TrainingService {
             tr.setId(runId);
             tr.setDatasetId(req.datasetId());
             tr.setModelId(req.modelId());
-
+            tr.setCreatedAt(Instant.now());
+            tr.setStartedAt(Instant.now());
             Map<String, Object> params = new LinkedHashMap<>();
             params.put("datasetVersion", req.datasetVersion());
             params.put("epochs", req.epochs());
@@ -47,7 +48,7 @@ public class TrainingService {
             params.put("useGPU", req.useGPU());
             params.put("priority", req.priority());
             tr.setParams(params);
-
+            
             tr.setStatus(TrainingStatus.QUEUED);
             repo.save(tr);
 

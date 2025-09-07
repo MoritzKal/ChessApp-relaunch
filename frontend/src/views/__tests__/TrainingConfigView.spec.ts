@@ -37,7 +37,7 @@ vi.mock('@/services/datasets', () => ({
 }))
 
 vi.mock('@/services/models', () => ({
-  listModels: vi.fn().mockResolvedValue([{ id: 'm1', name: 'Model One' }])
+  listModels: vi.fn().mockResolvedValue([{ modelId: 'm1', displayName: 'Model One' }])
 }))
 
 describe('TrainingConfigView', () => {
