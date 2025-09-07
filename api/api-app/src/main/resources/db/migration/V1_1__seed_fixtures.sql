@@ -2,8 +2,8 @@
 INSERT INTO datasets (name, version, filter, split, size_rows, location_uri)
 VALUES ('sample_ds', 'v0', '{"source":"sample"}'::jsonb, '{"train":0.8,"val":0.1,"test":0.1}'::jsonb, 4, 's3://datasets/sample_ds_v0');
 
-INSERT INTO models (name, version, framework, artifact_uri, metrics)
-VALUES ('policy_tiny', 'v0', 'pytorch', 's3://models/policy_tiny/v0/best.pt', '{"val_acc_top1":0.33}'::jsonb);
+INSERT INTO models (id, name, version, created_at, framework, artifact_uri, metrics)
+VALUES ('5c9f906a-c6bc-42dd-bb94-d7bd6c74b5e9', 'policy_tiny', 'v0', NOW(), 'pytorch', 's3://models/policy_tiny/v0/best.pt', '{"val_acc_top1":0.33}'::jsonb);
 
 INSERT INTO training_runs (model_id, dataset_id, params, status, metrics, logs_uri)
 SELECT m.id, d.id, '{"epochs":1,"batchSize":8}'::jsonb, 'SUCCEEDED', '{"loss":1.9}'::jsonb, 's3://logs/truns/demo'
