@@ -83,6 +83,9 @@ public class TrainingService {
         if (ml.get("artifactUris") instanceof Map<?,?> a) out.put("artifactUris", a);
         if (ml.get("startedAt") != null) out.put("startedAt", ml.get("startedAt"));
         if (ml.get("finishedAt") != null) out.put("finishedAt", ml.get("finishedAt"));
+        if (ml.get("step") instanceof Number s) out.put("step", s.intValue());
+        if (ml.get("epoch") instanceof Number e) out.put("epoch", e.intValue());
+        if (ml.get("progress") instanceof Number p) out.put("progress", p.doubleValue());
         out.putIfAbsent("etaSec", null);
         out.putIfAbsent("step", 0);
         out.putIfAbsent("epoch", 0);
