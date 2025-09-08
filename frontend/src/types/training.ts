@@ -6,8 +6,7 @@ export type TrainingStatus = 'queued' | 'running' | 'succeeded' | 'failed'
 export interface TrainingRun {
   runId: UUID
   status: TrainingStatus
-  startedAt: ISODate
-  finishedAt: ISODate | null
+  updatedAt: ISODate
   metrics?: { [k: string]: number }
   artifactUris?: { [k: string]: string }
 }
@@ -15,8 +14,7 @@ export interface TrainingRun {
 export const zTrainingRun = z.object({
   runId: z.string(),
   status: z.enum(['queued','running','succeeded','failed']),
-  startedAt: z.string(),
-  finishedAt: z.string().nullable(),
+  updatedAt: z.string().nullable(),
   metrics: z.record(z.number()).optional(),
   artifactUris: z.record(z.string()).optional()
 })

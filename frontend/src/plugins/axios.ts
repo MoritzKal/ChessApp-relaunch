@@ -1,6 +1,7 @@
 ﻿import axios, { AxiosError, type AxiosRequestConfig } from 'axios'
 import { incApiCall, incApiError, reqStart, reqEnd } from '@/lib/obs'
 import type { ApiError } from '@/types/common'
+import router from '@/router'
 
 const baseURL = (import.meta as any).env.VITE_API_BASE || '/api'
 const devToken = (import.meta as any).env.VITE_DEV_STATIC_TOKEN
@@ -89,6 +90,17 @@ async function ensureDevToken() {
   tokenPromise = null
   return t
 }
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token')
+      router.push('/login')
+    }
+    return Promise.reject(error)
+  }
+)
 
 api.interceptors.response.use(r => { reqEnd(); return r }, async (error: AxiosError) => {
   reqEnd()

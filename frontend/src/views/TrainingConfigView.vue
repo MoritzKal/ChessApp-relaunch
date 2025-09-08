@@ -343,7 +343,7 @@ async function loadActive () {
       runId: r.runId,
       status: r.status,
       progress: '—',
-      updatedAt: r.finishedAt || r.startedAt || ''
+      updatedAt: r.finishedAt || r.updatedAt || ''
     }))
   } finally { activeLoading.value = false }
 }
