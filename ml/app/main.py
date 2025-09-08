@@ -66,13 +66,16 @@ class RunState(BaseModel):
     runId: str
     datasetId: Optional[str] = None
     status: str = "queued"
-    currentEpoch: int = 0
+    epoch: int = 0
+    step: int = 0
     epochs: int = 10
     stepsPerEpoch: int = 50
     lr: float = 1e-3
+    progress: float = 0.0
     metrics: Dict[str, float] = Field(default_factory=dict)
     startedAt: Optional[str] = None
     finishedAt: Optional[str] = None
+    updatedAt: Optional[str] = None
     artifactUris: Dict[str, str] = Field(default_factory=dict)
     mlflowRunId: Optional[str] = None
 
@@ -194,11 +197,16 @@ def _training_loop(state: RunState, run_name: Optional[str]):
 
             loss, acc = 1.0, 0.1
             for epoch in range(1, state.epochs + 1):
-                state.currentEpoch = epoch
+                state.epoch = epoch
                 for step in range(1, state.stepsPerEpoch + 1):
                     t0 = time.perf_counter()
                     loss = max(0.01, loss * 0.97)
                     acc = min(0.999, acc + 0.005)
+
+                    global_step = (epoch - 1) * state.stepsPerEpoch + step
+                    state.step = global_step
+                    state.progress = float(global_step) / float(state.epochs * state.stepsPerEpoch)
+                    state.updatedAt = datetime.utcnow().isoformat()+"Z"
 
                     state.metrics = {"loss": float(round(loss, 6)), "val_acc": float(round(acc, 6))}
                     LOSS.labels(**labels).set(state.metrics["loss"])
@@ -206,7 +214,6 @@ def _training_loop(state: RunState, run_name: Optional[str]):
                     dt = time.perf_counter() - t0
                     STEP_SEC.labels(**labels).observe(dt)
 
-                    global_step = (epoch - 1) * state.stepsPerEpoch + step
                     mlflow.log_metrics({"loss": loss, "val_acc": acc}, step=global_step)
                     time.sleep(0.01)
 
@@ -226,11 +233,13 @@ def _training_loop(state: RunState, run_name: Optional[str]):
 
         state.status = "succeeded"
         state.finishedAt = datetime.utcnow().isoformat()+"Z"
+        state.updatedAt = state.finishedAt
         state.mlflowRunId = mlflow_run_id
         log_event("training.completed", run_id=state.runId, dataset_id=state.datasetId, mlflow_run_id=mlflow_run_id)
     except Exception as e:
         state.status = "failed"
         state.finishedAt = datetime.utcnow().isoformat()+"Z"
+        state.updatedAt = state.finishedAt
         log_event("training.failed", run_id=state.runId, dataset_id=state.datasetId, error=str(e))
 try:
     from app.selfplay.api import router as selfplay_router

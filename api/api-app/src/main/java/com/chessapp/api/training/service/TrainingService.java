@@ -83,6 +83,9 @@ public class TrainingService {
         if (ml.get("artifactUris") instanceof Map<?,?> a) out.put("artifactUris", a);
         if (ml.get("startedAt") != null) out.put("startedAt", ml.get("startedAt"));
         if (ml.get("finishedAt") != null) out.put("finishedAt", ml.get("finishedAt"));
+        if (ml.get("step") instanceof Number s) out.put("step", s.intValue());
+        if (ml.get("epoch") instanceof Number e) out.put("epoch", e.intValue());
+        if (ml.get("progress") instanceof Number p) out.put("progress", p.doubleValue());
         out.putIfAbsent("etaSec", null);
         out.putIfAbsent("step", 0);
         out.putIfAbsent("epoch", 0);
@@ -94,6 +97,45 @@ public class TrainingService {
             out.put("updatedAt", upd.toString());
         }
         out.putIfAbsent("updatedAt", Instant.now().toString());
+
+        if (tr != null && !ml.isEmpty()) {
+            boolean changed = false;
+            Object ms = ml.get("status");
+            if (ms instanceof String s) {
+                TrainingStatus newStatus = switch (s) {
+                    case "succeeded" -> TrainingStatus.SUCCEEDED;
+                    case "failed" -> TrainingStatus.FAILED;
+                    case "running" -> TrainingStatus.RUNNING;
+                    default -> tr.getStatus();
+                };
+                if (newStatus != tr.getStatus()) {
+                    tr.setStatus(newStatus);
+                    changed = true;
+                }
+            }
+            Object fa = ml.get("finishedAt");
+            if (fa instanceof String f) {
+                Instant fin = Instant.parse(f);
+                if (tr.getFinishedAt() == null || !tr.getFinishedAt().equals(fin)) {
+                    tr.setFinishedAt(fin);
+                    changed = true;
+                }
+            }
+            Object mm = ml.get("metrics");
+            if (mm instanceof Map<?,?> m) {
+                tr.setMetrics((Map<String,Object>) m);
+                changed = true;
+            }
+            Object aa = ml.get("artifactUris");
+            if (aa instanceof Map<?,?> a) {
+                Object rep = a.get("report");
+                if (rep instanceof String uri) {
+                    tr.setLogsUri(uri);
+                    changed = true;
+                }
+            }
+            if (changed) repo.save(tr);
+        }
         return out;
     }
 
@@ -129,11 +171,18 @@ public class TrainingService {
     }
 
     private TrainingItemDto toDto(TrainingRun tr) {
+        Map<String, Object> ml = Map.of();
+        try { ml = mlClient.getRun(tr.getId()); } catch (Exception ignored) {}
+        String status = tr.getStatus() != null ? tr.getStatus().name().toLowerCase() : "unknown";
+        double progress = 0.0;
         Instant upd = tr.getFinishedAt() != null ? tr.getFinishedAt() : Instant.now();
+        if (ml.get("status") != null) status = String.valueOf(ml.get("status"));
+        if (ml.get("progress") instanceof Number p) progress = p.doubleValue();
+        if (ml.get("updatedAt") instanceof String u) upd = Instant.parse(u);
         return new TrainingItemDto(
                 tr.getId().toString(),
-                tr.getStatus() != null ? tr.getStatus().name().toLowerCase() : "unknown",
-                0.0,
+                status,
+                progress,
                 upd.toString()
         );
     }
