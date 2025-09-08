@@ -41,10 +41,6 @@
       <TableTile title="Start Training" icon="mdi-rocket-launch" :vm="formVm" :loading="false">
         <template #cta>
           <ConfigPanel>
-            <v-alert v-if="formError" type="error" density="comfortable" class="mb-2">
-              {{ formError }}
-            </v-alert>
-
             <v-form v-model="formValid" @submit.prevent="onSubmit">
               <div class="row">
                 <v-select
