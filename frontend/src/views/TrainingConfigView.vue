@@ -329,16 +329,17 @@ async function onSubmit () {
 
 // --- Active Runs (local list w/ actions) ---
 const activeLoading = ref(false)
-const activeRows = ref<{ runId: string; status: string; progress?: string; updatedAt: string }[]>([])
+const activeRows = ref<{ runId: string; status: string; progress?: number; updatedAt: string }[]>([])
 
 async function loadActive () {
   activeLoading.value = true
   try {
     const rows = await listTrainingRuns({ status: 'active', limit: 50 })
+    console.log('Active runs:', rows)
     activeRows.value = rows.map((r: any) => ({
       runId: r.runId,
       status: r.status,
-      progress: '—',
+      progress: r.progress,
       updatedAt: r.finishedAt || r.updatedAt || ''
     }))
   } finally { activeLoading.value = false }

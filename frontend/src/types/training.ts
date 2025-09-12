@@ -6,7 +6,7 @@ export type TrainingStatus = 'queued' | 'running' | 'succeeded' | 'failed'
 export interface TrainingRun {
   runId: UUID
   status: TrainingStatus
-  updatedAt: ISODate
+  updatedAt: ISODate | null
   metrics?: { [k: string]: number }
   artifactUris?: { [k: string]: string }
 }
