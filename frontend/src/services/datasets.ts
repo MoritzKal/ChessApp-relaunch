@@ -18,6 +18,7 @@ export async function listDatasets(params?: { limit?: number; offset?: number; s
     sizeRows: it.rows ?? it.sizeRows ?? 0,
     sizeBytes: it.sizeBytes ?? 0,
     versions: it.versions ?? { count: 0, latest: undefined },
+    version: it.versions?.latest ?? it.version,
     updatedAt: it.updatedAt,
     createdAt: it.createdAt ?? it.updatedAt,
   }))
@@ -44,26 +45,41 @@ export async function getDatasetVersions(id: string): Promise<any[]> {
 
 // Schema & Stats
 export interface DatasetSchemaRow { name: string; dtype: string; nullPct?: number; uniquePct?: number; min?: number | string; max?: number | string }
-export async function getDatasetSchema(id: string): Promise<DatasetSchemaRow[]> {
-  return apiGet<DatasetSchemaRow[]>(ep.datasets.schema(id))
+export async function getDatasetSchema(id: string, version?: string): Promise<DatasetSchemaRow[]> {
+  const res = await api.get(ep.datasets.schema(id, { version }))
+  const data = (res.data as any) || {}
+  const cols = Array.isArray(data.columns) ? data.columns : Array.isArray(data.items) ? data.items : []
+  return cols.map((c: any) => ({
+    name: c.name,
+    dtype: c.dtype,
+    nullPct: c.nullPct ?? c.null_pct ?? 0,
+    uniquePct: c.uniquePct ?? c.unique_pct ?? 0,
+    min: c.min,
+    max: c.max,
+  }))
 }
 
 // Sample (pageable)
 export interface DatasetSampleResponse { rows: Record<string, unknown>[]; nextCursor?: string | null }
-export async function getDatasetSample(id: string, q?: { limit?: number; cursor?: string }): Promise<DatasetSampleResponse> {
-  return apiGet<DatasetSampleResponse>(ep.datasets.sample(id, q))
+export async function getDatasetSample(id: string, q?: { limit?: number; cursor?: string; version?: string }): Promise<DatasetSampleResponse> {
+  const res = await api.get(ep.datasets.sample(id, q))
+  const data = (res.data as any) || {}
+  const items = Array.isArray(data.items) ? data.items : data.rows ?? []
+  return { rows: items as any[], nextCursor: data.nextCursor }
 }
 
 // Quality summary
 export interface DatasetQuality { missingPct: number; outlierPct: number; duplicatePct: number }
-export async function getDatasetQuality(id: string): Promise<DatasetQuality> {
-  return apiGet<DatasetQuality>(ep.datasets.quality(id))
+export async function getDatasetQuality(id: string, version?: string): Promise<DatasetQuality> {
+  return apiGet<DatasetQuality>(ep.datasets.quality(id, { version }))
 }
 
 // Ingest history
 export interface IngestEvent { at: string; user: string; note?: string; version?: string }
 export async function getIngestHistory(id: string): Promise<IngestEvent[]> {
-  return apiGet<IngestEvent[]>(ep.datasets.ingestHistory(id))
+  const res = await api.get(ep.datasets.ingestHistory(id))
+  const data = (res.data as any) || {}
+  return Array.isArray(data.items) ? data.items as IngestEvent[] : []
 }
 
 // Ingest upload

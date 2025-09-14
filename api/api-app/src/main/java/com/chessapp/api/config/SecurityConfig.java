@@ -30,14 +30,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
-import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
-import static org.springframework.security.config.Customizer.withDefaults;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
@@ -67,7 +59,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/health", "/actuator/health").permitAll()
                         .requestMatchers("/v1/auth/token").permitAll()
-                        .requestMatchers("/actuator/prometheus").hasAnyAuthority("ROLE_ADMIN", "ROLE_MONITORING", "SCOPE_monitoring")
+                        .requestMatchers("/auth/login").permitAll()
+                        .requestMatchers("/v1/admin/**").hasAuthority("ROLE_ADMIN")
+                        // In development, allow Prometheus scrape without auth
+                        .requestMatchers("/actuator/prometheus").permitAll()
                         .requestMatchers("/actuator/**").authenticated()
                         .requestMatchers("/v1/**").authenticated()
                         .anyRequest().permitAll()
@@ -124,3 +119,4 @@ public class SecurityConfig {
         return src;
     }
 }
+

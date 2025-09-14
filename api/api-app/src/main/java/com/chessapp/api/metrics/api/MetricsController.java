@@ -2,6 +2,7 @@ package com.chessapp.api.metrics.api;
 
 import com.chessapp.api.common.dto.*;
 import com.chessapp.api.metrics.service.ObsProxyClient;
+import com.chessapp.api.training.service.TrainingService;
 import com.chessapp.api.metrics.service.RangeHelper;
 import com.chessapp.api.metrics.service.RangeParams;
 import org.springframework.web.bind.annotation.*;
@@ -13,13 +14,20 @@ import java.util.*;
 public class MetricsController {
 
     private final ObsProxyClient client;
-    public MetricsController(ObsProxyClient client) { this.client = client; }
+    private final TrainingService trainingService;
+    public MetricsController(ObsProxyClient client, TrainingService trainingService) {
+        this.client = client;
+        this.trainingService = trainingService;
+    }
 
     private Series toSeries(Map<String,Object> prom, String label) {
+        @SuppressWarnings("unchecked")
         Map<String,Object> data = (Map<String,Object>) prom.getOrDefault("data", Map.of());
+        @SuppressWarnings("unchecked")
         List<Map<String,Object>> res = (List<Map<String,Object>>) data.getOrDefault("result", List.of());
         List<TimeSeriesPoint> pts = new ArrayList<>();
         if (!res.isEmpty()) {
+            @SuppressWarnings("unchecked")
             List<List<Object>> values = (List<List<Object>>) res.get(0).getOrDefault("values", List.of());
             for (List<Object> v : values) {
                 long ts = ((Number) v.get(0)).longValue();
@@ -31,9 +39,12 @@ public class MetricsController {
     }
 
     private double lastValue(Map<String,Object> prom) {
+        @SuppressWarnings("unchecked")
         Map<String,Object> data = (Map<String,Object>) prom.getOrDefault("data", Map.of());
+        @SuppressWarnings("unchecked")
         List<Map<String,Object>> res = (List<Map<String,Object>>) data.getOrDefault("result", List.of());
         if (!res.isEmpty()) {
+            @SuppressWarnings("unchecked")
             List<List<Object>> values = (List<List<Object>>) res.get(0).getOrDefault("values", List.of());
             if (!values.isEmpty()) {
                 List<Object> last = values.get(values.size()-1);
@@ -59,9 +70,10 @@ public class MetricsController {
         RangeParams rp = RangeHelper.mapRange(range);
         String q;
         if (runId != null) {
-            q = "avg_over_time(chs_training_it_per_sec{run_id=\"" + runId + "\"}[5m])";
+            // it/s = rate(count) / rate(sum); avoid NaN/Inf with clamp_min on denominator
+            q = "( rate(chs_training_step_duration_seconds_count{run_id=\\\"" + runId + "\\\"}[5m]) ) / clamp_min(rate(chs_training_step_duration_seconds_sum{run_id=\\\"" + runId + "\\\"}[5m]), 1e-9)";
         } else {
-            q = "sum(avg_over_time(chs_training_it_per_sec[5m]))";
+            q = "sum( rate(chs_training_step_duration_seconds_count[5m]) ) / clamp_min(sum(rate(chs_training_step_duration_seconds_sum[5m])), 1e-9)";
         }
         Series s = toSeries(client.promRange(q, rp.start(), rp.end(), rp.step()), "throughput_it_per_sec");
         return new SeriesResponse(List.of(s));
@@ -77,14 +89,31 @@ public class MetricsController {
             String q = null;
             String label = null;
             switch (metric.trim()) {
-                case "loss" -> { q = "avg_over_time(ml_training_loss{run_id=\""+runId+"\"}[5m])"; label = "loss"; }
-                case "val_acc" -> { q = "avg_over_time(ml_training_val_acc{run_id=\""+runId+"\"}[5m])"; label = "val_acc"; }
+                case "loss" -> { q = "avg_over_time(chs_training_loss{run_id=\\\""+runId+"\\\"}[5m])"; label = "loss"; }
+                case "val_acc" -> { q = "avg_over_time(chs_training_val_accuracy{run_id=\\\""+runId+"\\\"}[5m])"; label = "val_acc"; }
                 default -> { /* unrecognized metric: skip */ }
             }
             if (q == null || label == null) {
                 continue;
             }
-            out.add(toSeries(client.promRange(q, rp.start(), rp.end(), rp.step()), label));
+            Series s = toSeries(client.promRange(q, rp.start(), rp.end(), rp.step()), label);
+            if (s.points().isEmpty()) {
+                // Fallback: single data point from training status when Prometheus has no data
+                try {
+                    java.util.UUID rid = java.util.UUID.fromString(runId);
+                    Map<String, Object> st = trainingService.getStatus(rid);
+                    Object metrics = st.get("metrics");
+                    Object at = st.get("updatedAt");
+                    if (metrics instanceof Map<?,?> mm && at != null) {
+                        Object val = mm.get(label);
+                        if (val instanceof Number) {
+                            long ts = java.time.Instant.parse(String.valueOf(at)).getEpochSecond();
+                            s = new Series(label, java.util.List.of(new TimeSeriesPoint(ts, ((Number) val).doubleValue())));
+                        }
+                    }
+                } catch (Exception ignored) { /* keep empty series */ }
+            }
+            out.add(s);
         }
         return new SeriesResponse(out);
     }
@@ -128,7 +157,7 @@ public class MetricsController {
     @GetMapping("/rps")
     public SeriesResponse rps(@RequestParam(defaultValue="24h") String range) {
         RangeParams rp = RangeHelper.mapRange(range);
-        String q = "sum(rate(http_server_requests_seconds_count[1m]))";
+        String q = "sum(rate(http_server_requests_seconds_count[5m]))";
         Series s = toSeries(client.promRange(q, rp.start(), rp.end(), rp.step()), "rps");
         return new SeriesResponse(List.of(s));
     }
@@ -136,7 +165,7 @@ public class MetricsController {
     @GetMapping("/error_rate")
     public SeriesResponse errorRate(@RequestParam(defaultValue="24h") String range) {
         RangeParams rp = RangeHelper.mapRange(range);
-        String q = "increase(http_server_requests_seconds_count{status=~\"5..\"}[5m]) / increase(http_server_requests_seconds_count[5m])";
+        String q = "sum(rate(http_server_requests_seconds_count{status=~\"5..\"}[5m])) / clamp_min(sum(rate(http_server_requests_seconds_count[5m])), 1e-9)";
         Series s = toSeries(client.promRange(q, rp.start(), rp.end(), rp.step()), "error_rate");
         return new SeriesResponse(List.of(s));
     }

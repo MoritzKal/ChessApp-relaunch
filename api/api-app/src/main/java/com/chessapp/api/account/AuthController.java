@@ -2,8 +2,8 @@ package com.chessapp.api.account;
 
 import java.time.Instant;
 import java.util.Base64;
-import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -15,25 +15,50 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import com.chessapp.api.domain.repo.UserRepository;
+import com.chessapp.api.domain.entity.User;
+
 @RestController
 @RequestMapping(path = "/auth", produces = MediaType.APPLICATION_JSON_VALUE)
 public class AuthController {
 
     private final String jwtSecret;
+    private final AppUserRepository appUsers;
+    private final UserRepository users;
 
-    public AuthController(@Value("${app.security.jwt.secret}") String jwtSecret) {
+    public AuthController(@Value("${app.security.jwt.secret}") String jwtSecret,
+                          AppUserRepository appUsers,
+                          UserRepository users) {
         this.jwtSecret = jwtSecret;
+        this.appUsers = appUsers;
+        this.users = users;
     }
 
     @PostMapping("/login")
     public Map<String, String> login(@RequestBody Map<String, String> body) {
-        String user = body.getOrDefault("username", "user1");
+        String username = body.getOrDefault("username", "");
+        String password = body.getOrDefault("password", "");
+
+        var opt = appUsers.findByUsername(username);
+        var encoder = new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
+        if (opt.isEmpty() || !encoder.matches(password, opt.get().getPasswordHash())) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.UNAUTHORIZED, "Invalid credentials");
+        }
+        var u = opt.get();
+
+        users.findByChessUsername(username).orElseGet(() -> {
+            User nu = new User();
+            nu.setId(UUID.randomUUID());
+            nu.setChessUsername(username);
+            return users.save(nu);
+        });
+
         long now = Instant.now().getEpochSecond();
         long exp = now + 3600;
         String headerJson = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
         String payloadJson = toJson(Map.of(
-                "preferred_username", user,
-                "roles", List.of("USER"),
+                "preferred_username", u.getUsername(),
+                "roles", u.getRoles(),
                 "scope", "api",
                 "iat", now,
                 "exp", exp
@@ -70,7 +95,7 @@ public class AuthController {
                 sb.append('"').append(escape(s)).append('"');
             } else if (v instanceof Number || v instanceof Boolean) {
                 sb.append(String.valueOf(v));
-            } else if (v instanceof List<?> list) {
+            } else if (v instanceof java.util.List<?> list) {
                 sb.append('[');
                 for (int i = 0; i < list.size(); i++) {
                     if (i > 0) sb.append(',');

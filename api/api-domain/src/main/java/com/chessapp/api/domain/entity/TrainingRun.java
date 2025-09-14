@@ -38,7 +38,10 @@ public class TrainingRun {
     @ColumnTransformer(write = "?::training_status")
     private TrainingStatus status;
 
-    @Column(name = "started_at")
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
+
+    @Column(name = "started_at", nullable = true)
     private Instant startedAt;
 
     @Column(name = "finished_at")
@@ -70,4 +73,6 @@ public class TrainingRun {
     public void setMetrics(Map<String, Object> metrics) { this.metrics = metrics; }
     public String getLogsUri() { return logsUri; }
     public void setLogsUri(String logsUri) { this.logsUri = logsUri; }
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

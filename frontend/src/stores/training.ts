@@ -58,8 +58,8 @@ export const useTrainingStore = defineStore('training', () => {
       rows: rowsRef.value.map(r => ({
         runId: r.runId,
         status: r.status,
-        duration: r.finishedAt && r.startedAt ? `${Math.max(0, (new Date(r.finishedAt).getTime() - new Date(r.startedAt).getTime())/1000).toFixed(0)}s` : '—',
-        updated: r.finishedAt || r.startedAt
+        duration: r.metrics?.duration ? `${(r.metrics.duration / 60).toFixed(1)} min` : '—',
+        updated: r.updatedAt ? new Date(r.updatedAt) : null
       }))
     }))
   }

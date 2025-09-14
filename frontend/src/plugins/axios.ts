@@ -1,6 +1,7 @@
-import axios, { AxiosError, type AxiosRequestConfig } from 'axios'
+﻿import axios, { AxiosError, type AxiosRequestConfig } from 'axios'
 import { incApiCall, incApiError, reqStart, reqEnd } from '@/lib/obs'
 import type { ApiError } from '@/types/common'
+import router from '@/router'
 
 const baseURL = (import.meta as any).env.VITE_API_BASE || '/api'
 const devToken = (import.meta as any).env.VITE_DEV_STATIC_TOKEN
@@ -16,7 +17,7 @@ function isJwt(tok?: string | null) {
 }
 function isAuthTokenPath(url?: string) {
   if (!url) return false
-  return url.includes('/v1/auth/token')
+  return url.includes('/v1/auth/token') || url.includes('/auth/login')
 }
 
 // request: add Authorization and correlation id
@@ -90,6 +91,17 @@ async function ensureDevToken() {
   return t
 }
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token')
+      router.push('/login')
+    }
+    return Promise.reject(error)
+  }
+)
+
 api.interceptors.response.use(r => { reqEnd(); return r }, async (error: AxiosError) => {
   reqEnd()
   const cfg = (error.config || {}) as AxiosRequestConfig & { __retryCount?: number }
@@ -119,3 +131,4 @@ api.interceptors.response.use(r => { reqEnd(); return r }, async (error: AxiosEr
 })
 
 export default api
+

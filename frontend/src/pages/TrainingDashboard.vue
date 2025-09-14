@@ -54,7 +54,7 @@ async function loadAll() {
   if (!runId.value) return
   await Promise.all([
     tr.fetchRun(runId.value),
-    mt.fetchThroughput(runId.value),
+    mt.fetchThroughput(runId.value, '24h'),
     mt.fetchTrainingSeries(runId.value, 'loss', '2h'),
     mt.fetchTrainingSeries(runId.value, 'val_acc', '2h'),
     mt.fetchTrainingSeries(runId.value, 'loss', '24h'),
@@ -66,7 +66,7 @@ async function loadAll() {
   ])
   startMany([
     { key: `t.run:${runId.value}`, intervalMs: 4000, run: () => tr.fetchRun(runId.value!) },
-    { key: `t.tp:${runId.value}`, intervalMs: 4000, run: () => mt.fetchThroughput(runId.value!) },
+    { key: `t.tp:${runId.value}`, intervalMs: 4000, run: () => mt.fetchThroughput(runId.value!, '24h') },
     { key: `t.loss2h:${runId.value}`, intervalMs: 4000, run: () => mt.fetchTrainingSeries(runId.value!, 'loss', '2h') },
     { key: `t.val2h:${runId.value}`, intervalMs: 4000, run: () => mt.fetchTrainingSeries(runId.value!, 'val_acc', '2h') },
     { key: `t.util:${runId.value}`, intervalMs: 8000, run: () => mt.fetchUtilization(runId.value!, '24h') },
@@ -79,8 +79,17 @@ watch(runId, loadAll)
 
 // Selectors/texts
 const runStatus = computed(() => runId.value ? (tr.selectRun(runId.value).value?.status ?? '—') : 'Pick a Run')
-const tpKey = computed(() => `throughput:${runId.value}`)
-const throughputText = computed(() => mt.scalars.get(tpKey.value || '')?.value ?? '—')
+const tpKey = computed(() => `throughput:${runId.value || 'all'}:24h`)
+function lastSeriesPointValue(key: string | undefined) {
+  if (!key) return '—'
+  const s = mt.series.get(key)
+  if (!s || !s.series?.length) return '—'
+  const first = s.series[0]
+  const pts = first.points || []
+  if (!pts.length) return '—'
+  return pts[pts.length - 1].value
+}
+const throughputText = computed(() => lastSeriesPointValue(tpKey.value))
 const loss2hKey = computed(() => `train:${runId.value}:loss:2h`)
 const val2hKey = computed(() => `train:${runId.value}:val_acc:2h`)
 function lastPointVal(key: string | undefined) {
@@ -154,6 +163,10 @@ const paramsLoading = ref(false)
 async function loadHyperparams(){
   if (!runId.value) return
   paramsLoading.value = true
-  try { hyperparams.value = await getHyperparams(runId.value) } finally { paramsLoading.value = false }
+  try {
+    hyperparams.value = await getHyperparams(runId.value)
+  } catch {
+    hyperparams.value = []
+  } finally { paramsLoading.value = false }
 }
 </script>

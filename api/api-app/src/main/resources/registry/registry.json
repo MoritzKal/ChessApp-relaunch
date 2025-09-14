@@ -1,7 +1,7 @@
 {
   "models": [
     {
-      "modelId": "policy_tiny",
+      "modelId": "5c9f906a-c6bc-42dd-bb94-d7bd6c74b5e9",
       "displayName": "Policy Tiny",
       "tags": ["staging", "policy"],
       "versions": [

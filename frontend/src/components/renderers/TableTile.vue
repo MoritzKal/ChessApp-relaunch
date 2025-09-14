@@ -1,5 +1,5 @@
 <template>
-  <LargeTile :title="title" :icon="icon">
+  <LargeTile v-bind="$attrs" :title="title" :icon="icon">
     <div class="tbl_wrap">
       <div class="tools">
         <v-btn size="small" variant="text" @click="copyCsv" prepend-icon="mdi-content-copy">CSV</v-btn>
@@ -13,6 +13,7 @@
             <slot name="cta"></slot>
           </div>
         </template>
+        <!-- Render actions column only; keep default cell rendering intact -->
         <template #item.actions="{ item }">
           <slot name="item-actions" :item="item" />
         </template>

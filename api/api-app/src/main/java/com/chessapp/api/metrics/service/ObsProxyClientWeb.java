@@ -12,7 +12,7 @@ public class ObsProxyClientWeb implements ObsProxyClient {
 
     private final WebClient web;
 
-    public ObsProxyClientWeb(@Value("${chs.obs.base-url:http://obs-proxy:8080}") String baseUrl) {
+    public ObsProxyClientWeb(@Value("${chs.obs.base-url:http://obs-proxy:8088}") String baseUrl) {
         this.web = WebClient.builder().baseUrl(baseUrl).build();
     }
 

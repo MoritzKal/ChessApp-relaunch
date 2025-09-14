@@ -58,8 +58,9 @@ async function promRange(query: string, range: string, fallbackMetric: string): 
 
 // Timeseries tiles via Obs-Proxy (Prometheus)
 export const getLoss = (range: string): Promise<TimeseriesResponse> => promRange(Q_LOSS, range, 'loss')
-export const getRps = (range: string): Promise<TimeseriesResponse> => promRange(Q_RPS, range, 'rps')
-export const getErrorRate = (range: string): Promise<TimeseriesResponse> => promRange(Q_ERR, range, 'error_rate')
+// Prefer backend API for general metrics (works without direct Prometheus access)
+export const getRps = (range: string): Promise<TimeseriesResponse> => getParsed(ep.metrics.rps(range), zTimeseriesResponse)
+export const getErrorRate = (range: string): Promise<TimeseriesResponse> => getParsed(ep.metrics.errorRate(range), zTimeseriesResponse)
 
 // Latency as scalar using Prometheus instant query
 export const getLatency = async (p: 50 | 95 | 99): Promise<ScalarMetric> => {
@@ -72,6 +73,6 @@ export const getLatency = async (p: 50 | 95 | 99): Promise<ScalarMetric> => {
 }
 export const getMps = (): Promise<ScalarMetric> => getParsed(ep.metrics.mps(), zScalarMetric)
 export const getElo = (range: string): Promise<TimeseriesResponse> => getParsed(ep.metrics.elo(range), zTimeseriesResponse)
-export const getThroughput = (runId: string): Promise<ScalarMetric> => getParsed(ep.metrics.throughput(runId), zScalarMetric)
+export const getThroughput = (runId?: string, range = '24h'): Promise<TimeseriesResponse> => getParsed(ep.metrics.throughput(runId, range), zTimeseriesResponse)
 export const getTrainingMetric = (runId: string, m: string, range?: string): Promise<TimeseriesResponse> => getParsed(ep.metrics.trainingMetric(runId, m, range), zTimeseriesResponse)
 export const getUtilization = (runId: string, range = '24h'): Promise<TimeseriesResponse> => getParsed(ep.metrics.utilization(runId, range), zTimeseriesResponse)

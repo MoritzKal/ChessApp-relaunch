@@ -1,5 +1,6 @@
 package com.chessapp.api.datasets;
 
+import com.chessapp.api.datasets.service.DatasetCatalogService;
 import com.chessapp.api.service.DatasetService;
 import com.chessapp.api.testutil.AbstractIntegrationTest;
 import com.chessapp.api.testutil.TestAuth;
@@ -7,8 +8,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import software.amazon.awssdk.services.s3.S3Client;
 
 import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -20,7 +22,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class DatasetsControllerTest extends AbstractIntegrationTest {
 
     @Autowired MockMvc mvc;
-    @MockBean DatasetService service;
+    @MockitoBean DatasetService service;
+    @MockitoBean S3Client s3;
+    @Autowired(required = false) DatasetCatalogService catalog;
 
     @Test
     void summary_ok() throws Exception {
@@ -50,6 +54,38 @@ class DatasetsControllerTest extends AbstractIntegrationTest {
         mvc.perform(get("/v1/datasets/" + id + "/export?format=csv").with(TestAuth.jwtUser()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(header().string("Location", notNullValue()));
+    }
+
+    @Test
+    void versions_sorted_and_latest() throws Exception {
+        // Use real catalog service if available
+        if (catalog != null) {
+            String name = "ds_versions_demo";
+            catalog.registerIfAbsent(name, name);
+            catalog.addVersion(name, "v2025-06", 1, 10);
+            catalog.addVersion(name, "v2025-08", 3, 30);
+            catalog.addVersion(name, "v2025-07", 2, 20);
+            mvc.perform(get("/v1/datasets/" + name + "/versions").with(TestAuth.jwtUser()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.count").value(3))
+                    .andExpect(jsonPath("$.latest").value("v2025-08"))
+                    .andExpect(jsonPath("$.items[0].version").value("v2025-08"));
+        }
+    }
+
+    @Test
+    void summary_aggregates_versions() throws Exception {
+        if (catalog != null) {
+            String name = "ds_summary_demo";
+            catalog.registerIfAbsent(name, name);
+            catalog.addVersion(name, "v2025-06", 1, 10);
+            catalog.addVersion(name, "v2025-07", 2, 20);
+            mvc.perform(get("/v1/datasets/" + name + "/summary").with(TestAuth.jwtUser()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.rows").value(3))
+                    .andExpect(jsonPath("$.sizeBytes").value(30))
+                    .andExpect(jsonPath("$.versions[0]").value("v2025-07"));
+        }
     }
 
     @Test

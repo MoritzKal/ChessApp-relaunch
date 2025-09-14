@@ -41,6 +41,8 @@ services:
 
   minio:
     image: minio/minio:latest
+    container_name: chs_minio
+    networks: [chs_net]
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
@@ -51,22 +53,29 @@ services:
     ports:
       - "${MINIO_S3_PORT:-9000}:9000"
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
-
   create-buckets:
     image: minio/mc:latest
+    container_name: chs_create_buckets
+    networks: [chs_net]
     depends_on:
       minio:
         condition: service_started
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     entrypoint: >
-      sh -c '
-      set -e;
-      until mc alias set local http://minio:9000 "${MINIO_ROOT_USER}" "${MINIO_ROOT_PASSWORD}" >/dev/null 2>&1; do
-        echo "waiting for minio..."; sleep 2;
-      done;
-      mc mb -p local/chess-datasets || true;
-      mc mb -p local/chess-models || true;
-      echo "buckets ready";
-      '
+      /bin/sh -c "
+      until (/usr/bin/mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} >/dev/null 2>&1); do echo '...waiting for minio'; sleep 2; done &&
+      /usr/bin/mc mb -p local/datasets || true &&
+      /usr/bin/mc mb -p local/models || true &&
+      /usr/bin/mc mb -p local/reports || true &&
+      /usr/bin/mc mb -p local/logs || true &&
+      /usr/bin/mc mb -p local/mlflow || true &&
+      /usr/bin/mc mb -p chess-models || true &&
+      /usr/bin/mc mb -p local/chess-datasets || true &&
+      /usr/bin/mc anonymous set public local/mlflow || true &&
+      echo 'MinIO buckets ready'"
+    restart: "no"
 
   mlflow:
     build: mlflow
@@ -157,6 +166,9 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: "Editor"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
@@ -181,6 +193,7 @@ services:
       context: ../ml
       dockerfile: Dockerfile
     working_dir: /app
+    container_name: chs_ml
     environment:
       MLFLOW_TRACKING_URI: http://mlflow:5000
       ML_S3_ENDPOINT: http://minio:9000
@@ -211,8 +224,8 @@ services:
     container_name: chs_serve
     environment:
       ML_S3_ENDPOINT: http://minio:9000
-      AWS_ACCESS_KEY_ID: minioadmin
-      AWS_SECRET_ACCESS_KEY: minioadmin
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
       AWS_REGION: us-east-1
       DEFAULT_USERNAME: M3NG00S3
     ports:

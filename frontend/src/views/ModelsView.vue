@@ -28,7 +28,8 @@ import InfoMetricTile from '@/components/panels/InfoMetricTile.vue'
 import TableTile from '@/components/renderers/TableTile.vue'
 import ChartTile from '@/components/renderers/ChartTile.vue'
 import { Endpoints as ep } from '@/lib/endpoints'
-import { listModels } from '@/services/models'
+import { listModels, listModelVersions, loadModel } from '@/services/models'
+import { listTrainingRuns, getTraining } from '@/services/training'
 import { api } from '@/lib/api'
 import { useMetricsStore } from '@/stores/metrics'
 
@@ -59,7 +60,39 @@ const modelsVm = computed(() => ({
   rows: rows.value.map(r => ({ ...r, tags: Array.isArray(r.tags) ? r.tags.join(',') : '' })),
 }))
 
-async function loadForServing(item: any){ try { await api.post(ep.models.load(), { modelId: item.modelId }) } catch { /* error path acceptable */ } }
-async function promote(item: any){ try { await api.post(ep.models.promote(), { modelId: item.modelId }) } catch { /* may 404 - optional */ } }
+async function loadForServing(item: any){
+  try {
+    // Try to find the most recent successful training and reuse its weights uri
+    let artifactUri: string | undefined
+    try {
+      const runs = await listTrainingRuns({ status: 'finished', limit: 10 })
+      if (runs && runs.length) {
+        const last = runs[0]
+        const full = await getTraining(last.runId)
+        artifactUri = (full as any)?.artifactUris?.weights
+      }
+    } catch { /* tolerate */ }
+    const versions = await listModelVersions(item.modelId).catch(() => [])
+    const ver = versions?.[0]?.modelVersion
+    await loadModel({ modelId: item.modelId, modelVersion: ver, artifactUri })
+  } catch { /* ignore errors; UI shows no blocking */ }
+}
+async function promote(item: any){
+  try {
+    const versions = await listModelVersions(item.modelId).catch(() => [])
+    const ver = versions?.[0]?.modelVersion || 'v1'
+    let runId: string | undefined
+    let artifactUri: string | undefined
+    try {
+      const runs = await listTrainingRuns({ status: 'finished', limit: 10 })
+      if (runs && runs.length) {
+        const last = runs[0]
+        runId = last.runId
+        const full = await getTraining(last.runId)
+        artifactUri = (full as any)?.artifactUris?.weights
+      }
+    } catch {}
+    await api.post(ep.models.promote(), { modelId: item.modelId, modelVersion: ver, runId, artifactUri })
+  } catch { /* ignore */ }
+}
 </script>
-

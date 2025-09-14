@@ -9,7 +9,7 @@ x-ports: &ports
   postgres: ${POSTGRES_PORT:-5432}
 
 networks:
-  chs_net: {}
+  infra_chs_net: {}
 
 volumes:
   db-data: {}
@@ -31,7 +31,7 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
-    networks: [chs_net]
+    networks: [infra_chs_net]
     healthcheck:
       test: [ "CMD-SHELL","pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
       interval: 5s
@@ -91,7 +91,7 @@ services:
         required: true
       create-buckets:
         condition: service_completed_successfully
-    networks: [chs_net]
+    networks: [infra_chs_net]
 
   prometheus:
     image: prom/prometheus:latest
@@ -116,7 +116,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 5s
-    networks: [chs_net]
+    networks: [infra_chs_net]
 
   loki:
     image: grafana/loki:2.9.6
@@ -133,7 +133,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 5s
-    networks: [chs_net]
+    networks: [infra_chs_net]
 
   promtail:
     image: grafana/promtail:latest
@@ -147,7 +147,7 @@ services:
       - loki
     ports:
       - "9080:9080"
-    networks: [chs_net]
+    networks: [infra_chs_net]
 
   grafana:
     image: grafana/grafana:latest
@@ -174,7 +174,7 @@ services:
         condition: service_healthy
       loki:
         condition: service_healthy
-    networks: [chs_net]
+    networks: [infra_chs_net]
 
   ml:
     build:
@@ -203,7 +203,7 @@ services:
     volumes:
       - ../data:/app/ml/data
       - ../out:/app/ml/out
-    networks: [ chs_net ]
+    networks: [ infra_chs_net ]
     restart: unless-stopped
 
   serve:
@@ -211,8 +211,8 @@ services:
     container_name: chs_serve
     environment:
       ML_S3_ENDPOINT: http://minio:9000
-      AWS_ACCESS_KEY_ID: minioadmin
-      AWS_SECRET_ACCESS_KEY: minioadmin
+      AWS_ACCESS_KEY_ID: minio_chs
+      AWS_SECRET_ACCESS_KEY: chs_minio_password_change_me
       AWS_REGION: us-east-1
       DEFAULT_USERNAME: M3NG00S3
     ports:
@@ -225,7 +225,7 @@ services:
       timeout: 3s
       retries: 10
       start_period: 10s
-    networks: [ chs_net ]
+    networks: [ infra_chs_net ]
     restart: unless-stopped
   api:
     build:
@@ -270,7 +270,7 @@ services:
         condition: service_healthy
     ports:
       - "8080:8080"
-    networks: [ chs_net ]
+    networks: [ infra_chs_net ]
     restart: unless-stopped
 
   frontend:

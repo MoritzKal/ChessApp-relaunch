@@ -1,5 +1,6 @@
 package com.chessapp.api.domain.repo;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -9,4 +10,5 @@ import com.chessapp.api.domain.entity.DatasetVersion;
 
 public interface DatasetVersionRepository extends JpaRepository<DatasetVersion, UUID> {
     Optional<DatasetVersion> findByDatasetIdAndVersion(UUID datasetId, String version);
+    List<DatasetVersion> findAllByDatasetIdOrderByVersionDesc(UUID datasetId);
 }
