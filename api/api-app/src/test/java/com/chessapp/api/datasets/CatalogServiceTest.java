@@ -9,10 +9,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import software.amazon.awssdk.services.s3.S3Client;
-
 import com.chessapp.api.codex.CodexApplication;
 import com.chessapp.api.datasets.service.DatasetCatalogService;
 import com.chessapp.api.domain.repo.DatasetRepository;
@@ -32,7 +31,7 @@ class CatalogServiceTest extends AbstractIntegrationTest {
     @Autowired DatasetRepository datasetRepo;
     @Autowired DatasetVersionRepository versionRepo;
     @Autowired MockMvc mvc;
-    @MockBean S3Client s3;
+    @MockitoBean S3Client s3;
 
     @Test
     void register_parallel() throws Exception {

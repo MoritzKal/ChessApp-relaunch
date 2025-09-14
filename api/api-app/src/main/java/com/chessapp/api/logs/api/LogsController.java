@@ -33,7 +33,8 @@ public class LogsController {
                                @RequestParam(defaultValue = "2h") String range,
                                @RequestParam(defaultValue = "500") int limit,
                                @RequestParam(defaultValue = "backward") String direction) {
-        String query = "{app=\"trainer\",run_id=\"" + runId + "\"}";
+        // promtail labels 'component' from JSON logs; ML uses component="training"
+        String query = "{component=\"training\",run_id=\"" + runId + "\"}";
         return fetch(query, range, limit, direction);
     }
 

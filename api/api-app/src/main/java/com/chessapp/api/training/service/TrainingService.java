@@ -123,7 +123,13 @@ public class TrainingService {
             }
             Object mm = ml.get("metrics");
             if (mm instanceof Map<?,?> m) {
-                tr.setMetrics((Map<String,Object>) m);
+                Map<String, Object> safeMetrics = new LinkedHashMap<>();
+                for (Map.Entry<?, ?> entry : m.entrySet()) {
+                    if (entry.getKey() instanceof String key) {
+                        safeMetrics.put(key, entry.getValue());
+                    }
+                }
+                tr.setMetrics(safeMetrics);
                 changed = true;
             }
             Object aa = ml.get("artifactUris");
@@ -159,6 +165,13 @@ public class TrainingService {
             return repo.countByStatus(ts);
         }
         return repo.count();
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getParams(UUID runId) {
+        var tr = repo.findById(runId).orElse(null);
+        if (tr == null || tr.getParams() == null) return Map.of();
+        return new java.util.LinkedHashMap<>(tr.getParams());
     }
 
     private TrainingStatus mapStatus(String status) {

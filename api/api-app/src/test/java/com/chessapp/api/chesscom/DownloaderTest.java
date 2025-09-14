@@ -6,8 +6,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
 import software.amazon.awssdk.services.s3.S3Client;
 
 import java.time.YearMonth;
@@ -21,8 +22,8 @@ class DownloaderTest {
 
     @Autowired ChessComDownloader downloader;
     @Autowired MeterRegistry meterRegistry;
-    @MockBean ChessComService service;
-    @MockBean S3Client s3;
+    @MockitoBean ChessComService service;
+    @MockitoBean S3Client s3;
 
     @Test
     void download_increments_metric() {

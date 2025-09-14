@@ -28,6 +28,7 @@ public class ChessComController {
     private final ChessComService service;
     private final IngestService ingestService;
     private final DatasetCatalogService datasetCatalog;
+    @SuppressWarnings("unused")
     private final IngestRunRepository ingestRunRepository;
 
     public ChessComController(ChessComService service, IngestService ingestService,

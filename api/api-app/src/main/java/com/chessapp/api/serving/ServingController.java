@@ -20,6 +20,7 @@ import org.springframework.web.reactive.function.client.WebClientRequestExceptio
 import com.chessapp.api.serving.dto.ModelsLoadRequest;
 import com.chessapp.api.serving.dto.PredictRequest;
 import com.chessapp.api.serving.dto.PredictResponse;
+import com.chessapp.api.storage.MinioStorageService;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -35,12 +36,15 @@ public class ServingController {
     private final ServingClient client;
     private final MeterRegistry registry;
     private final String defaultUsername;
+    private final MinioStorageService storage;
 
     public ServingController(ServingClient client, MeterRegistry registry,
-                             @Value("${chs.default-username:M3NG00S3}") String defaultUsername) {
+                             @Value("${chs.default-username:M3NG00S3}") String defaultUsername,
+                             MinioStorageService storage) {
         this.client = client;
         this.registry = registry;
         this.defaultUsername = defaultUsername;
+        this.storage = storage;
     }
 
     @PostMapping("/predict")
@@ -117,11 +121,32 @@ public class ServingController {
 
     @PostMapping("/models/promote")
     public ResponseEntity<Map<String, Object>> modelsPromote(@RequestBody Map<String, String> body) {
-        return ResponseEntity.ok(Map.of(
-                "modelId", body.get("modelId"),
-                "targetStage", body.get("targetStage"),
-                "ok", true
-        ));
+        String modelId = body.get("modelId");
+        String modelVersion = body.getOrDefault("modelVersion", "v1");
+        String runId = body.get("runId");
+        String artifactUri = body.get("artifactUri");
+        if (modelId == null || modelVersion == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "modelId and modelVersion required"));
+        }
+        try {
+            byte[] src;
+            if (artifactUri != null && artifactUri.startsWith("s3://")) {
+                src = storage.readUri(artifactUri);
+            } else if (runId != null) {
+                // Default training artifact location
+                src = storage.read("mlflow", "models/" + runId + "/best.pt");
+            } else {
+                return ResponseEntity.badRequest().body(Map.of("error", "runId or artifactUri required"));
+            }
+            if (src == null || src.length == 0) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "source artifact empty or missing"));
+            }
+            String destKey = "models/" + modelId + "/" + modelVersion + "/best.pt";
+            storage.write("mlflow", destKey, src, "application/octet-stream");
+            return ResponseEntity.ok(Map.of("ok", true, "artifactUri", "s3://mlflow/" + destKey));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of("error", e.getMessage()));
+        }
     }
 
     private static String jsonEscape(String s) {

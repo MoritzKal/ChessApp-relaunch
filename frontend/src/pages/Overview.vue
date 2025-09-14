@@ -7,8 +7,8 @@
     <div class="is_small"><InfoMetricTile title="System Health" icon="mdi-stethoscope" :value="healthText" /></div>
 
     <!-- Row 2: Large (Loss 7d, Requests/sec 7d) with loading/error states -->
-    <div class="is_large"><ChartTile title="Loss (7d)" icon="mdi-chart-line" :vm="lossVm" :loading="lossLoading" /></div>
-    <div class="is_large"><ChartTile title="Requests/sec (7d)" icon="mdi-chart-areaspline" :vm="rpsVm" :loading="rpsLoading" /></div>
+    <div class="is_large"><ChartTile title="Error Rate (24h)" icon="mdi-alert-circle-outline" :vm="errVm" :loading="errLoading" /></div>
+    <div class="is_large"><ChartTile title="Requests/sec (24h)" icon="mdi-chart-areaspline" :vm="rpsVm" :loading="rpsLoading" /></div>
 
     <!-- Row 3: Large (Recent Trainings, Top Datasets) → tables -->
     <div class="is_large"><TableTile title="Recent Trainings" icon="mdi-history" :vm="recentRunsVm" :loading="recentLoading" /></div>
@@ -43,8 +43,8 @@ onMounted(async () => {
     ds.fetchCount(),
     tr.fetchCount('active'),
     mt.fetchHealth(),
-    mt.fetchLoss('7d'),
-    mt.fetchRps('7d'),
+    mt.fetchErrorRate('24h'),
+    mt.fetchRps('24h'),
     tr.fetchRuns(20,0),
     ds.fetchTop('size', 20),
   ])
@@ -63,13 +63,13 @@ const trainingActiveText = computed(() => tr.countsByStatus.get('active') ?? '�
 const healthText = computed(() => mt.health?.status?.toUpperCase?.() ?? '—')
 
 // Series loading/error
-const lossKey = 'loss:7d'
-const rpsKey = 'rps:7d'
-const lossLoading = computed(() => mt.loading.has(lossKey))
+const errKey = 'error_rate:24h'
+const rpsKey = 'rps:24h'
+const errLoading = computed(() => mt.loading.has(errKey))
 const rpsLoading = computed(() => mt.loading.has(rpsKey))
-const lossError = computed(() => mt.errors.get(lossKey)?.message || false)
+const errError = computed(() => mt.errors.get(errKey)?.message || false)
 const rpsError = computed(() => mt.errors.get(rpsKey)?.message || false)
-const lossVm = mt.selectSeriesVm(lossKey)
+const errVm = mt.selectSeriesVm(errKey)
 const rpsVm = mt.selectSeriesVm(rpsKey)
 
 // Recent trainings list

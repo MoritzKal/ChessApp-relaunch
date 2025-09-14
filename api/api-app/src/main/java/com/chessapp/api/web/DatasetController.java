@@ -23,7 +23,10 @@ import com.chessapp.api.domain.entity.Dataset;
 import com.chessapp.api.domain.entity.DatasetVersion;
 import com.chessapp.api.domain.repo.DatasetRepository;
 import com.chessapp.api.domain.repo.DatasetVersionRepository;
+import com.chessapp.api.data.ingest.IngestRunRepository;
+import com.chessapp.api.data.ingest.IngestRunEntity;
 import com.chessapp.api.service.DatasetService;
+import com.chessapp.api.datasets.service.DatasetProfileService;
 import com.chessapp.api.service.dto.DatasetCreateRequest;
 import com.chessapp.api.service.dto.DatasetResponse;
 
@@ -36,13 +39,19 @@ public class DatasetController {
     private final DatasetService datasetService;
     private final DatasetRepository datasetRepository;
     private final DatasetVersionRepository versionRepository;
+    private final IngestRunRepository ingestRepository;
+    private final DatasetProfileService profileService;
 
     public DatasetController(DatasetService datasetService,
                              DatasetRepository datasetRepository,
-                             DatasetVersionRepository versionRepository) {
+                             DatasetVersionRepository versionRepository,
+                             IngestRunRepository ingestRepository,
+                             DatasetProfileService profileService) {
         this.datasetService = datasetService;
         this.datasetRepository = datasetRepository;
         this.versionRepository = versionRepository;
+        this.ingestRepository = ingestRepository;
+        this.profileService = profileService;
     }
 
     @PostMapping
@@ -193,11 +202,33 @@ public class DatasetController {
     }
 
     @GetMapping("/{id}/schema")
-    public ResponseEntity<SchemaDto> schema(@PathVariable String id) {
-        // Not implemented yet; return empty schema for known ids
-        if ("sample".equalsIgnoreCase(id)) return ResponseEntity.ok(new SchemaDto(List.of()));
-        try { UUID.fromString(id); return ResponseEntity.ok(new SchemaDto(List.of())); }
-        catch (Exception e) { return ResponseEntity.notFound().build(); }
+    public ResponseEntity<SchemaDto> schema(@PathVariable String id,
+                                            @RequestParam(name="version", required=false) String version) {
+        // Provide a minimal schema based on expected chess dataset columns until profiling is available
+        // Resolve dataset existence first (by UUID or name)
+        Dataset dataset = null;
+        try {
+            try { dataset = datasetRepository.findById(UUID.fromString(id)).orElse(null); }
+            catch (IllegalArgumentException ignored) { dataset = datasetRepository.findByNameIgnoreCase(id).orElse(null); }
+            if (dataset == null && !"sample".equalsIgnoreCase(id)) return ResponseEntity.notFound().build();
+        } catch (Exception e) { return ResponseEntity.notFound().build(); }
+        if (version != null && !version.isBlank()) {
+            try {
+                SchemaDto fromProfile = profileService.loadSchema(dataset != null ? dataset.getId().toString() : id, version);
+                if (fromProfile != null && fromProfile.columns() != null && !fromProfile.columns().isEmpty()) {
+                    return ResponseEntity.ok(fromProfile);
+                }
+            } catch (Exception ignored) { }
+        }
+        var cols = List.of(
+                new ColumnDto("endTime", "timestamp", 0.0, 1.0, null, null),
+                new ColumnDto("timeControl", "string", 0.0, 0.4, null, null),
+                new ColumnDto("result", "string", 0.0, 0.1, null, null),
+                new ColumnDto("whiteRating", "int", 0.0, 0.9, null, null),
+                new ColumnDto("blackRating", "int", 0.0, 0.9, null, null),
+                new ColumnDto("pgn", "string", 0.0, 1.0, null, null)
+        );
+        return ResponseEntity.ok(new SchemaDto(cols));
     }
 
     @GetMapping("/{id}/sample")
@@ -213,17 +244,61 @@ public class DatasetController {
     }
 
     @GetMapping("/{id}/quality")
-    public ResponseEntity<QualityDto> quality(@PathVariable String id) {
+    public ResponseEntity<QualityDto> quality(@PathVariable String id,
+                                              @RequestParam(name="version", required=false) String version) {
         if ("sample".equalsIgnoreCase(id)) return ResponseEntity.ok(new QualityDto(0.0, 0.0, 0.0));
-        try { UUID.fromString(id); return ResponseEntity.ok(new QualityDto(0.0, 0.0, 0.0)); }
-        catch (Exception e) { return ResponseEntity.notFound().build(); }
+        Dataset dataset = null;
+        try {
+            try { dataset = datasetRepository.findById(UUID.fromString(id)).orElse(null); }
+            catch (IllegalArgumentException ignored) { dataset = datasetRepository.findByNameIgnoreCase(id).orElse(null); }
+            if (dataset == null) return ResponseEntity.notFound().build();
+        } catch (Exception e) { return ResponseEntity.notFound().build(); }
+        if (version != null && !version.isBlank()) {
+            try { return ResponseEntity.ok(profileService.loadQuality(dataset.getId().toString(), version)); }
+            catch (Exception ignored) { }
+        }
+        return ResponseEntity.ok(new QualityDto(0.0, 0.0, 0.0));
     }
 
     @GetMapping("/{id}/ingest/history")
     public ResponseEntity<IngestHistoryDto> history(@PathVariable String id) {
-        if ("sample".equalsIgnoreCase(id)) return ResponseEntity.ok(new IngestHistoryDto(List.of()));
-        try { UUID.fromString(id); return ResponseEntity.ok(new IngestHistoryDto(List.of())); }
-        catch (Exception e) { return ResponseEntity.notFound().build(); }
+        // Try to resolve dataset by UUID or name
+        String dsId = null;
+        if ("sample".equalsIgnoreCase(id)) {
+            dsId = "sample";
+        } else {
+            try {
+                Dataset dataset = null;
+                try { dataset = datasetRepository.findById(UUID.fromString(id)).orElse(null); }
+                catch (IllegalArgumentException ignored) { dataset = datasetRepository.findByNameIgnoreCase(id).orElse(null); }
+                if (dataset == null) return ResponseEntity.notFound().build();
+                dsId = dataset.getId().toString();
+            } catch (Exception e) { return ResponseEntity.notFound().build(); }
+        }
+
+        List<IngestHistoryItemDto> items = new java.util.ArrayList<>();
+        try {
+            // match by dataset UUID string or by dataset name (some runs store name instead of UUID)
+            List<IngestRunEntity> runs = new java.util.ArrayList<>();
+            runs.addAll(ingestRepository.findAllByDatasetIdOrderByStartedAtDesc(dsId));
+            try {
+                Dataset d = datasetRepository.findById(java.util.UUID.fromString(dsId)).orElse(null);
+                if (d != null) {
+                    runs.addAll(ingestRepository.findAllByDatasetIdOrderByStartedAtDesc(d.getName()));
+                }
+            } catch (Exception ignored) { /* dsId may be name already */ }
+            for (IngestRunEntity r : runs) {
+                String note = (r.getFromMonth() != null && r.getToMonth() != null)
+                        ? (r.getFromMonth() + ".." + r.getToMonth()) : null;
+                items.add(new IngestHistoryItemDto(
+                        (r.getFinishedAt() != null ? r.getFinishedAt() : r.getStartedAt()).toString(),
+                        r.getUsername(),
+                        note,
+                        r.getVersion()
+                ));
+            }
+        } catch (Exception ignored) { /* default to empty */ }
+        return ResponseEntity.ok(new IngestHistoryDto(items));
     }
 
     @GetMapping("/{id}/export")

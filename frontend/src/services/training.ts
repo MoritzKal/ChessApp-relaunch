@@ -54,12 +54,21 @@ export async function countTraining(q?: { status?: string }): Promise<number> {
 // Artifacts listing + Hyperparameters
 export interface TrainingArtifact { name: string; sizeBytes?: number; downloadUrl?: string }
 export async function listArtifacts(runId: string): Promise<TrainingArtifact[]> {
-  return apiGet<TrainingArtifact[]>(ep.training.artifacts(runId))
+  const res = await apiGet<any>(ep.training.artifacts(runId))
+  if (Array.isArray(res?.items)) return res.items as TrainingArtifact[]
+  if (Array.isArray(res)) return res as TrainingArtifact[]
+  return []
 }
 
 export interface HyperParamKV { key: string; value: string | number | boolean }
 export async function getHyperparams(runId: string): Promise<Record<string, unknown> | HyperParamKV[]> {
-  return apiGet<Record<string, unknown> | HyperParamKV[]>(ep.training.hyperparams(runId))
+  try {
+    const res = await apiGet<any>(ep.training.hyperparams(runId))
+    if (res && typeof res === 'object') return res as Record<string, unknown>
+    if (Array.isArray(res?.items)) return res.items as HyperParamKV[]
+    if (Array.isArray(res)) return res as HyperParamKV[]
+  } catch { /* optional endpoint – ignore */ }
+  return []
 }
 
 export async function controlTrainingRun(runId: string, action: 'pause' | 'stop'): Promise<{ ok: boolean }> {

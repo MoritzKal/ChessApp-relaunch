@@ -54,10 +54,16 @@ _metric_kwargs = {"registry": _SINGLE_REGISTRY} if _SINGLE_REGISTRY is not None 
 
 RUNS_TOTAL = Counter("chs_training_runs_total", "Total training runs started",
                      ["username", "component"], **_metric_kwargs)
-LOSS = Gauge("chs_training_loss", "Training loss (last step)",
-             ["run_id", "dataset_id", "username", "component"], **_metric_kwargs)
-VAL_ACC = Gauge("chs_training_val_accuracy", "Validation accuracy (last step)",
-                ["run_id", "dataset_id", "username", "component"], **_metric_kwargs)
+if IS_MULTIPROC:
+    LOSS = Gauge("chs_training_loss", "Training loss (last step)",
+                 ["run_id", "dataset_id", "username", "component"], multiprocess_mode="max")
+    VAL_ACC = Gauge("chs_training_val_accuracy", "Validation accuracy (last step)",
+                    ["run_id", "dataset_id", "username", "component"], multiprocess_mode="max")
+else:
+    LOSS = Gauge("chs_training_loss", "Training loss (last step)",
+                 ["run_id", "dataset_id", "username", "component"], **_metric_kwargs)
+    VAL_ACC = Gauge("chs_training_val_accuracy", "Validation accuracy (last step)",
+                    ["run_id", "dataset_id", "username", "component"], **_metric_kwargs)
 STEP_SEC = Histogram("chs_training_step_duration_seconds", "Per-step duration seconds",
                      ["run_id", "dataset_id", "username", "component"], **_metric_kwargs)
 

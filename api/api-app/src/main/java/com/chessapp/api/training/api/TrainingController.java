@@ -1,6 +1,7 @@
 package com.chessapp.api.training.api;
 
 import com.chessapp.api.common.dto.CountDto;
+import com.chessapp.api.training.api.dto.ArtifactDto;
 import com.chessapp.api.training.api.dto.ArtifactListDto;
 import com.chessapp.api.training.api.dto.TrainingListDto;
 import com.chessapp.api.training.service.TrainingService;
@@ -10,8 +11,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -53,7 +52,28 @@ public class TrainingController {
 
     @GetMapping("/{runId}/artifacts")
     public ArtifactListDto artifacts(@PathVariable UUID runId) {
-        return new ArtifactListDto(List.of());
+        Map<String, Object> st = service.getStatus(runId);
+        Object a = st.get("artifactUris");
+        java.util.List<ArtifactDto> items = new java.util.ArrayList<>();
+        if (a instanceof Map<?,?> map) {
+            for (var e : map.entrySet()) {
+                String name = String.valueOf(e.getKey());
+                String uri = String.valueOf(e.getValue());
+                items.add(new ArtifactDto(name, 0L, uri));
+            }
+        }
+        return new ArtifactListDto(items);
+    }
+
+    @GetMapping("/{runId}/hyperparams")
+    public ResponseEntity<Map<String, Object>> hyperparams(@PathVariable UUID runId) {
+        // Return stored params from the DB entity if available
+        try {
+            java.util.Map<String, Object> st = service.getParams(runId);
+            return ResponseEntity.ok(st);
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of());
+        }
     }
 
     @PostMapping("/{runId}/control")

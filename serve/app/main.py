@@ -217,6 +217,7 @@ class PredictResponse(BaseModel):
 class ModelsLoadRequest(BaseModel):
     modelId: str
     modelVersion: str
+    artifactUri: str | None = None
 
 
 class ModelsLoadResponse(BaseModel):
@@ -233,6 +234,42 @@ def health() -> Dict[str, str]:
 @app.post("/models/load", response_model=ModelsLoadResponse)
 def models_load(body: ModelsLoadRequest) -> ModelsLoadResponse:
     try:
+        # If an explicit artifactUri is provided, try to materialize it to the expected path
+        if body.artifactUri:
+            dest = os.path.join(loader.root, body.modelId, body.modelVersion, "best.pt")
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            uri = body.artifactUri
+            try:
+                if uri.startswith("s3://"):
+                    import boto3  # type: ignore
+                    from urllib.parse import urlparse
+                    p = urlparse(uri)
+                    bucket = p.netloc
+                    key = p.path.lstrip("/")
+                    s3 = boto3.client(
+                        "s3",
+                        endpoint_url=os.getenv("SERVE_S3_ENDPOINT", os.getenv("ML_S3_ENDPOINT")),
+                        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+                        region_name=os.getenv("AWS_REGION", "us-east-1"),
+                    )
+                    s3.download_file(bucket, key, dest)
+                elif uri.startswith("file://"):
+                    import shutil
+                    shutil.copyfile(uri.replace("file://", ""), dest)
+                elif uri.startswith("http://") or uri.startswith("https://"):
+                    import requests  # type: ignore
+                    r = requests.get(uri, timeout=10)
+                    r.raise_for_status()
+                    with open(dest, "wb") as f:
+                        f.write(r.content)
+                # else: treat as local path
+                else:
+                    import shutil
+                    shutil.copyfile(uri, dest)
+            except Exception:
+                # best effort; loader.load will still try S3 fallback by convention
+                pass
         loader.load(body.modelId, body.modelVersion)
         artifact = os.path.join(loader.root, body.modelId, body.modelVersion, "best.pt")
         if not os.path.exists(artifact):

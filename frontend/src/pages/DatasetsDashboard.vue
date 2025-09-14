@@ -8,7 +8,11 @@
 
     <!-- Row 2: Large -->
     <div class="is_large">
-      <TableTile title="Schema & Stats" icon="mdi-table" :vm="schemaVm" :loading="schemaLoading" />
+      <TableTile title="Schema & Stats" icon="mdi-table" :vm="schemaVm" :loading="schemaLoading">
+        <template #tools>
+          <v-select v-if="(versionsRef||[]).length" v-model="selectedVersion" :items="(versionsRef||[]).map((v:any)=>v.version||v)" label="Version" density="compact" hide-details style="max-width:200px" />
+        </template>
+      </TableTile>
     </div>
     <div class="is_large">
       <TableTile title="Samples" icon="mdi-image-multiple-outline" :vm="sampleVm" :loading="sampleLoading">
@@ -55,6 +59,8 @@ async function loadAll(){
 }
 onMounted(loadAll)
 watch(id, loadAll)
+const selectedVersion = ref<string | undefined>(undefined)
+watch(selectedVersion, () => { void Promise.all([loadSchema(), loadSamples(true), loadQuality()]) })
 
 const summaryRef = computed(() => ds.selectSummary(id.value).value)
 const versionsRef = computed(() => ds.selectVersions(id.value).value)
@@ -85,7 +91,7 @@ const schemaVm = ref<TableVM>({ columns: [
 async function loadSchema(){
   schemaLoading.value = true
   try {
-    const rows = await getDatasetSchema(id.value)
+    const rows = await getDatasetSchema(id.value, selectedVersion.value)
     schemaVm.value = { ...schemaVm.value, rows: rows.map(r => ({
       name: r.name, dtype: r.dtype,
       nullPct: pct(r.nullPct), uniquePct: pct(r.uniquePct),
@@ -101,7 +107,7 @@ const nextCursor = ref<string | null | undefined>(null)
 async function loadSamples(reset = false){
   sampleLoading.value = true
   try {
-    const resp = await getDatasetSample(id.value, { limit: 25, cursor: reset ? undefined : nextCursor.value || undefined })
+    const resp = await getDatasetSample(id.value, { limit: 25, cursor: reset ? undefined : nextCursor.value || undefined, version: selectedVersion.value })
     nextCursor.value = resp.nextCursor
     const rows = resp.rows || []
     // derive columns dynamically
@@ -120,7 +126,7 @@ const qualitySegs = ref<{ label: string; value: number }[]>([])
 async function loadQuality(){
   qualityLoading.value = true
   try {
-    const q = await getDatasetQuality(id.value)
+    const q = await getDatasetQuality(id.value, selectedVersion.value)
     function norm(v: number){ const n = Number(v) || 0; return n > 1 ? n/100 : n }
     qualitySegs.value = [
       { label: 'Missing', value: norm(q.missingPct) },

@@ -181,7 +181,7 @@
       <TableTile title="Recent Runs" icon="mdi-timeline-text-outline" :vm="recentVm" :loading="recentLoading" />
     </div>
     <div class="is_large">
-      <ChartTile title="Queue / Throughput" icon="mdi-chart-areaspline" :vm="null" :loading="false" />
+      <ChartTile title="Queue / Throughput" icon="mdi-chart-areaspline" :vm="tpVm" :loading="tpLoading" />
     </div>
   </DashboardGrid>
 </template>
@@ -203,6 +203,7 @@ import { createTraining, listTrainingRuns, controlTrainingRun } from '@/services
 
 import type { TableVM } from '@/types/vm'
 import { useTrainingStore } from '@/stores/training'
+import { useMetricsStore } from '@/stores/metrics'
 import { usePolling } from '@/composables/usePolling'
 
 const fmtZeroAsDash = (v: any) => {
@@ -370,16 +371,23 @@ async function loadRecent () { await tr.fetchRuns(50, 0) }
 
 // initial load + polling
 const { startMany } = usePolling()
+const mt = useMetricsStore()
 onMounted(async () => {
   await Promise.all([loadDatasets(), loadModels(), loadActive(), loadRecent()])
   startMany([
     { key: 'training.active', intervalMs: 5000, run: loadActive },
-    { key: 'training.recent', intervalMs: 8000, run: loadRecent }
+    { key: 'training.recent', intervalMs: 8000, run: loadRecent },
+    { key: 'metrics.tp', intervalMs: 6000, run: () => mt.fetchThroughput(undefined, '24h') }
   ])
 })
 
 // VM for form container (empty -> shows slot)
 const formVm = ref<TableVM>({ columns: [], rows: [] })
+
+// Throughput VM
+const tpKey = 'throughput:all:24h'
+const tpVm = mt.selectSeriesVm(tpKey, 'it/s')
+const tpLoading = computed(() => mt.loading.has(tpKey))
 </script>
 
 <style scoped>

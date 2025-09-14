@@ -50,4 +50,25 @@ public class MinioStorageService {
         s3.putObject(req, RequestBody.fromBytes(data));
         writes.increment();
     }
+
+    public byte[] read(String bucket, String key) {
+        try {
+            var obj = s3.getObject(b -> b.bucket(bucket).key(key));
+            return obj.readAllBytes();
+        } catch (Exception e) {
+            log.warn("read failed bucket={} key={} error={}", bucket, key, e.toString());
+            return new byte[0];
+        }
+    }
+
+    public byte[] readUri(String uri) {
+        // expects s3://bucket/key
+        if (uri == null || !uri.startsWith("s3://")) return new byte[0];
+        String no = uri.substring("s3://".length());
+        int slash = no.indexOf('/');
+        if (slash <= 0) return new byte[0];
+        String bucket = no.substring(0, slash);
+        String key = no.substring(slash + 1);
+        return read(bucket, key);
+    }
 }

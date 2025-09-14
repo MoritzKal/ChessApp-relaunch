@@ -63,7 +63,7 @@ export const useMetricsStore = defineStore('metrics', () => {
   const fetchLatencyP95 = () => fetchScalar('latency:p95', () => getLatency(95))
   const fetchMps = () => fetchScalar('mps', () => getMps())
   const fetchElo = (range: string) => fetchSeries(`elo:${range}`, () => getElo(range))
-  const fetchThroughput = (runId: string) => fetchScalar(`throughput:${runId}`, () => getThroughput(runId))
+  const fetchThroughput = (runId?: string, range = '24h') => fetchSeries(`throughput:${runId || 'all'}:${range}`, () => getThroughput(runId, range))
   const fetchTrainingSeries = (runId: string, m: string, range?: string) => fetchSeries(`train:${runId}:${m}:${range ?? ''}`, () => getTrainingMetric(runId, m, range))
   const fetchUtilization = (runId: string, range = '24h') => fetchSeries(`util:${runId}:${range}`, () => getUtilization(runId, range))
 

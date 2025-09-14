@@ -14,6 +14,7 @@ export interface TrainingRun {
 export const zTrainingRun = z.object({
   runId: z.string(),
   status: z.enum(['queued','running','succeeded','failed']),
+  progress: z.number().min(0).max(1).optional(),
   updatedAt: z.string().nullable(),
   metrics: z.record(z.number()).optional(),
   artifactUris: z.record(z.string()).optional()
